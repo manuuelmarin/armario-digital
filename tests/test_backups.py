@@ -6,7 +6,7 @@ import pytest
 
 from armario import create_app
 from armario.backups import create_backup, process_lock, restore_backup, verify_backup
-from armario.db import connect, migrate
+from armario.db import SCHEMA_VERSION, connect, migrate
 
 from .conftest import photograph, post
 
@@ -23,7 +23,7 @@ def test_complete_backup_restore_roundtrip(client, add_garment, db, app, tmp_pat
     assert download.status_code == 200 and download.data.startswith(b"PK")
     path = next((app.config["DATA_DIR"] / "backups").glob("*.zip"))
     assert verify_backup(path) == {
-        "schema_version": 3,
+        "schema_version": SCHEMA_VERSION,
         "garments": 1,
         "outfits": 1,
         "outfit_items": 1,
@@ -127,7 +127,7 @@ def test_populated_v1_migration_preserves_relations_and_backs_up(tmp_path):
     db.close()
     migrate(root)
     with connect(root / "wardrobe.sqlite") as after:
-        assert after.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert after.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
         assert after.execute("SELECT count(*) FROM outfit_items").fetchone()[0] == 1
         assert after.execute("SELECT name FROM garments").fetchone()[0] == "Anterior"
         assert after.execute("PRAGMA foreign_key_check").fetchall() == []
