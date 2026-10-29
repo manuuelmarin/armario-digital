@@ -138,3 +138,31 @@ def test_trip_dates_edit_remove_and_delete(client, add_garment, db):
     assert client.get(f"/maletas/{tid}/eliminar").status_code == 200
     assert post(client, f"/maletas/{tid}/eliminar", {"confirm": "1"}).status_code == 302
     assert db.execute("SELECT count(*) FROM garments").fetchone()[0] == 1
+
+
+def test_duplicate_and_return_trip_never_move_garments(client, add_garment, db):
+    from .conftest import post
+
+    garment = add_garment()
+    assert (
+        post(
+            client, "/maletas/nueva", {"name": "Escapada", "origin_id": 1, "destination_id": 2}
+        ).status_code
+        == 302
+    )
+    tid = db.execute("SELECT id FROM trips").fetchone()[0]
+    assert post(client, f"/maletas/{tid}/anadir", {"garment_ids": [garment]}).status_code == 302
+    assert post(client, f"/maletas/{tid}/anadir", {"label": "Cargador"}).status_code == 302
+    assert client.get(f"/maletas/{tid}/imprimir").status_code == 200
+    for action in ("duplicar", "vuelta"):
+        assert post(client, f"/maletas/{tid}/{action}").status_code == 302
+    trips = db.execute("SELECT * FROM trips ORDER BY id").fetchall()
+    assert (trips[-1]["origin_id"], trips[-1]["destination_id"]) == (2, 1)
+    assert (
+        db.execute(
+            "SELECT count(*) FROM trip_items WHERE trip_id=? AND packed=0", (trips[-1]["id"],)
+        ).fetchone()[0]
+        == 2
+    )
+    assert db.execute("SELECT location_id FROM garments WHERE id=?", (garment,)).fetchone()[0] == 1
+    assert db.execute("SELECT count(*) FROM garment_movements").fetchone()[0] == 0
