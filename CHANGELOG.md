@@ -2,6 +2,12 @@
 
 ## En desarrollo
 
+- Añade importación por lotes, colecciones, etiquetas y filtros combinables.
+- Añade tableros privados con imágenes locales, enlaces y collage con posiciones editables y arrastre.
+- Añade consulta manual opcional de previsión meteorológica y caché local.
+- Guarda huellas persistentes de las imágenes, verifica las copias y permite limpiar copias diarias tras confirmar y verificar las conservadas.
+- Ajusta el límite del servidor para permitir el tamaño de petición anunciado.
+
 - Selección de fotografía principal para el catálogo, los outfits y las maletas.
 - Migración con copia previa para preservar los armarios existentes.
 
