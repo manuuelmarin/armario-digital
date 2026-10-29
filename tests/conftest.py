@@ -10,7 +10,17 @@ from armario.db import connect
 
 @pytest.fixture
 def app(tmp_path):
-    return create_app({"TESTING": True, "DATA_DIR": tmp_path / "data"})
+    application = create_app({"TESTING": True, "DATA_DIR": tmp_path / "data"})
+    connection = connect(application.config["DATA_DIR"] / "wardrobe.sqlite")
+    try:
+        with connection:
+            connection.executemany(
+                "INSERT INTO locations(name) VALUES (?)",
+                [("Espacio A",), ("Espacio B",), ("Espacio C",)],
+            )
+    finally:
+        connection.close()
+    return application
 
 
 @pytest.fixture

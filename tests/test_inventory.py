@@ -103,7 +103,7 @@ def test_duplicate_photo_and_orientation(client, add_garment, db, app):
         == 302
     )
     assert db.execute("SELECT count(*) FROM garment_images").fetchone()[0] == 1
-    assert len(list((app.config["DATA_DIR"] / "images").iterdir())) == 2
+    assert len(list((app.config["DATA_DIR"] / "images").iterdir())) == 3
     row = db.execute("SELECT * FROM garment_images").fetchone()
     with Image.open(app.config["DATA_DIR"] / "images" / row["filename"]) as image:
         assert image.size == (1000, 800)
@@ -171,7 +171,7 @@ def test_bulk_move_is_atomic_and_preserves_outfits(client, add_garment, db):
         )
     assert db.execute("SELECT count(*) FROM garment_movements").fetchone()[0] == 2
     assert db.execute("SELECT count(*) FROM outfit_items").fetchone()[0] == 2
-    assert b"Madrid" in client.get("/outfits").data
+    assert b"Espacio B" in client.get("/outfits").data
     assert post(client, f"/prendas/{first}/archivar").status_code == 302
     assert (
         post(client, "/prendas/mover", {"garment_ids": [first], "destination_id": 3}).status_code
@@ -183,7 +183,7 @@ def test_delete_blocks_relations_and_preserves_images(client, add_garment, db, a
     gid = add_garment(photos=photograph())
     post(client, "/outfits/nuevo", {"name": "Look", "garment_ids": [gid]})
     assert post(client, f"/prendas/{gid}/eliminar", {"confirm": "1"}).status_code == 409
-    assert len(list((app.config["DATA_DIR"] / "images").iterdir())) == 2
+    assert len(list((app.config["DATA_DIR"] / "images").iterdir())) == 3
     oid = db.execute("SELECT id FROM outfits").fetchone()[0]
     assert post(client, f"/outfits/{oid}/eliminar", {"confirm": "1"}).status_code == 302
     assert post(client, f"/prendas/{gid}/eliminar", {"confirm": "1"}).status_code == 302
@@ -193,8 +193,11 @@ def test_delete_blocks_relations_and_preserves_images(client, add_garment, db, a
 def test_locations_categories_and_favorites(client, add_garment, db):
     gid = add_garment()
     assert post(client, "/ubicaciones/nueva", {"name": "Valencia"}).status_code == 302
-    assert post(client, "/ubicaciones/1/renombrar", {"name": "Albacete casa"}).status_code == 302
-    assert b"Albacete casa" in client.get(f"/prendas/{gid}").data
+    assert (
+        post(client, "/ubicaciones/1/renombrar", {"name": "Espacio A renombrado"}).status_code
+        == 302
+    )
+    assert b"Espacio A renombrado" in client.get(f"/prendas/{gid}").data
     assert post(client, "/ubicaciones/1/eliminar", {"confirm": "1"}).status_code == 409
     assert post(client, "/ubicaciones/4/eliminar", {"confirm": "1"}).status_code == 302
     assert post(client, "/ajustes/categorias", {"name": "Bañadores"}).status_code == 302

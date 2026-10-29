@@ -27,6 +27,10 @@ def benchmark():
             app = create_app({"TESTING": True, "DATA_DIR": root})
             db = connect(root / "wardrobe.sqlite")
             with db:
+                db.executemany(
+                    "INSERT INTO locations(name) VALUES (?)",
+                    [("Espacio A",), ("Espacio B",), ("Espacio C",)],
+                )
                 for number in range(count):
                     gid = db.execute(
                         "INSERT INTO garments(name,category_id,location_id) VALUES (?,2,?)",
