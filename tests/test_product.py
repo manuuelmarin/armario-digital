@@ -193,3 +193,35 @@ def test_outfit_detail_search_and_duplicate_preserve_items(client, add_garment, 
         == 5
     )
     assert db.execute("SELECT count(*) FROM garment_movements").fetchone()[0] == 0
+
+
+def test_upgrade_v3_preserves_photo_and_creates_backup(tmp_path):
+    root = tmp_path / "v3"
+    root.mkdir()
+    (root / "images").mkdir()
+    db = connect(root / "wardrobe.sqlite")
+    migrations = Path(__file__).parents[1] / "armario" / "migrations"
+    try:
+        for name in ("001_core.sql", "002_trips.sql", "003_responsive_images.sql"):
+            db.executescript((migrations / name).read_text(encoding="utf-8"))
+        with db:
+            db.execute("PRAGMA user_version=3")
+            db.execute("INSERT INTO locations(name) VALUES ('Espacio existente')")
+            db.execute("INSERT INTO garments(name,category_id,location_id) VALUES ('Prenda',1,1)")
+            db.execute(
+                "INSERT INTO garment_images(garment_id,filename,thumbnail,digest) VALUES (1,?,?,?)",
+                ("b" * 32 + ".webp", "b" * 32 + "-thumb.webp", "legacy"),
+            )
+        for name in ("b" * 32 + ".webp", "b" * 32 + "-thumb.webp"):
+            Image.new("RGB", (80, 100), "ivory").save(root / "images" / name, "WEBP")
+    finally:
+        db.close()
+    migrate(root)
+    db = connect(root / "wardrobe.sqlite")
+    try:
+        assert db.execute("SELECT is_primary FROM garment_images").fetchone()[0] == 0
+        assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 4
+    finally:
+        db.close()
+    assert list((root / "backups").glob("before-schema-3*.zip"))

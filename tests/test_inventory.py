@@ -271,3 +271,23 @@ def test_search_accepts_accents_case_and_literal_symbols(client, add_garment):
     assert b"Pantal" in client.get("/?q=PANTALON+CANAMO").data
     assert b'class="garment-card"' in client.get("/?q=50%25").data
     assert b'class="garment-card"' not in client.get("/?q=_").data
+
+
+def test_primary_photo_is_used_across_views_and_scoped_to_garment(client, add_garment, db):
+    gid = add_garment(photos=[photograph("navy"), photograph("red")])
+    other = add_garment(photos=photograph("green"))
+    images = db.execute(
+        "SELECT * FROM garment_images WHERE garment_id=? ORDER BY id", (gid,)
+    ).fetchall()
+    other_image = db.execute(
+        "SELECT id FROM garment_images WHERE garment_id=?", (other,)
+    ).fetchone()[0]
+    assert post(client, f"/prendas/{gid}/fotos/{other_image}/principal").status_code == 404
+    assert post(client, f"/prendas/{gid}/fotos/{images[1]['id']}/principal").status_code == 302
+    assert images[1]["thumbnail"].encode() in client.get("/").data
+    detail = client.get(f"/prendas/{gid}").data
+    assert detail.index(images[1]["filename"].encode()) < detail.index(
+        images[0]["filename"].encode()
+    )
+    assert post(client, f"/prendas/{gid}/fotos/{images[1]['id']}/eliminar").status_code == 302
+    assert images[0]["thumbnail"].encode() in client.get("/").data

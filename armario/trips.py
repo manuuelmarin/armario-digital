@@ -13,7 +13,7 @@ def trip_items(tid):
         .execute(
             """
         SELECT i.*,g.name,g.archived,g.location_id,l.name location_name,
-        (SELECT thumbnail FROM garment_images WHERE garment_id=g.id ORDER BY id LIMIT 1) thumbnail
+        (SELECT thumbnail FROM garment_images WHERE garment_id=g.id ORDER BY is_primary DESC, id LIMIT 1) thumbnail
         FROM trip_items i LEFT JOIN garments g ON g.id=i.garment_id
         LEFT JOIN locations l ON l.id=g.location_id WHERE trip_id=? ORDER BY i.id
     """,

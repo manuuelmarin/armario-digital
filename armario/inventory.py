@@ -192,7 +192,7 @@ def detail(gid):
         "garment_detail.html",
         item=item,
         photos=db.execute(
-            "SELECT * FROM garment_images WHERE garment_id=? ORDER BY id", (gid,)
+            "SELECT * FROM garment_images WHERE garment_id=? ORDER BY is_primary DESC, id", (gid,)
         ).fetchall(),
         chosen_seasons=[
             row[0]
@@ -279,6 +279,21 @@ def delete(gid):
     )
     flash("Prenda eliminada.", "success")
     return redirect(url_for("inventory.index"))
+
+
+@bp.post("/prendas/<int:gid>/fotos/<int:image_id>/principal")
+def primary_image(gid, image_id):
+    garment(gid)
+    db = get_db()
+    if not db.execute(
+        "SELECT 1 FROM garment_images WHERE id=? AND garment_id=?", (image_id, gid)
+    ).fetchone():
+        abort(404)
+    with db:
+        db.execute("UPDATE garment_images SET is_primary=0 WHERE garment_id=?", (gid,))
+        db.execute("UPDATE garment_images SET is_primary=1 WHERE id=?", (image_id,))
+    flash("Fotografía principal actualizada.", "success")
+    return redirect(url_for("inventory.detail", gid=gid))
 
 
 @bp.post("/prendas/<int:gid>/fotos/<int:image_id>/eliminar")
