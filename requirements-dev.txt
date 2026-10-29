@@ -1,0 +1,11 @@
+-r requirements.txt
+pytest==9.2.0
+ruff==0.17.3
+playwright==1.64.1
+iniconfig==2.3.1
+packaging==26.3
+pluggy==1.7.0
+Pygments==2.21.0
+pyee==14.0.0
+greenlet==3.5.6
+typing_extensions==4.16.0
