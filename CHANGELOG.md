@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Allow six photographs of up to 10 MiB each in the same request.
 - Restrict image decoders before opening uploads and update Pillow.
 - Validate backup images and verify the generated archive before reporting success.
 - Restore a valid backup while preserving a damaged previous data directory.
