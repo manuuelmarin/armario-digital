@@ -153,3 +153,36 @@ def test_process_lock_prevents_parallel_server_or_restore(tmp_path):
                 pass
     with process_lock(root):
         pass
+
+
+def test_restore_preserves_corrupt_database_and_restores_valid_copy(app, add_garment):
+    add_garment(photos=photograph())
+    root = app.config["DATA_DIR"]
+    backup = create_backup(root)
+    broken = b"corrupt database contents"
+    (root / "wardrobe.sqlite").write_bytes(broken)
+    result, previous = restore_backup(backup, root)
+    assert result["garments"] == 1
+    assert (previous / "wardrobe.sqlite").read_bytes() == broken
+    assert verify_backup(previous / "backups" / backup.name)["garments"] == 1
+
+
+def test_backup_rejects_corrupted_referenced_image(app, add_garment):
+    add_garment(photos=photograph())
+    root = app.config["DATA_DIR"]
+    next((root / "images").glob("*.webp")).write_bytes(b"damaged image")
+    with pytest.raises(ValueError, match="imagen"):
+        create_backup(root)
+    assert not list((root / "backups").glob("*.zip"))
+    assert not list((root / "backups").glob("*.partial"))
+
+
+def test_backup_creation_respects_restore_size_limit(app, add_garment, monkeypatch):
+    import armario.backups as backups
+
+    add_garment()
+    root = app.config["DATA_DIR"]
+    monkeypatch.setattr(backups, "MAX_UNPACKED_BYTES", 256)
+    with pytest.raises(ValueError, match="límite"):
+        create_backup(root)
+    assert not list((root / "backups").glob("*.zip"))
