@@ -147,6 +147,23 @@ def test_image_size_and_count_limits(client, add_garment, app, monkeypatch):
     assert response.status_code == 400
 
 
+def test_six_valid_photos_can_exceed_old_total_request_limit(client):
+    # JPEG decoders allow trailing bytes; use padding to exercise the multipart limit.
+    raw, _ = photograph()
+    jpeg = raw.getvalue() + b"\0" * (6 * 1024 * 1024)
+    response = post(
+        client,
+        "/prendas/nueva",
+        {
+            "name": "Prenda con fotos",
+            "category_id": 1,
+            "location_id": 1,
+            "photos": [(io.BytesIO(jpeg), f"foto{i}.jpg") for i in range(6)],
+        },
+    )
+    assert response.status_code == 302
+
+
 def test_bulk_move_is_atomic_and_preserves_outfits(client, add_garment, db):
     first, second = add_garment(), add_garment("Pantalón")
     assert (
