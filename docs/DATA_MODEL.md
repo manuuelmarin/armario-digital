@@ -1,26 +1,30 @@
 # Modelo de datos
 
-Esquema actual: `PRAGMA user_version = 2`. Migraciones SQL incrementales, con transacción e integridad referencial comprobada. `001_core` crea inventario/outfits; `002_trips` añade viajes sin reconstruir tablas existentes.
+Esquema actual: `PRAGMA user_version = 3`. Las migraciones se aplican secuencialmente dentro de transacciones, con verificación de claves foráneas y copia previa de datos existentes.
 
-| Tabla | Papel y relaciones |
+| Tabla | Función |
 |---|---|
-| locations | Ubicaciones editables; su borrado se restringe si conservan referencias |
-| categories | Catálogo ampliable de categorías |
-| garments | Una fila por artículo físico, con identidad estable, ubicación actual y categoría |
-| garment_seasons | Relación muchos a muchos limitada a las cuatro temporadas |
-| garment_images | Hasta seis fotos por prenda en la aplicación; rutas UUID y hash de entrada, único por prenda |
-| garment_movements | Origen, destino, motivo y fecha UTC de los cambios reales de ubicación |
-| outfits | Nombre, ocasión, notas y favorito |
-| outfit_items | Asociación única outfit/prenda; restringe borrar una prenda usada |
-| trips | Origen, destino, fechas opcionales y notas; valida orden cronológico |
-| trip_items | Una prenda única por viaje o un objeto libre; indicador de preparado |
+| `locations` | Espacios configurables; eliminación restringida si conservan referencias |
+| `categories` | Categorías de prendas ampliables |
+| `garments` | Artículo físico, categoría, ubicación actual y metadatos |
+| `garment_seasons` | Temporadas múltiples por artículo |
+| `garment_images` | Archivos de imagen, hash y dimensiones; principal por orden de ID |
+| `garment_movements` | Origen, destino, motivo y fecha de cambios reales |
+| `outfits`, `outfit_items` | Combinaciones y asociaciones únicas con prendas |
+| `trips`, `trip_items` | Viajes, prendas deduplicadas, objetos libres y preparación |
 
-Los precios se almacenan en céntimos enteros y se introducen en euros. Las fechas de compra y viaje son fechas ISO sin hora. Los eventos usan fecha/hora UTC. Los campos opcionales de texto utilizan cadena vacía; las fechas y precios desconocidos usan NULL.
+Los precios se almacenan en céntimos y se introducen en euros. Las fechas de compra y viaje son ISO sin hora; los eventos se registran en UTC. Las prendas no se duplican al incorporarlas a un outfit o viaje.
 
-Los outfits y las maletas referencian prendas, sin copiar su ubicación ni duplicar fotos. Al mover una prenda, todas las vistas muestran su ubicación actual. Importar un outfit en una maleta guarda sus prendas como lista independiente: cambiar o eliminar después el outfit no cambia esa maleta.
+## Imágenes
 
-Se utiliza `ON DELETE RESTRICT` en referencias a prendas y ubicaciones que protegen información de uso; `CASCADE` en las filas dependientes propias de una prenda, outfit o viaje. Archivar no borra filas. Las ubicaciones con historial se pueden renombrar, pero no borrar: los eventos seguirán usando su identidad y mostrarán su nombre actual.
+Cada imagen nueva tiene un master WebP de hasta 4.096 px, una vista previa de hasta 1.024 px y una miniatura de hasta 512 px. Las dimensiones reales se almacenan para construir un `srcset` válido, sin inventar resolución ni ampliar fotografías pequeñas. El master conserva más detalle que las variantes de navegación, pero sigue siendo una versión recodificada; el archivo original y su EXIF no se conservan.
 
-Las imágenes se recodifican a WebP (máximo 2.400 px por lado) y miniaturas de 560 px. No se conserva el original binario ni su EXIF. La primera foto que queda según ID es la principal. Se rechazan más de 10 MB por foto, más de 24 megapíxeles y formatos distintos de JPEG/PNG/WebP. No se admiten HEIC o SVG.
+Se admiten JPEG, PNG y WebP, hasta 10 MB y 24 megapíxeles por archivo; hasta seis imágenes por prenda. Los nombres internos son UUID, no rutas elegidas por el cliente. Los archivos nuevos se retiran si falla la transacción. Una interrupción de proceso podría dejar archivos huérfanos, que no se incluyen en copias; no se hace limpieza destructiva automática.
 
-Un fallo antes del commit retira los archivos recién creados. Un cierre abrupto entre operaciones de disco y SQL podría dejar archivos huérfanos, que no se sirven por referencia en la interfaz ni se incluyen en copias. Se prioriza no borrar imágenes referenciadas; no se ejecuta limpieza automática destructiva.
+## Evolución
+
+- `001_core`: esquema de inventario y outfits. La definición de instalación nueva ya no contiene datos de un entorno de desarrollo; la estructura no se altera.
+- `002_trips`: listas de viaje.
+- `003_responsive_images`: añade vistas previas y dimensiones opcionales, con índices de referencias inversas. No reconstruye tablas ni borra registros.
+
+Las bases de datos existentes conservan sus espacios y prendas. Las fotografías antiguas pueden tener `preview` y dimensiones a NULL; la interfaz y las copias soportan esa situación. Se aceptan copias de esquemas compatibles 1, 2 y 3.

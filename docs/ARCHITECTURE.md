@@ -1,37 +1,39 @@
 # Arquitectura
 
-Se elige **Flask + Jinja + SQLite + Pillow + Waitress**. El navegador recibe HTML del mismo proceso que gestiona los datos. JavaScript se limita a previsualizar fotos, contar selecciones y confirmar la eliminación de una foto. Los formularios y la persistencia no dependen de una SPA.
+## Componentes
 
-| Alternativa | Ventaja para este producto | Coste o incertidumbre | Decisión |
-|---|---|---|---|
-| Personalizar Libre Closet 0.6.0 | Catálogo, editor de outfits, traducciones, fotos y meteorología existentes | Adaptar ubicaciones y viajes; mantener un fork con Nest, ORM, generación de assets y varias funciones ajenas al uso local | Buen candidato si primasen collage/PWA; no se adopta en este núcleo |
-| NiceGUI + SQLite | Una base Python y componentes preparados | Añade su modelo de sesiones y transporte; libertad visual y flujo de formularios pendientes de validar con un prototipo | No se instala ni se atribuye rendimiento no medido |
-| React + FastAPI + SQLite | Gran flexibilidad de interacción | Dos cadenas de herramientas, contrato API y estado de cliente para un CRUD monousuario | Se aplaza hasta que exista una necesidad concreta |
-| Flask + Jinja + SQLite | Un proceso, sin compilación frontend, HTML/CSS sencillo y SQL explícito | Hay que escribir funciones que Libre Closet ya ofrece; el collage libre y la PWA no vienen incluidos | Elegida; núcleo implementado y probado |
+Un proceso Python sirve HTML y recursos locales, aplica las reglas del dominio y accede a SQLite. No hay una SPA ni una compilación frontend. Waitress es el servidor normal; el modo de desarrollo utiliza recarga de archivos sin depurador interactivo.
 
-La valoración es un juicio para este alcance, no un benchmark de calidad de los frameworks. El coste de no reutilizar Libre Closet se ha asumido expresamente; no se pretende reproducir ahora todas sus capacidades.
+| Módulo | Responsabilidad |
+|---|---|
+| `run.py` | Lanzador, exclusión de instancias, modo demo y recuperación offline |
+| `inventory.py`, `looks.py`, `trips.py`, `settings.py` | Rutas y flujos por funcionalidad |
+| `domain.py` | Validaciones y operaciones compartidas |
+| `queries.py` | Lecturas de prendas con su imagen principal y entidades permitidas |
+| `db.py`, `migrations/` | Conexiones, integridad y evolución del esquema |
+| `images.py` | Validación, orientación, recodificación y resoluciones |
+| `backups.py` | Snapshots, manifiestos, verificación y restauración |
+| `demo.py` | Colección ficticia e ilustraciones originales, sin datos reales |
+| `templates/`, `static/` | Plantillas, estilos por responsabilidad, fuentes e interacciones progresivas |
 
-## Módulos
+## Persistencia y concurrencia
 
-- `inventory.py`, `looks.py`, `trips.py`, `settings.py`: rutas y formularios por funcionalidad.
-- `domain.py`: validaciones y operaciones compartidas de traslado y maletas.
-- `queries.py`: proyección de prendas y recuperación de entidades.
-- `db.py`, `migrations/`: conexiones, integridad y evolución del esquema.
-- `images.py`: validación, orientación, conversión y miniaturas.
-- `backups.py`: snapshots, manifiestos, verificación y restauración.
-- `templates/`, `static/`: interfaz local, sin CDN ni fuentes externas.
-- `run.py`: servidor, exclusión de instancias y comandos de recuperación.
+Las conexiones se abren por solicitud y siempre activan claves foráneas. Las escrituras adquieren un bloqueo común dentro del proceso y las operaciones relacionadas utilizan transacciones. El punto de entrada soportado es `run.py`, que además adquiere un bloqueo del sistema operativo para impedir procesos simultáneos sobre la carpeta.
 
-## Ejecución y concurrencia
+La restauración se hace con el servidor cerrado. Las copias usan la API de backup de SQLite y las imágenes referenciadas por ese snapshot, con mutaciones excluidas durante el empaquetado.
 
-El punto de entrada soportado es `run.py`. Un bloqueo del sistema operativo impide dos servidores o una restauración simultánea en la misma carpeta. Todas las solicitudes POST adquieren un bloqueo común; cada operación SQL relacionada usa una transacción. La copia usa la API de backup de SQLite y copia las fotos referenciadas por ese snapshot mientras se excluyen mutaciones.
+## Interfaz y rendimiento
 
-Las lecturas usan conexiones por solicitud. Las galerías consultan 48 prendas por página y cargan miniaturas de forma diferida. Los selectores de outfits/maletas muestran el armario activo completo: la búsqueda y paginación del selector quedan como mejora si el inventario crece.
+La galería pagina 48 prendas. La imagen principal se obtiene en la consulta de inventario. La biblioteca de outfits carga sus componentes en conjunto, evitando una consulta por combinación.
 
-No inicies varios procesos WSGI directamente sobre estos datos: el bloqueo entre mutaciones es interno al proceso y el bloqueo de instancia se aplica en `run.py`. No se soportan carpetas de red ni edición externa simultánea de SQLite o de las fotografías.
+Las fotografías usan variantes de 512, 1.024 y hasta 4.096 px y atributos `srcset` y `sizes`. Las fotos anteriores mantienen una ruta de compatibilidad sin regeneración destructiva. Las imágenes y fuentes son locales; no se necesitan CDN. HTML y copias no se cachean; recursos estáticos e imágenes con nombres únicos tienen políticas de caché diferenciadas. En desarrollo se desactiva esa caché.
 
-## Seguridad local
+Los estilos se dividen en `tokens.css` (variables y fuentes), `app.css` (base y estructura), `components.css` (pantallas y componentes) y `responsive.css` (adaptación y accesibilidad). Las plantillas usan formato Jinja verificable con djLint.
 
-Loopback obligatorio en el lanzador, hosts permitidos, token CSRF por sesión, comprobación de origen para escrituras, escape HTML, CSP sin código externo y rutas de fotos validadas. No se descargan URLs del usuario. Las fotos se validan por su contenido, se reorientan y recodifican sin EXIF. No se incluye autenticación: el acceso desde otros equipos exige un diseño y una revisión específicos.
+JavaScript mejora selección masiva, filtros móviles, búsqueda en selectores, vista previa y galería. Los formularios siguen siendo operativos sin JavaScript. El selector de outfits todavía renderiza el armario activo completo; la paginación del selector queda pendiente para colecciones muy grandes.
 
-Dependencias de ejecución y herramientas fijadas en los archivos `requirements`. La aplicación no necesita internet tras instalarse. Waitress soporta Windows directamente, según la [documentación de Flask](https://flask.palletsprojects.com/en/stable/deploying/waitress/).
+## Decisiones
+
+Se comparó reutilizar Libre Closet, usar NiceGUI y separar frontend y API. Se eligió Flask + Jinja + SQLite por el alcance local, la edición directa de HTML/CSS y un único proceso sin compilación frontend. El coste aceptado es implementar y mantener capacidades que otras soluciones ofrecen ya, como el collage libre o una PWA.
+
+No se han medido comparativamente esos frameworks ni se atribuyen garantías de rendimiento a alternativas no ejecutadas. Las referencias de producto están en [AUDIT.md](AUDIT.md).
