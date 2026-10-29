@@ -1,0 +1,611 @@
+/* Responsive layout */
+@media (min-width: 1700px) {
+  .garment-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1250px) {
+  :root {
+    --rail: 198px;
+  }
+
+  .sidebar {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+
+  main {
+    padding: 30px 28px 50px;
+  }
+
+  .topbar,
+  .footer {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .demo-banner {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .garment-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 25px 18px;
+  }
+
+  .collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .picker-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .card-color {
+    display: none;
+  }
+
+  .form-grid {
+    gap: 20px;
+  }
+
+  .panel {
+    padding: 23px;
+  }
+
+  .detail-layout {
+    gap: 30px;
+  }
+
+  .detail-copy h1 {
+    font-size: 37px;
+  }
+
+  .welcome-panel {
+    gap: 35px;
+    padding: 37px;
+  }
+
+  .onboarding-layout {
+    gap: 35px;
+    padding: 35px 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    display: block;
+    padding: 19px 24px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand {
+    margin: 0 0 23px;
+    font-size: 28px;
+  }
+
+  .brand-symbol .icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .brand-sub {
+    font-size: 7px;
+    letter-spacing: 4px;
+    margin-top: 6px;
+  }
+
+  .nav-label,
+  .sidebar-note,
+  .sidebar-spaces,
+  .nav-dot {
+    display: none;
+  }
+
+  .sidebar nav {
+    flex-direction: row;
+    gap: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav-link {
+    min-height: 36px;
+    padding: 8px 13px;
+    font-size: 11px;
+    gap: 7px;
+    white-space: nowrap;
+  }
+
+  .nav-link .icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .sidebar-bottom {
+    position: absolute;
+    right: 21px;
+    top: 24px;
+    padding: 0;
+  }
+
+  .sidebar-bottom .nav-link {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .sidebar-bottom .nav-link.active {
+    color: white;
+  }
+
+  .workspace {
+    margin: 0;
+  }
+
+  .topbar {
+    height: 49px;
+  }
+
+  .page-heading {
+    margin-bottom: 26px;
+  }
+
+  .page-heading .button {
+    padding: 10px 13px;
+    font-size: 11px;
+  }
+
+  .page-heading h1 {
+    font-size: 47px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .trip-tools .panel {
+    margin: 0;
+  }
+
+  .selection-hint {
+    display: none;
+  }
+
+  .filters .search-field {
+    flex-basis: 100%;
+  }
+
+  .filters .filter-select {
+    flex: 1;
+  }
+
+  .filters .filter-select select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .onboarding-layout {
+    gap: 28px;
+  }
+
+  .onboarding-form {
+    padding: 27px;
+  }
+
+  .skip {
+    left: 12px;
+  }
+}
+
+@media (max-width: 620px) {
+
+  .filters[data-filter-collapsed="true"] .filter-select,
+  .filters[data-filter-collapsed="true"] .filter-options {
+    display: none;
+  }
+
+  .filters[data-filter-collapsed="true"] .search-field {
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+
+  .filters[data-filter-collapsed="true"] .filter-button {
+    flex: 0 0 auto;
+  }
+
+  main {
+    padding: 27px 18px 42px;
+  }
+
+  .sidebar {
+    padding: 16px 18px 11px;
+  }
+
+  .sidebar-bottom {
+    right: 16px;
+    top: 21px;
+  }
+
+  .nav-link {
+    padding: 8px 11px;
+  }
+
+  .nav-link .icon {
+    display: none;
+  }
+
+  .sidebar-bottom .nav-link .icon {
+    display: block;
+  }
+
+  .brand {
+    font-size: 27px;
+    margin-bottom: 20px;
+  }
+
+  .topbar {
+    padding: 0 18px;
+  }
+
+  .breadcrumb>span,
+  .breadcrumb .icon {
+    display: none;
+  }
+
+  .demo-banner {
+    padding: 7px 18px;
+    font-size: 10px;
+  }
+
+  .device-label {
+    font-size: 9px;
+  }
+
+  h1,
+  .page-heading h1 {
+    font-size: 41px;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .page-heading .button {
+    padding: 10px 14px;
+  }
+
+  .eyebrow {
+    font-size: 8px;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+  }
+
+  .location-tabs {
+    gap: 23px;
+    margin-bottom: 18px;
+  }
+
+  .tab {
+    font-size: 11px;
+    padding-bottom: 12px;
+  }
+
+  .filters {
+    gap: 8px;
+    padding-bottom: 15px;
+  }
+
+  .filters .filter-select {
+    flex: 1 1 40%;
+  }
+
+  .filters .filter-button {
+    flex: 1;
+  }
+
+  .filter-options {
+    flex-wrap: wrap;
+    gap: 12px 18px;
+  }
+
+  .filter-options .check-label {
+    font-size: 10px;
+  }
+
+  .sort-control {
+    margin: 0;
+    flex: 1 0 100%;
+    justify-content: space-between;
+    padding-top: 3px;
+  }
+
+  .sort-control span,
+  .sort-control select {
+    font-size: 10px;
+  }
+
+  .garment-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 23px 13px;
+  }
+
+  .card-image {
+    border-radius: 6px;
+  }
+
+  .card-image img {
+    padding: 6px;
+  }
+
+  .card-caption {
+    padding-top: 11px;
+  }
+
+  .category-label {
+    font-size: 9px;
+    letter-spacing: 1.1px;
+  }
+
+  .card-caption h2 {
+    font-size: 12px;
+    margin: 4px 0 6px;
+  }
+
+  .card-caption p {
+    font-size: 10px;
+  }
+
+  .card-favorite {
+    right: 7px;
+    bottom: 7px;
+  }
+
+  .card-favorite .icon-button {
+    width: 31px;
+    height: 31px;
+  }
+
+  .card-checkbox {
+    left: 9px;
+    top: 9px;
+  }
+
+  .collection-toolbar {
+    font-size: 10px;
+    margin-bottom: 16px;
+  }
+
+  .bulk-bar {
+    gap: 9px;
+    padding: 11px;
+  }
+
+  .bulk-bar>span {
+    flex-basis: 100%;
+  }
+
+  .bulk-bar select {
+    width: 130px;
+  }
+
+  .bulk-bar .button {
+    font-size: 10px;
+  }
+
+  .bulk-bar label {
+    font-size: 10px;
+  }
+
+  .collection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .outfit-preview {
+    height: 350px;
+  }
+
+  .picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .pick-photo {
+    height: 160px;
+  }
+
+  .picker-toolbar {
+    gap: 10px;
+  }
+
+  .picker-toolbar>span {
+    font-size: 9px;
+  }
+
+  .two-columns {
+    gap: 12px;
+  }
+
+  .panel {
+    padding: 22px 20px;
+  }
+
+  .panel-heading {
+    gap: 10px;
+  }
+
+  .panel-heading h2 {
+    font-size: 16px;
+  }
+
+  .detail-layout {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .detail-photo {
+    aspect-ratio: 1;
+  }
+
+  .detail-photo>img {
+    padding: 18px;
+  }
+
+  .detail-photo>.photo-placeholder {
+    min-height: 300px;
+  }
+
+  .detail-copy h1 {
+    font-size: 38px;
+  }
+
+  .trip-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading .muted {
+    font-size: 10px;
+  }
+
+  .checklist-row {
+    padding: 12px 10px;
+    gap: 9px;
+  }
+
+  .checklist-photo {
+    width: 38px;
+    height: 48px;
+  }
+
+  .checklist-copy strong {
+    font-size: 11px;
+  }
+
+  .checklist-copy small {
+    font-size: 9px;
+  }
+
+  .checklist-row button.text-link {
+    font-size: 9px;
+  }
+
+  .welcome-panel {
+    grid-template-columns: 1fr;
+    gap: 29px;
+    padding: 27px;
+  }
+
+  .welcome-art {
+    max-width: 190px;
+    width: 100%;
+    margin: auto;
+  }
+
+  .welcome-panel h2 {
+    font-size: 37px;
+  }
+
+  .welcome-panel p:not(.eyebrow) {
+    font-size: 12px;
+  }
+
+  .onboarding-layout {
+    grid-template-columns: 1fr;
+    padding: 15px 0;
+    gap: 28px;
+  }
+
+  .onboarding-copy h1 {
+    font-size: 46px;
+  }
+
+  .onboarding-steps {
+    flex-direction: row;
+    gap: 13px;
+    margin-top: 23px;
+  }
+
+  .step {
+    display: block;
+    flex: 1;
+    font-size: 9px;
+  }
+
+  .step strong {
+    display: block;
+    margin-top: 6px;
+  }
+
+  .narrow h1 {
+    font-size: 34px;
+  }
+
+  .confirm-panel {
+    padding: 28px;
+  }
+
+  .footer {
+    padding: 17px 18px;
+    font-size: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media print {
+
+  .sidebar,
+  .topbar,
+  .footer,
+  .demo-banner,
+  .button,
+  .trip-tools,
+  .secondary-actions {
+    display: none !important;
+  }
+
+  .workspace {
+    margin: 0;
+  }
+
+  main {
+    padding: 0;
+  }
+
+  .trip-layout {
+    display: block;
+  }
+
+  .checklist-row {
+    break-inside: avoid;
+  }
+}
