@@ -1,74 +1,88 @@
 # Armario Digital
 
-Tu ropa, en su sitio. Aplicación personal para saber qué tienes en Albacete, Madrid, La Manga y cualquier otra ubicación; guardar outfits y preparar maletas.
+**Un catálogo visual para organizar prendas, crear outfits y preparar viajes.**
 
-**Primera versión: 0.1.0.** Funciona en el navegador de tu propio equipo. Un proceso Python, una base SQLite y fotos locales; sin cuentas, Docker ni servicios externos. No registra qué llevas puesto cada día.
+Aplicación local desarrollada con Python y SQLite. Los espacios son configurables, las fotografías permanecen en el dispositivo y la instalación empieza sin datos de ejemplo.
 
-## Empezar en Windows
+**Preview 0.2.0** · Python 3.11+ · Windows / Linux / macOS · Interfaz en español
 
-1. Instala **Python 3.11 o posterior** desde [python.org](https://www.python.org/downloads/windows/), incluido el lanzador `py`. Se recomienda Python 3.12.
-2. Descarga este repositorio con **Code → Download ZIP** y extrae la carpeta completa. También puedes clonarlo con Git.
-3. Abre `instalar.cmd`. La primera instalación requiere internet para descargar las dependencias.
-4. Abre `iniciar.cmd`. Se abrirá [http://127.0.0.1:8765](http://127.0.0.1:8765).
-5. Añade tu primera prenda. Para cerrar el servidor, pulsa **Ctrl+C** en su ventana.
+[Primeros pasos](docs/GETTING_STARTED.md) · [Arquitectura](docs/ARCHITECTURE.md) · [Auditoría](docs/AUDIT.md) · [Comprobaciones](https://github.com/manuuelmarin/armario-digital/actions)
 
-No se incluye ropa de ejemplo en tu inventario. Los datos permanecen al cerrar y al actualizar el código.
+![Inventario de demostración de Armario Digital](docs/assets/desktop.png)
 
-## Qué puedes hacer
+*Captura real de la aplicación. Todas las prendas, ilustraciones y ubicaciones de esta demo son ficticias.*
 
-- Añadir, editar, archivar y recuperar prendas, con hasta seis fotografías por prenda.
-- Guardar marca, talla, color, temporadas, precio, compra, notas y favoritos.
-- Buscar sin distinguir tildes o mayúsculas y combinar filtros por ubicación, categoría, temporada y favoritos.
-- Crear y renombrar ubicaciones; mover prendas individualmente o en grupo con historial.
-- Guardar outfits con prendas de diferentes armarios y consultar sus ubicaciones actuales.
-- Crear viajes, importar outfits sin duplicar prendas y preparar una lista con ropa y otros objetos.
-- Distinguir lo que está en origen, en destino o en otra ubicación. Confirmar por separado qué prendas han llegado.
-- Descargar copias completas verificables y restaurarlas con la aplicación cerrada.
+## Qué ofrece
 
-Archivar conserva las relaciones. La eliminación de una prenda utilizada en un outfit o maleta se bloquea para evitar pérdidas accidentales.
+- **Catálogo visual.** Hasta seis fotos por prenda, imágenes adaptadas a pantallas de alta densidad y vista ampliada. Marca, talla, color, temporada, compra y notas opcionales.
+- **Organización flexible.** Espacios con nombres propios, búsqueda sin tildes, filtros combinables, ordenación, favoritos y archivo.
+- **Outfits.** Combinaciones guardadas con un selector visual que permite buscar prendas y consultar dónde están.
+- **Maletas.** Listas que incorporan prendas y outfits sin duplicados, objetos adicionales y confirmación explícita de traslados.
+- **Recuperación.** Copias consistentes de SQLite y fotografías, verificación de integridad y restauración offline con conservación del estado anterior.
 
-## Datos y recuperación
+El archivo conserva las relaciones entre prendas, outfits y viajes. Preparar una maleta no cambia la ubicación de las prendas.
 
-En Windows, los datos se guardan por defecto en `%LOCALAPPDATA%\ArmarioDigital`, fuera del repositorio. Puedes elegir otra carpeta con `ARMARIO_DATA_DIR` o `run.py --data-dir`. Una carpeta nueva empieza vacía: utiliza una copia para trasladar tu inventario.
+## Empezar
 
-Desde **Ajustes → Crear y descargar copia** obtienes un ZIP con base de datos y fotos. Conserva otra copia fuera del equipo. Al arrancar se crea una copia diaria y se realizan copias antes de migraciones. No se borran automáticamente copias antiguas.
+### Windows
 
-Consulta [copias y restauración](docs/BACKUP_RESTORE.md) antes de recuperar datos.
+Requisito: [Python](https://www.python.org/downloads/) 3.11 o posterior, con el lanzador `py`. Python 3.12 es la versión de referencia de CI.
 
-## Desarrollo y comprobaciones
+1. Clona el repositorio o descarga **Code → Download ZIP** y extrae la carpeta completa.
+2. Ejecuta `instalar.cmd` una vez.
+3. Abre `iniciar.cmd`.
+4. Visita `http://127.0.0.1:8765` y crea tu primer espacio.
 
-```powershell
-.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.venv\Scripts\python.exe run.py --dev
+La instalación inicial descarga las dependencias. Después, el catálogo funciona sin conexión. Cierra el servidor con **Ctrl+C**.
+
+### Linux y macOS
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+python run.py
 ```
 
-El modo de desarrollo recarga Python, plantillas y recursos al guardarlos, sin activar un depurador interactivo. En el uso normal se utiliza Waitress, escuchando exclusivamente en `127.0.0.1:8765`.
+## Explorar la demo
 
-```powershell
-.venv\Scripts\python.exe -m pytest -q
-.venv\Scripts\python.exe -m ruff check .
-.venv\Scripts\python.exe -m ruff format --check .
+```bash
+python run.py --demo
 ```
 
-También funciona en Linux/macOS con `python -m venv .venv`, instalación con `pip` y `python run.py`. La integración continua comprueba Windows y Linux. Las instrucciones detalladas de la prueba visual están en [TESTING.md](docs/TESTING.md).
+El modo demo crea un inventario ficticio en una carpeta temporal aislada. Sus cambios se descartan al cerrar. No utiliza la carpeta del inventario habitual. Para ejecutarlo en otro puerto:
 
-## Actualizar
+```bash
+python run.py --demo --port 8766
+```
 
-1. Crea y descarga una copia, verifica el archivo y cierra la aplicación.
-2. Actualiza los archivos de código con `git pull --ff-only` o extrae la nueva versión en otra carpeta.
-3. Ejecuta `instalar.cmd` y después `iniciar.cmd`.
+## Desarrollo
 
-Si cambia el esquema, el arranque hace una copia previa y aplica migraciones versionadas. Una versión antigua del código rechaza datos con un esquema más reciente.
+```bash
+python -m pip install -r requirements-dev.txt
+python run.py --dev
+python -m pytest -q
+python -m ruff check .
+python -m ruff format --check .
+python -m djlint armario/templates --check
+```
 
-## Alcance y documentación
+Las plantillas, CSS y JavaScript son editables directamente; el modo de desarrollo recarga los archivos al guardarlos. No hay compilación frontend ni despliegue obligatorio.
 
-Inspiración, meteorología, colecciones, duplicación de prendas, editor libre de collages y aplicación móvil quedan para iteraciones posteriores. No se muestran botones de funciones pendientes.
+[Cómo ejecutar las pruebas de navegador](docs/TESTING.md) · [Guía de contribución](CONTRIBUTING.md)
 
-- [Producto y alcance](docs/PRODUCT.md)
-- [Arquitectura y alternativas](docs/ARCHITECTURE.md)
-- [Modelo de datos](docs/DATA_MODEL.md)
-- [Decisiones e investigación](docs/DECISIONS.md)
-- [Pruebas y limitaciones](docs/TESTING.md)
-- [Siguientes pasos](docs/ROADMAP.md)
+## Datos y actualizaciones
 
-Código propio. No se ha importado código ni recursos de otros armarios digitales.
+Los datos se almacenan fuera del código: `%LOCALAPPDATA%\ArmarioDigital` en Windows y `~/.local/share/armario-digital` en sistemas Unix. `ARMARIO_DATA_DIR` y `--data-dir` permiten elegir otra carpeta.
+
+Antes de actualizar, crea una copia desde Ajustes, cierra el proceso, actualiza el código y vuelve a instalar los requisitos. Las migraciones conservan los registros existentes y crean una copia previa al cambiar el esquema.
+
+[Copias y restauración](docs/BACKUP_RESTORE.md) · [Modelo de datos](docs/DATA_MODEL.md)
+
+## Alcance de esta versión
+
+La versión 0.2 es una preview para uso local y monousuario. Están pendientes los tableros de inspiración, meteorología, colecciones y editor libre de collages. La compatibilidad de servidor se comprueba en Windows y Linux; el lanzador gráfico y la experiencia de instalación deben probarse en cada plataforma de distribución.
+
+Publicar el código y ofrecer un servicio accesible por internet requieren revisiones diferentes. El proceso actual escucha únicamente en loopback y no incorpora cuentas ni controles multiusuario. La elección de licencia de distribución del código está pendiente.
+
+[Preparar una publicación](docs/PUBLISHING.md) · [Seguridad](SECURITY.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
