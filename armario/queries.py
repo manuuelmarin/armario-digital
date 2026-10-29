@@ -9,7 +9,7 @@ GARMENT_SELECT = """
  FROM garments g
  JOIN categories c ON c.id=g.category_id
  JOIN locations l ON l.id=g.location_id
- LEFT JOIN garment_images img ON img.id=(SELECT min(id) FROM garment_images WHERE garment_id=g.id)
+ LEFT JOIN garment_images img ON img.id=(SELECT id FROM garment_images WHERE garment_id=g.id ORDER BY is_primary DESC, id LIMIT 1)
 """
 
 
