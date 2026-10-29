@@ -1,5 +1,10 @@
 # Changelog
 
+## En desarrollo
+
+- Selección de fotografía principal para el catálogo, los outfits y las maletas.
+- Migración con copia previa para preservar los armarios existentes.
+
 ## Unreleased
 
 - Add outfit detail, search, favorites filter and safe duplication.
