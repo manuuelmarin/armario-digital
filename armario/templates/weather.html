@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% from 'macros.html' import csrf with context %}
+{% block title %}Tiempo · Armario Digital{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">PREPARA TU DÍA</p>
+      <h1>Tiempo</h1>
+      <p class="subtitle">Consulta voluntaria de la previsión.</p>
+    </div>
+  </div>
+  <section class="panel">
+    <h2>Consultar previsión</h2>
+    <p>Al pulsar «Actualizar», se envían las coordenadas indicadas y tu dirección IP a Open-Meteo. No se consultan automáticamente ni se utiliza la ubicación del dispositivo.</p>
+    <p class="muted">Servicio gratuito para uso no comercial. Datos de <a href="https://open-meteo.com/"
+    target="_blank"
+    rel="noopener noreferrer">Open-Meteo</a>, CC BY 4.0.</p>
+    <form method="post" action="{{ url_for('weather.update') }}">
+      {{ csrf() }}<label>Nombre del lugar<input name="label"
+       maxlength="80"
+       required
+       value="{{ cache.label if cache else '' }}"></label><label>Latitud<input name="latitude"
+       type="number"
+       step="any"
+       min="-90"
+       max="90"
+       required
+       value="{{ cache.latitude if cache else '' }}"></label><label>Longitud<input name="longitude"
+       type="number"
+       step="any"
+       min="-180"
+       max="180"
+       required
+       value="{{ cache.longitude if cache else '' }}"></label><button class="button primary">Actualizar previsión</button>
+    </form>
+  </section>
+  <section class="panel section-space"><h2>Última previsión{% if cache %}: {{ cache.label }}{% endif %}</h2>{% if cache %}<p class="muted">Actualizada: {{ cache.fetched_at }}. Puede no ser actual si estás sin conexión.</p><ul>{% for day in forecast %}<li>{{ day.date }}: {{ day.min }}–{{ day.max }} °C · lluvia {{ day.rain }} %</li>{% endfor %}</ul>{% else %}<p>Aún no hay una consulta guardada.</p>{% endif %}</section>
+  {% if cache %}<form method="post" action="{{ url_for('weather.clear') }}">{{ csrf() }}<label><input type="checkbox" name="confirm" value="1" required> Confirmo borrar la consulta guardada</label><button class="button">Borrar consulta</button><p class="muted">Las copias de seguridad anteriores pueden conservar esta consulta.</p></form>{% endif %}
+{% endblock %}

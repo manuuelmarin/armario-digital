@@ -25,6 +25,7 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='responsive.css', v=version) }}">
     <script src="{{ url_for('static', filename='app.js', v=version) }}" defer></script>
+    {% block head %}{% endblock %}
   </head>
   <body {% if request.endpoint == "trips.printable" %} class="printable-trip"{% endif %}>
     <a class="skip" href="#main">Saltar al contenido</a>
@@ -36,8 +37,8 @@
       </a>
       <p class="nav-label">TU BIBLIOTECA</p>
       <nav aria-label="Navegación principal">
-        {% for endpoint,label,glyph in [('inventory.index','Mi armario','grid'),('looks.index','Outfits','outfit'),('trips.index','Maletas','bag'),('settings.locations','Ubicaciones','pin')] %}
-          {% set active = (endpoint == 'inventory.index' and (request.blueprint == 'inventory' or request.endpoint == 'settings.onboarding')) or (endpoint == 'looks.index' and request.blueprint == 'looks') or (endpoint == 'trips.index' and request.blueprint == 'trips') or (endpoint == 'settings.locations' and request.endpoint in ['settings.locations','settings.save_location','settings.delete_location']) %}
+        {% for endpoint,label,glyph in [('inventory.index','Mi armario','grid'),('looks.index','Outfits','outfit'),('trips.index','Maletas','bag'),('organization.index','Colecciones','grid'),('boards.index','Inspiración','grid'),('weather.index','Tiempo','leaf'),('settings.locations','Ubicaciones','pin')] %}
+          {% set active = (endpoint == 'inventory.index' and (request.blueprint == 'inventory' or request.endpoint == 'settings.onboarding')) or (endpoint == 'looks.index' and request.blueprint == 'looks') or (endpoint == 'trips.index' and request.blueprint == 'trips') or (endpoint == 'organization.index' and request.blueprint == 'organization') or (endpoint == 'boards.index' and request.blueprint == 'boards') or (endpoint == 'weather.index' and request.blueprint == 'weather') or (endpoint == 'settings.locations' and request.endpoint in ['settings.locations','settings.save_location','settings.delete_location']) %}
           <a class="nav-link{% if active %} active{% endif %}"
              href="{{ url_for(endpoint) }}"
              {% if active %} aria-current="page"{% endif %}>{{ icon(glyph) }}<span>{{ label }}</span>{% if active %}<span class="nav-dot"></span>{% endif %}</a>

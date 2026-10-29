@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% from 'macros.html' import csrf, picker, photo with context %}
+{% block title %}{{ collection.name }} · Armario Digital{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">COLECCIÓN</p>
+      <h1>{{ collection.name }}</h1>
+    </div>
+    <a class="button" href="{{ url_for('organization.index') }}">Volver</a>
+  </div>
+  <p class="muted">Las prendas archivadas permanecen en la colección y no aparecen en el selector.</p>
+  <form method="post"
+        action="{{ url_for('organization.save_collection',cid=collection.id) }}"
+        class="panel editor">
+    {{ csrf() }}
+    <label>
+      Nombre<input name="name" value="{{ collection.name }}" maxlength="100" required></label><label>Notas<textarea name="notes" maxlength="3000">{{ collection.notes }}</textarea>
+      </label>
+      <h2>Prendas</h2>
+      {{ picker(garments, selected) }}<button class="button primary">Guardar colección</button>
+    </form>
+    <form method="post"
+          action="{{ url_for('organization.delete',kind='coleccion',item_id=collection.id) }}"
+          data-confirm="¿Eliminar la colección? Las prendas se conservarán.">
+      {{ csrf() }}<input type="hidden"
+       name="confirm"
+       value="1"><button class="text-link danger">Eliminar colección</button>
+    </form>
+{% endblock %}

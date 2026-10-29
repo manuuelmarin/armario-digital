@@ -1,0 +1,64 @@
+{% extends "base.html" %}{% from 'macros.html' import csrf with context %}
+{% block title %}{{ board.name }} · Armario Digital{% endblock %}
+{% block head %}
+  <link rel="stylesheet"
+        href="{{ url_for('boards.layout_css',bid=board.id) }}">
+{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">INSPIRACIÓN</p>
+      <h1>{{ board.name }}</h1>
+      <p>{{ board.notes }}</p>
+    </div>
+    <a class="button" href="{{ url_for('boards.index') }}">Volver</a>
+  </div>
+  <section class="panel">
+    <h2>Añadir una idea</h2>
+    <p>Las imágenes se guardan en este dispositivo. Los enlaces se abren solo cuando los pulses.</p>
+    <form method="post"
+          enctype="multipart/form-data"
+          action="{{ url_for('boards.add',bid=board.id) }}">
+      {{ csrf() }}<label>Imagen opcional<input type="file" name="photo" accept="image/jpeg,image/png,image/webp"></label><label>Nota<input name="caption" maxlength="300"></label><label>Enlace HTTP o HTTPS<input type="url" name="link" maxlength="2000"></label><button class="button primary">Añadir al tablero</button>
+    </form>
+  </section>
+  <section class="panel section-space"><h2>Collage</h2><p class="muted">Ajusta la posición y el tamaño en la ficha de cada elemento. Desplázate dentro del lienzo para ver el resto.</p><div class="board-scroll"><div class="board-canvas">{% for item in items %}<article class="board-item board-item-{{ item.id }}"
+         data-board-item="{{ item.id }}"><button type="button"
+        class="board-drag"
+        aria-label="Arrastrar elemento {{ loop.index }}">Mover</button>{% if item.preview %}<img src="{{ url_for('inventory.image',name=item.preview) }}"
+     alt="{{ item.caption or 'Imagen de inspiración' }}">{% endif %}<p>{{ item.caption }}</p>{% if item.link %}<a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">Abrir enlace</a>{% endif %}</article>{% endfor %}</div></div></section>
+  <section class="panel section-space"><h2>Editar elementos</h2>{% for item in items %}<details><summary>{{ item.caption or 'Elemento ' ~ loop.index }}</summary><form method="post"
+      action="{{ url_for('boards.update_item',bid=board.id,iid=item.id) }}"
+      id="board-form-{{ item.id }}">{{ csrf() }}<label>Nota<input name="caption" maxlength="300" value="{{ item.caption }}"></label><label>Enlace<input name="link" type="url" maxlength="2000" value="{{ item.link }}"></label><label>Posición horizontal<input type="number"
+       name="x"
+       min="0"
+       max="2000"
+       value="{{ item.x }}"
+       required></label><label>Posición vertical<input type="number"
+       name="y"
+       min="0"
+       max="2000"
+       value="{{ item.y }}"
+       required></label><label>Anchura<input type="number"
+       name="width"
+       min="100"
+       max="600"
+       value="{{ item.width }}"
+       required></label><button class="button">Guardar posición</button></form><form method="post"
+      action="{{ url_for('boards.delete_item',bid=board.id,iid=item.id) }}"
+      data-confirm="¿Eliminar este elemento?">{{ csrf() }}<label><input type="checkbox" name="confirm" value="1" required> Confirmo esta eliminación</label><button class="text-link danger">Eliminar elemento</button></form></details>{% else %}<p>Añade tu primera idea.</p>{% endfor %}</section>
+  <details class="section-space">
+    <summary>Editar tablero</summary>
+    <form method="post" action="{{ url_for('boards.rename',bid=board.id) }}">
+      {{ csrf() }}<label>Nombre<input name="name" value="{{ board.name }}" maxlength="100" required></label><label>Notas<textarea name="notes" maxlength="3000">{{ board.notes }}</textarea></label><button class="button">Guardar tablero</button>
+    </form>
+    <form method="post"
+          action="{{ url_for('boards.delete_board',bid=board.id) }}"
+          data-confirm="¿Eliminar el tablero y sus imágenes?">
+      {{ csrf() }}<input type="hidden"
+       name="confirm"
+       value="1"><button class="text-link danger">Eliminar tablero</button>
+    </form>
+  </details>
+  <script src="{{ url_for('static',filename='board.js',v=version) }}" defer></script>
+{% endblock %}

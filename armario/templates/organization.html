@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% from 'macros.html' import csrf with context %}
+{% block title %}Colecciones y etiquetas · Armario Digital{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">ORGANIZA TUS PRENDAS</p>
+      <h1>Colecciones y etiquetas</h1>
+      <p class="subtitle">Agrupa tus prendas sin cambiar su ubicación.</p>
+    </div>
+  </div>
+  <div class="form-grid">
+    <section class="panel">
+      <h2>Colecciones</h2>
+      <form method="post"
+            action="{{ url_for('organization.create_collection') }}">
+        {{ csrf() }}<label>Nombre<input name="name" maxlength="100" required></label><label>Notas<textarea name="notes" maxlength="3000"></textarea></label><button class="button primary">Crear colección</button>
+      </form>
+      <ul>{% for collection in collections %}<li><a href="{{ url_for('organization.collection',cid=collection.id) }}">{{ collection.name }}</a> · {{ collection.total }} prendas</li>{% else %}<li>Aún no hay colecciones.</li>{% endfor %}</ul></section>
+    <section class="panel">
+      <h2>Etiquetas</h2>
+      <form method="post" action="{{ url_for('organization.create_tag') }}">
+        {{ csrf() }}<label>Nombre<input name="name"
+       maxlength="60"
+       required></label><button class="button">Crear etiqueta</button>
+      </form>
+      <ul>{% for tag in tags %}<li><a href="{{ url_for('organization.tag',tid=tag.id) }}">{{ tag.name }}</a> · {{ tag.total }} prendas</li>{% else %}<li>Aún no hay etiquetas.</li>{% endfor %}</ul></section></div>
+{% endblock %}

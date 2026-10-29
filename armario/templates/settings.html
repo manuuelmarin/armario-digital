@@ -20,6 +20,17 @@
         Conserva otra copia fuera de este equipo. Al arrancar, se crea una copia
         diaria; también se crea una antes de actualizar el esquema.
       </p>
+      <p class="muted">{% if backup_age is none %}Todavía no hay copias manuales o diarias.{% elif backup_age == 0 %}La última copia se creó hoy.{% else %}La última copia se creó hace {{ backup_age }} días.{% endif %}</p>
+      <details>
+        <summary>Gestionar copias automáticas</summary>
+        <p>Elimina solo copias diarias antiguas. Las manuales y las previas a migraciones se conservan.</p>
+        <form method="post"
+              action="{{ url_for('settings.prune_daily_backups') }}"
+              data-confirm="¿Eliminar las copias diarias más antiguas?">
+          {{ csrf() }}<label>Conservar las más recientes<input type="number" name="keep" value="30" min="1" max="365" required></label><label><input type="checkbox" name="confirm" value="1" required>
+          Confirmo esta eliminación</label><button class="button">Limpiar copias diarias</button>
+        </form>
+      </details>
       <details>
         <summary>Restaurar una copia</summary>
         <p>Cierra la aplicación. Desde su carpeta ejecuta:</p>
