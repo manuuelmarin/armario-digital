@@ -1,0 +1,100 @@
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
+
+from .backups import create_backup
+from .db import get_db
+from .domain import text_value
+from .queries import entity
+
+bp = Blueprint("settings", __name__)
+
+
+@bp.get("/ubicaciones")
+def locations():
+    rows = (
+        get_db()
+        .execute(
+            "SELECT l.*,count(g.id) total FROM locations l LEFT JOIN garments g ON g.location_id=l.id AND g.archived=0 GROUP BY l.id ORDER BY l.id"
+        )
+        .fetchall()
+    )
+    return render_template("locations.html", items=rows)
+
+
+@bp.post("/ubicaciones/nueva")
+@bp.post("/ubicaciones/<int:lid>/renombrar")
+def save_location(lid=None):
+    if lid:
+        entity("locations", lid)
+    name = text_value(request.form, "name", 80, required=True)
+    db = get_db()
+    with db:
+        if lid:
+            db.execute("UPDATE locations SET name=? WHERE id=?", (name, lid))
+        else:
+            db.execute("INSERT INTO locations(name) VALUES (?)", (name,))
+    flash("Ubicación guardada.", "success")
+    return redirect(url_for("settings.locations"))
+
+
+@bp.route("/ubicaciones/<int:lid>/eliminar", methods=["GET", "POST"])
+def delete_location(lid):
+    location = entity("locations", lid)
+    if request.method == "GET":
+        return render_template(
+            "confirm.html",
+            title="Eliminar ubicación",
+            message=f"Se eliminará {location['name']} si no tiene prendas, viajes ni movimientos asociados.",
+        )
+    if request.form.get("confirm") != "1":
+        raise ValueError("Confirma la eliminación.")
+    db = get_db()
+    with db:
+        db.execute("DELETE FROM locations WHERE id=?", (lid,))
+    return redirect(url_for("settings.locations"))
+
+
+@bp.get("/ajustes")
+def index():
+    root = current_app.config["DATA_DIR"]
+    copies = (
+        sorted((root / "backups").glob("*.zip"), reverse=True)
+        if (root / "backups").exists()
+        else []
+    )
+    return render_template("settings.html", data_dir=root, copies=copies)
+
+
+@bp.post("/ajustes/categorias")
+def category():
+    db = get_db()
+    with db:
+        db.execute(
+            "INSERT INTO categories(name) VALUES (?)",
+            (text_value(request.form, "name", 80, required=True),),
+        )
+    flash("Categoría creada.", "success")
+    return redirect(url_for("settings.index"))
+
+
+@bp.post("/copias")
+def backup():
+    path = create_backup(current_app.config["DATA_DIR"])
+    flash("Copia creada con base de datos, fotografías y comprobaciones de integridad.", "success")
+    return redirect(url_for("settings.download_backup", name=path.name))
+
+
+@bp.get("/copias/<name>")
+def download_backup(name):
+    if not name.endswith(".zip") or "/" in name or "\\" in name or not name.isascii():
+        abort(404)
+    return send_from_directory(current_app.config["DATA_DIR"] / "backups", name, as_attachment=True)
