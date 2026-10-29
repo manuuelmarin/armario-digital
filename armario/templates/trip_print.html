@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Lista de {{ trip.name }} · Armario Digital{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('trips.detail', tid=trip.id) }}">← Volver a la maleta</a>
+  <div class="page-heading"><div><p class="eyebrow">LISTA DE VIAJE</p><h1>{{ trip.name }}</h1><p class="subtitle">{{ trip.starts_on or 'Sin fecha definida' }}{% if trip.ends_on %} — {{ trip.ends_on }}{% endif %}</p></div></div>
+  <p>Usa la opción Imprimir del navegador para imprimir o guardar como PDF.</p>
+  {% if trip.notes %}<p class="preserve-lines">{{ trip.notes }}</p>{% endif %}
+  <ul>
+    {% for item in items %}<li>{{ '☑' if item.packed else '☐' }} {{ item.name or item.label }}{% if item.garment_id %} — {{ item.location_name }}{% if item.archived %} · Archivada{% endif %}{% endif %}</li>{% else %}<li>Lista vacía</li>{% endfor %}
+  </ul>
+{% endblock %}

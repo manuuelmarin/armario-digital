@@ -26,7 +26,7 @@
           href="{{ url_for('static', filename='responsive.css', v=version) }}">
     <script src="{{ url_for('static', filename='app.js', v=version) }}" defer></script>
   </head>
-  <body>
+  <body {% if request.endpoint == "trips.printable" %} class="printable-trip"{% endif %}>
     <a class="skip" href="#main">Saltar al contenido</a>
     <aside class="sidebar">
       <a class="brand"
