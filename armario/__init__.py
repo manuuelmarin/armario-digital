@@ -28,7 +28,8 @@ def create_app(config=None):
     app = Flask(__name__)
     app.config.from_mapping(
         DATA_DIR=default_data_dir(),
-        MAX_CONTENT_LENGTH=32 * 1024 * 1024,
+        # Six photographs may each be up to 10 MiB; leave room for form fields.
+        MAX_CONTENT_LENGTH=64 * 1024 * 1024,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Strict",
         TRUSTED_HOSTS=["localhost", "127.0.0.1", "[::1]"],
