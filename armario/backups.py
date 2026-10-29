@@ -13,7 +13,10 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
+from PIL import Image, UnidentifiedImageError
+
 from .db import SCHEMA_VERSION, connect
+from .images import MAX_PIXELS
 
 IMAGE_NAME = re.compile(r"^[0-9a-f]{32}(?:-thumb|-preview)?\.webp$")
 MAX_UNPACKED_BYTES = 4 * 1024**3
@@ -91,6 +94,18 @@ def check_database(path, expected_version=None):
         db.close()
 
 
+def check_image(path):
+    try:
+        with Image.open(path, formats=("WEBP",)) as image:
+            if image.width * image.height > MAX_PIXELS:
+                raise ValueError(f"La imagen {path.name} supera el límite de resolución.")
+            image.load()
+    except FileNotFoundError:
+        raise
+    except (OSError, UnidentifiedImageError, Image.DecompressionBombError) as exc:
+        raise ValueError(f"La imagen {path.name} no se puede leer.") from exc
+
+
 def create_backup(root, prefix="manual", expected_version=SCHEMA_VERSION):
     """Caller holds the application mutation lock (or runs before serving)."""
     root = Path(root).resolve()
@@ -110,6 +125,8 @@ def create_backup(root, prefix="manual", expected_version=SCHEMA_VERSION):
                 source.close()
             version, images, _ = check_database(snapshot, expected_version)
             files = {"wardrobe.sqlite": snapshot} | {name: root / name for name in images}
+            for name in images:
+                check_image(root / name)
             manifest = {
                 "format": 1,
                 "schema_version": version,
@@ -120,6 +137,7 @@ def create_backup(root, prefix="manual", expected_version=SCHEMA_VERSION):
                 for name, path in files.items():
                     archive.write(path, name)
                 archive.writestr("manifest.json", json.dumps(manifest, indent=2))
+        verify_backup(temporary)
         os.replace(temporary, destination)
     except Exception:
         temporary.unlink(missing_ok=True)
@@ -160,6 +178,8 @@ def unpack_verified(archive_path, staging):
             target.parent.mkdir(parents=True, exist_ok=True)
             with archive.open(entry) as source, target.open("wb") as output:
                 shutil.copyfileobj(source, output)
+            if name.startswith("images/"):
+                check_image(target)
             if digest(target) != expected_hash:
                 raise ValueError(f"El archivo {name} no supera la comprobación de integridad.")
         version, images, counts = check_database(
@@ -186,8 +206,12 @@ def restore_backup(path, root):
         result = unpack_verified(path, staging)
         if root.exists():
             if (root / "wardrobe.sqlite").exists():
-                previous_version, _, _ = check_database(root / "wardrobe.sqlite")
-                create_backup(root, prefix="before-restore", expected_version=previous_version)
+                try:
+                    previous_version, _, _ = check_database(root / "wardrobe.sqlite")
+                    create_backup(root, prefix="before-restore", expected_version=previous_version)
+                except (sqlite3.DatabaseError, ValueError, FileNotFoundError):
+                    # Preserve the complete original directory even when it cannot be backed up.
+                    pass
             root.rename(old)
         try:
             staging.rename(root)

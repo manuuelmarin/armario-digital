@@ -31,7 +31,7 @@ def store_image(upload: BinaryIO, root: Path) -> ImageMetadata:
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
-            with Image.open(io.BytesIO(data)) as source:
+            with Image.open(io.BytesIO(data), formats=("JPEG", "PNG", "WEBP")) as source:
                 if source.format not in {"JPEG", "PNG", "WEBP"}:
                     raise ValueError("Utiliza una fotografía JPEG, PNG o WebP.")
                 if source.width * source.height > MAX_PIXELS:
