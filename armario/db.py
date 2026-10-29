@@ -6,7 +6,7 @@ from pathlib import Path
 
 from flask import current_app, g
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 7
 
 
 def connect(path):
@@ -55,6 +55,14 @@ def migrate(root):
             sql = next(Path(__file__).with_name("migrations").glob(f"{number:03d}_*.sql"))
             try:
                 db.executescript("BEGIN IMMEDIATE;\n" + sql.read_text(encoding="utf-8"))
+                if number == 5:
+                    from .backups import digest, referenced_images
+
+                    for name in referenced_images(db):
+                        db.execute(
+                            "INSERT INTO image_integrity(name,sha256) VALUES (?,?)",
+                            (name[7:], digest(root / name)),
+                        )
                 if db.execute("PRAGMA foreign_key_check").fetchall():
                     raise RuntimeError("La migración ha producido relaciones inválidas.")
                 db.execute(f"PRAGMA user_version = {number}")

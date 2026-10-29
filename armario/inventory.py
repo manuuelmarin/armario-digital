@@ -12,7 +12,7 @@ from flask import (
 
 from .db import get_db
 from .domain import SEASONS, date_value, identifier, ids, move_garments, price_value, text_value
-from .images import remove_files, store_image
+from .images import record_integrity, remove_files, store_image
 from .queries import GARMENT_SELECT, garment
 
 bp = Blueprint("inventory", __name__)
@@ -39,6 +39,16 @@ def index():
             "EXISTS(SELECT 1 FROM garment_seasons s WHERE s.garment_id=g.id AND s.season=?)"
         )
         parameters.append(args["season"])
+    if args.get("tag_id"):
+        clauses.append(
+            "EXISTS(SELECT 1 FROM garment_tags gt WHERE gt.garment_id=g.id AND gt.tag_id=?)"
+        )
+        parameters.append(identifier(args, "tag_id"))
+    if args.get("collection_id"):
+        clauses.append(
+            "EXISTS(SELECT 1 FROM collection_items ci WHERE ci.garment_id=g.id AND ci.collection_id=?)"
+        )
+        parameters.append(identifier(args, "collection_id"))
     if args.get("favorite") == "1":
         clauses.append("g.favorite=1")
     if query := text_value(args, "q"):
@@ -80,6 +90,8 @@ def index():
         filter_url=filter_url,
         sort=sort,
         total=db.execute("SELECT count(*) FROM garments WHERE archived=0").fetchone()[0],
+        all_tags=db.execute("SELECT * FROM tags ORDER BY name").fetchall(),
+        all_collections=db.execute("SELECT * FROM collections ORDER BY name").fetchall(),
     )
 
 
@@ -141,6 +153,7 @@ def save_garment(gid=None):
                 ).fetchone():
                     remove_files(root, names)
                     continue
+                record_integrity(db, root, names)
                 db.execute(
                     "INSERT INTO garment_images(garment_id,filename,thumbnail,preview,digest,width,height,preview_width,thumbnail_width) VALUES (?,?,?,?,?,?,?,?,?)",
                     (
@@ -160,6 +173,59 @@ def save_garment(gid=None):
         raise
     flash("Prenda guardada.", "success")
     return redirect(url_for("inventory.detail", gid=gid))
+
+
+@bp.route("/prendas/importar", methods=["GET", "POST"])
+def bulk_import():
+    db = get_db()
+    if not db.execute("SELECT 1 FROM locations LIMIT 1").fetchone():
+        return redirect(url_for("settings.onboarding"))
+    if request.method == "GET":
+        return render_template("bulk_import.html")
+    category = identifier(request.form, "category_id")
+    location = identifier(request.form, "location_id")
+    uploads = [file for file in request.files.getlist("photos") if file.filename]
+    if not 1 <= len(uploads) <= 20:
+        raise ValueError("Selecciona entre una y veinte fotografías.")
+    root = current_app.config["DATA_DIR"] / "images"
+    created = []
+    try:
+        with db:
+            for upload in uploads:
+                name = upload.filename.replace("\\", "/").rsplit("/", 1)[-1].rsplit(".", 1)[0]
+                name = name.strip()[:120] or "Prenda sin nombre"
+                gid = db.execute(
+                    "INSERT INTO garments(name,category_id,location_id) VALUES (?,?,?)",
+                    (name, category, location),
+                ).lastrowid
+                image = store_image(upload, root)
+                names = [image["filename"], image["thumbnail"], image["preview"]]
+                created.extend(names)
+                record_integrity(db, root, names)
+                db.execute(
+                    "INSERT INTO garment_images(garment_id,filename,thumbnail,preview,digest,width,height,preview_width,thumbnail_width) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (
+                        gid,
+                        *(
+                            image[k]
+                            for k in (
+                                "filename",
+                                "thumbnail",
+                                "preview",
+                                "digest",
+                                "width",
+                                "height",
+                                "preview_width",
+                                "thumbnail_width",
+                            )
+                        ),
+                    ),
+                )
+    except Exception:
+        remove_files(root, created)
+        raise
+    flash(f"Se han importado {len(uploads)} prendas. Puedes editar sus datos después.", "success")
+    return redirect(url_for("inventory.index"))
 
 
 @bp.route("/prendas/nueva", methods=["GET", "POST"])
@@ -274,6 +340,10 @@ def delete(gid):
     ).fetchall()
     with db:
         db.execute("DELETE FROM garments WHERE id=?", (gid,))
+        db.executemany(
+            "DELETE FROM image_integrity WHERE name=?",
+            [(name,) for row in photos for name in row if name],
+        )
     remove_files(
         current_app.config["DATA_DIR"] / "images", [name for row in photos for name in row]
     )
@@ -307,6 +377,10 @@ def delete_image(gid, image_id):
         abort(404)
     with db:
         db.execute("DELETE FROM garment_images WHERE id=?", (image_id,))
+        db.executemany(
+            "DELETE FROM image_integrity WHERE name=?",
+            [(photo[key],) for key in ("filename", "thumbnail", "preview") if photo[key]],
+        )
     remove_files(
         current_app.config["DATA_DIR"] / "images",
         [photo["filename"], photo["thumbnail"], photo["preview"]],

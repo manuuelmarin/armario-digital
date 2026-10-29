@@ -76,3 +76,11 @@ def remove_files(root, names):
     for name in names:
         if name:
             (root / name).unlink(missing_ok=True)
+
+
+def record_integrity(db, root, names):
+    """Record a baseline after creating files, in the same transaction as their rows."""
+    for name in names:
+        with (root / name).open("rb") as stream:
+            checksum = hashlib.file_digest(stream, "sha256").hexdigest()
+        db.execute("INSERT INTO image_integrity(name, sha256) VALUES (?, ?)", (name, checksum))

@@ -69,6 +69,15 @@ def referenced_images(db):
             if not IMAGE_NAME.fullmatch(name):
                 raise ValueError("La base de datos contiene una ruta de imagen inválida.")
             names.add("images/" + name)
+    tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if "board_items" in tables:
+        for row in db.execute("SELECT filename,thumbnail,preview FROM board_items"):
+            for name in row:
+                if name is None:
+                    continue
+                if not IMAGE_NAME.fullmatch(name):
+                    raise ValueError("El tablero contiene una ruta de imagen inválida.")
+                names.add("images/" + name)
     return names
 
 
@@ -106,6 +115,17 @@ def check_image(path):
         raise ValueError(f"La imagen {path.name} no se puede leer.") from exc
 
 
+def verify_image_baselines(database_path, images, root):
+    database = sqlite3.connect(database_path)
+    try:
+        checksums = dict(database.execute("SELECT name,sha256 FROM image_integrity"))
+    finally:
+        database.close()
+    for name in images:
+        if checksums.get(name[7:]) != digest(root / name):
+            raise ValueError(f"La imagen {name} no coincide con su huella original.")
+
+
 def create_backup(root, prefix="manual", expected_version=SCHEMA_VERSION):
     """Caller holds the application mutation lock (or runs before serving)."""
     root = Path(root).resolve()
@@ -127,6 +147,8 @@ def create_backup(root, prefix="manual", expected_version=SCHEMA_VERSION):
             files = {"wardrobe.sqlite": snapshot} | {name: root / name for name in images}
             for name in images:
                 check_image(root / name)
+            if version >= 5:
+                verify_image_baselines(snapshot, images, root)
             manifest = {
                 "format": 1,
                 "schema_version": version,
@@ -187,6 +209,8 @@ def unpack_verified(archive_path, staging):
         )
         if images != set(files) - {"wardrobe.sqlite"}:
             raise ValueError("La copia no incluye exactamente las imágenes de su inventario.")
+        if version >= 5:
+            verify_image_baselines(staging / "wardrobe.sqlite", images, staging)
         (staging / "images").mkdir(exist_ok=True)
     return {"schema_version": version, **counts}
 
