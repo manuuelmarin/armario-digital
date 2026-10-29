@@ -12,7 +12,16 @@
       {{ trip.ends_on }}{% endif %}
   </p>
 </div>
-<a class="button" href="{{ url_for('trips.edit',tid=trip.id) }}">Editar viaje</a>
+<div class="action-row">
+  <a class="button" href="{{ url_for('trips.edit',tid=trip.id) }}">Editar viaje</a>
+  <a class="button" href="{{ url_for('trips.printable',tid=trip.id) }}">Vista para imprimir</a>
+  <form method="post" action="{{ url_for('trips.duplicate',tid=trip.id) }}">
+    {{ csrf() }}<button class="button">Duplicar lista</button>
+  </form>
+  <form method="post" action="{{ url_for('trips.return_trip',tid=trip.id) }}">
+    {{ csrf() }}<button class="button">Preparar vuelta</button>
+  </form>
+</div>
 </div>
 {% if trip.notes %}<p class="preserve-lines">{{ trip.notes }}</p>{% endif %}
 <div class="notice">

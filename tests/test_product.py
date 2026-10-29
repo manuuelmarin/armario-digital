@@ -163,3 +163,33 @@ def test_private_html_and_immutable_images_have_distinct_cache_policies(client, 
     assert "private" in client.get("/imagenes/" + image).headers["Cache-Control"]
     assert "immutable" in client.get("/imagenes/" + image).headers["Cache-Control"]
     assert "public" in client.get("/static/app.css").headers["Cache-Control"]
+
+
+def test_outfit_detail_search_and_duplicate_preserve_items(client, add_garment, db):
+    garments = [add_garment(name=f"Prenda {i}") for i in range(5)]
+    assert (
+        post(
+            client,
+            "/outfits/nuevo",
+            {"name": "Día soleado", "occasion": "Viaje", "favorite": "1", "garment_ids": garments},
+        ).status_code
+        == 302
+    )
+    oid = db.execute("SELECT id FROM outfits").fetchone()[0]
+    assert "Día soleado".encode() in client.get("/outfits?q=dia&favorite=1").data
+    assert "Día soleado".encode() not in client.get("/outfits?q=inexistente").data
+    page = client.get(f"/outfits/{oid}")
+    assert page.status_code == 200
+    for i in range(5):
+        assert f"Prenda {i}".encode() in page.data
+    assert post(client, f"/prendas/{garments[0]}/archivar").status_code == 302
+    response = post(client, f"/outfits/{oid}/duplicar")
+    assert response.status_code == 302
+    duplicate = db.execute("SELECT id FROM outfits WHERE id!=?", (oid,)).fetchone()[0]
+    assert (
+        db.execute("SELECT count(*) FROM outfit_items WHERE outfit_id=?", (duplicate,)).fetchone()[
+            0
+        ]
+        == 5
+    )
+    assert db.execute("SELECT count(*) FROM garment_movements").fetchone()[0] == 0

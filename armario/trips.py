@@ -89,6 +89,37 @@ def detail(tid):
     )
 
 
+@bp.get("/maletas/<int:tid>/imprimir")
+def printable(tid):
+    trip = entity("trips", tid)
+    return render_template("trip_print.html", trip=trip, items=trip_items(tid))
+
+
+@bp.post("/maletas/<int:tid>/duplicar")
+@bp.post("/maletas/<int:tid>/vuelta", endpoint="return_trip")
+def duplicate(tid):
+    trip = entity("trips", tid)
+    returning = request.path.endswith("/vuelta")
+    origin, destination = (
+        (trip["destination_id"], trip["origin_id"])
+        if returning
+        else (trip["origin_id"], trip["destination_id"])
+    )
+    suffix = " (vuelta)" if returning else " (copia)"
+    db = get_db()
+    with db:
+        new_id = db.execute(
+            "INSERT INTO trips(name,origin_id,destination_id,notes) VALUES (?,?,?,?)",
+            (trip["name"][: 120 - len(suffix)] + suffix, origin, destination, trip["notes"]),
+        ).lastrowid
+        db.execute(
+            "INSERT INTO trip_items(trip_id,garment_id,label,packed) SELECT ?,garment_id,label,0 FROM trip_items WHERE trip_id=?",
+            (new_id, tid),
+        )
+    flash("Lista copiada sin mover prendas. Revisa sus fechas y contenido.", "success")
+    return redirect(url_for("trips.detail", tid=new_id))
+
+
 @bp.post("/maletas/<int:tid>/anadir")
 def add(tid):
     entity("trips", tid)

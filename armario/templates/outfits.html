@@ -10,17 +10,27 @@
     </div>
     <a class="button primary" href="{{ url_for('looks.edit') }}">{{ icon("plus") }}Crear outfit</a>
   </div>
+  <form method="get" class="panel section-space">
+    <label for="outfit-search">Buscar por nombre, ocasión o notas</label>
+    <input id="outfit-search" type="search" name="q" value="{{ search }}">
+    <label class="check-label"><input type="checkbox"
+       name="favorite"
+       value="1"
+       {% if favorite %}checked{% endif %}> Solo favoritos</label>
+    <button class="button">Buscar</button>
+    <a class="text-link" href="{{ url_for('looks.index') }}">Limpiar</a>
+  </form>
   <div class="collection-grid outfit-grid">
     {% for outfit in outfits %}
       <article class="outfit-card"><a class="outfit-preview"
-   href="{{ url_for('looks.edit',oid=outfit.id) }}"
+   href="{{ url_for('looks.detail',oid=outfit.id) }}"
    aria-label="Ver combinación {{ outfit.name }}">{% for item in outfit['items'][:4] %}<div>{{ photo(item) }}</div>{% endfor %}</a><div class="outfit-caption"><p class="eyebrow">{{ outfit.occasion or 'TU COMBINACIÓN' }}</p><div class="card-title"><h2>{{ outfit.name }}</h2>{% if outfit.favorite %}{{ icon("heart") }}{% endif %}</div><p class="muted">{{ outfit['items']|length }} prendas · {% set places = outfit['items']|map(attribute='location_name')|unique|list %}{{ places|join(" / ") }}</p><div class="outfit-pieces">{% for item in outfit['items'] %}<a class="pill" href="{{ url_for('inventory.detail',gid=item.id) }}">{{ item.name }}{% if item.archived %} · Archivada{% endif %}</a>{% endfor %}</div><div class="secondary-actions"><a class="text-link" href="{{ url_for('looks.edit',oid=outfit.id) }}">Editar outfit {{ icon("arrow") }}</a><a class="text-link danger"
    href="{{ url_for('looks.delete',oid=outfit.id) }}">Eliminar</a></div></div></article>
     {% else %}
       <section class="empty-state wide">
         <div class="empty-icon">{{ icon("outfit") }}</div>
         <p class="eyebrow">LAS MEJORES IDEAS SE GUARDAN</p>
-        <h2>Juntas, encajan.</h2>
+        <h2>{{ 'No hay resultados.' if search or favorite else 'Juntas, encajan.' }}</h2>
         <p>Combina prendas de tus espacios y crea una biblioteca de looks para cada ocasión.</p>
         <a class="button primary"
            href="{{ url_for('looks.edit') }}">Crear mi primer outfit {{ icon("arrow") }}</a>

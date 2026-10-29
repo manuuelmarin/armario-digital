@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, photo with context %}
+{% block title %}{{ outfit.name }} · Armario Digital{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('looks.index') }}">← Volver a mis outfits</a>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">{{ outfit.occasion or 'TU COMBINACIÓN' }}</p>
+      <h1>{{ outfit.name }}</h1>
+      <p class="subtitle">{{ items|length }} prendas{% if outfit.favorite %} · Favorito{% endif %}</p>
+    </div>
+    <div class="action-row">
+      <a class="button primary"
+         href="{{ url_for('looks.edit', oid=outfit.id) }}">Editar outfit</a>
+      <form method="post"
+            action="{{ url_for('looks.duplicate', oid=outfit.id) }}">
+        {{ csrf() }}<button class="button">Duplicar outfit</button>
+      </form>
+    </div>
+  </div>
+  {% if outfit.notes %}<p class="preserve-lines">{{ outfit.notes }}</p>{% endif %}
+  <div class="collection-grid">
+    {% for item in items %}
+      <article class="outfit-card">
+        <a class="outfit-preview"
+           href="{{ url_for('inventory.detail', gid=item.id) }}">{{ photo(item) }}</a>
+        <div class="outfit-caption">
+          <h2>{{ item.name }}</h2>
+          <p class="muted">{{ item.location_name }}{% if item.archived %} · Archivada{% endif %}</p>
+        </div>
+      </article>
+    {% else %}
+      <p class="muted">Este outfit todavía no tiene prendas.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -73,6 +73,10 @@ def test_full_browser_workflow_and_responsive_layout(app, tmp_path):
             page.get_by_role("button", name="Guardar outfit").click()
             page.wait_for_url("**/outfits")
             assert page.get_by_role("heading", name="Oficina de prueba").is_visible()
+            page.get_by_role("link", name="Ver combinación Oficina de prueba").click()
+            assert page.get_by_role("heading", name="Oficina de prueba").is_visible()
+            assert page.get_by_role("heading", name="Camisa de prueba").is_visible()
+            assert page.locator(".outfit-preview img").evaluate("img => img.naturalWidth > 0")
             page.goto(base + "/maletas/nueva")
             page.get_by_label("Nombre *", exact=True).fill("Viaje de prueba")
             page.get_by_label("Origen *").select_option("2")
@@ -105,9 +109,11 @@ def test_full_browser_workflow_and_responsive_layout(app, tmp_path):
                     "/prendas/nueva",
                     "/prendas/1",
                     "/outfits",
+                    "/outfits/1",
                     "/outfits/1/editar",
                     "/maletas",
                     "/maletas/1",
+                    "/maletas/1/imprimir",
                     "/ubicaciones",
                     "/ajustes",
                 ):

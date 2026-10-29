@@ -609,3 +609,10 @@
     break-inside: avoid;
   }
 }
+
+@media print {
+  .printable-trip .sidebar, .printable-trip .topbar, .printable-trip .footer,
+  .printable-trip .back-link, .printable-trip .skip, .printable-trip .demo-banner { display: none; }
+  .printable-trip .workspace, .printable-trip main { margin: 0; padding: 0; width: 100%; }
+  .printable-trip { background: white; color: black; }
+}
