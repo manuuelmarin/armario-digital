@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Restrict image decoders before opening uploads and update Pillow.
+- Validate backup images and verify the generated archive before reporting success.
+- Restore a valid backup while preserving a damaged previous data directory.
+
 ## 0.2.0 — 2026-10-29
 
 ### Added
