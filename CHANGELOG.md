@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add outfit detail, search, favorites filter and safe duplication.
+- Duplicate trip lists, prepare a return list without moving garments, and print lists.
+
 - Allow six photographs of up to 10 MiB each in the same request.
 - Restrict image decoders before opening uploads and update Pillow.
 - Validate backup images and verify the generated archive before reporting success.

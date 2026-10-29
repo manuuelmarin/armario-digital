@@ -16,8 +16,8 @@ Aplicación local desarrollada con Python y SQLite. Los espacios son configurabl
 
 - **Catálogo visual.** Hasta seis fotos por prenda, imágenes adaptadas a pantallas de alta densidad y vista ampliada. Marca, talla, color, temporada, compra y notas opcionales.
 - **Organización flexible.** Espacios con nombres propios, búsqueda sin tildes, filtros combinables, ordenación, favoritos y archivo.
-- **Outfits.** Combinaciones guardadas con un selector visual que permite buscar prendas y consultar dónde están.
-- **Maletas.** Listas que incorporan prendas y outfits sin duplicados, objetos adicionales y confirmación explícita de traslados.
+- **Outfits.** Combinaciones guardadas con búsqueda, filtro de favoritos, vista completa y duplicación; el selector visual permite consultar dónde están las prendas.
+- **Maletas.** Listas que incorporan prendas y outfits sin duplicados, objetos adicionales, copia o vuelta y confirmación explícita de traslados. Se pueden imprimir o guardar como PDF desde el navegador.
 - **Recuperación.** Copias consistentes de SQLite y fotografías, verificación de integridad y restauración offline con conservación del estado anterior.
 
 El archivo conserva las relaciones entre prendas, outfits y viajes. Preparar una maleta no cambia la ubicación de las prendas.
