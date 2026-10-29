@@ -10,8 +10,14 @@ bp = Blueprint("looks", __name__)
 @bp.get("/outfits")
 def index():
     db = get_db()
+    search = text_value(request.args, "q")
+    favorite = request.args.get("favorite") == "1"
     outfits = [
-        dict(row) for row in db.execute("SELECT * FROM outfits ORDER BY favorite DESC,id DESC")
+        dict(row)
+        for row in db.execute(
+            "SELECT * FROM outfits WHERE (?='' OR instr(fold(name || ' ' || occasion || ' ' || notes), fold(?))>0) AND (?=0 OR favorite=1) ORDER BY favorite DESC,id DESC",
+            (search, search, int(favorite)),
+        )
     ]
     by_id = {outfit["id"]: outfit for outfit in outfits}
     for outfit in outfits:
@@ -21,8 +27,41 @@ def index():
             GARMENT_SELECT.replace("SELECT g.*", "SELECT i.outfit_id, g.*")
             + " JOIN outfit_items i ON i.garment_id=g.id ORDER BY i.outfit_id,g.id"
         ):
-            by_id[item["outfit_id"]]["items"].append(item)
-    return render_template("outfits.html", outfits=outfits)
+            if item["outfit_id"] in by_id:
+                by_id[item["outfit_id"]]["items"].append(item)
+    return render_template("outfits.html", outfits=outfits, search=search, favorite=favorite)
+
+
+@bp.get("/outfits/<int:oid>")
+def detail(oid):
+    outfit = entity("outfits", oid)
+    items = (
+        get_db()
+        .execute(
+            GARMENT_SELECT
+            + " JOIN outfit_items i ON i.garment_id=g.id WHERE i.outfit_id=? ORDER BY g.id",
+            (oid,),
+        )
+        .fetchall()
+    )
+    return render_template("outfit_detail.html", outfit=outfit, items=items)
+
+
+@bp.post("/outfits/<int:oid>/duplicar")
+def duplicate(oid):
+    outfit = entity("outfits", oid)
+    db = get_db()
+    with db:
+        new_id = db.execute(
+            "INSERT INTO outfits(name,notes,occasion,favorite) VALUES (?,?,?,?)",
+            (outfit["name"][:112] + " (copia)", outfit["notes"], outfit["occasion"], 0),
+        ).lastrowid
+        db.execute(
+            "INSERT INTO outfit_items(outfit_id,garment_id) SELECT ?,garment_id FROM outfit_items WHERE outfit_id=?",
+            (new_id, oid),
+        )
+    flash("Outfit duplicado. Las prendas mantienen su ubicación.", "success")
+    return redirect(url_for("looks.detail", oid=new_id))
 
 
 @bp.route("/outfits/nuevo", methods=["GET", "POST"])
