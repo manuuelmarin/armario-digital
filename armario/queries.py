@@ -4,8 +4,12 @@ from .db import get_db
 
 GARMENT_SELECT = """
  SELECT g.*, c.name category_name, l.name location_name,
- (SELECT thumbnail FROM garment_images WHERE garment_id=g.id ORDER BY id LIMIT 1) thumbnail
- FROM garments g JOIN categories c ON c.id=g.category_id JOIN locations l ON l.id=g.location_id
+ img.thumbnail, img.filename, img.preview, img.width, img.height,
+ img.preview_width, img.thumbnail_width
+ FROM garments g
+ JOIN categories c ON c.id=g.category_id
+ JOIN locations l ON l.id=g.location_id
+ LEFT JOIN garment_images img ON img.id=(SELECT min(id) FROM garment_images WHERE garment_id=g.id)
 """
 
 
@@ -17,7 +21,8 @@ def garment(gid):
 
 
 def entity(table, item_id):
-    assert table in {"outfits", "trips", "locations"}
+    if table not in {"outfits", "trips", "locations"}:
+        raise ValueError("Unsupported entity type")
     row = get_db().execute(f"SELECT * FROM {table} WHERE id=?", (item_id,)).fetchone()
     if row is None:
         abort(404, "Este elemento no existe.")

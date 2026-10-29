@@ -16,6 +16,12 @@ from .images import remove_files, store_image
 from .queries import GARMENT_SELECT, garment
 
 bp = Blueprint("inventory", __name__)
+SORT_OPTIONS = {
+    "newest": "g.id DESC",
+    "oldest": "g.id ASC",
+    "name": "fold(g.name),g.id",
+    "name_desc": "fold(g.name) DESC,g.id DESC",
+}
 
 
 @bp.get("/")
@@ -45,18 +51,35 @@ def index():
     except ValueError as exc:
         raise ValueError("La página no es válida.") from exc
     where = " WHERE " + " AND ".join(clauses)
+    sort = args.get("sort", "newest")
+    if sort not in SORT_OPTIONS:
+        raise ValueError("El orden seleccionado no es válido.")
     db = get_db()
     count = db.execute("SELECT count(*) FROM garments g" + where, parameters).fetchone()[0]
     rows = db.execute(
-        GARMENT_SELECT + where + " ORDER BY g.id DESC LIMIT 48 OFFSET ?",
+        GARMENT_SELECT + where + f" ORDER BY {SORT_OPTIONS[sort]} LIMIT 48 OFFSET ?",
         [*parameters, (page - 1) * 48],
     ).fetchall()
 
     def page_url(number):
         return url_for("inventory.index", **dict(args, page=number))
 
+    def filter_url(**changes):
+        values = {**args.to_dict(), "page": 1, **changes}
+        return url_for(
+            "inventory.index",
+            **{key: value for key, value in values.items() if value is not None and value != ""},
+        )
+
     return render_template(
-        "inventory.html", garments=rows, count=count, page=page, page_url=page_url
+        "inventory.html",
+        garments=rows,
+        count=count,
+        page=page,
+        page_url=page_url,
+        filter_url=filter_url,
+        sort=sort,
+        total=db.execute("SELECT count(*) FROM garments WHERE archived=0").fetchone()[0],
     )
 
 
@@ -110,7 +133,7 @@ def save_garment(gid=None):
             )
             for photo in photos:
                 image = store_image(photo, root)
-                names = [image["filename"], image["thumbnail"]]
+                names = [image["filename"], image["thumbnail"], image["preview"]]
                 created.extend(names)
                 if db.execute(
                     "SELECT 1 FROM garment_images WHERE garment_id=? AND digest=?",
@@ -119,8 +142,18 @@ def save_garment(gid=None):
                     remove_files(root, names)
                     continue
                 db.execute(
-                    "INSERT INTO garment_images(garment_id,filename,thumbnail,digest) VALUES (?,?,?,?)",
-                    (gid, image["filename"], image["thumbnail"], image["digest"]),
+                    "INSERT INTO garment_images(garment_id,filename,thumbnail,preview,digest,width,height,preview_width,thumbnail_width) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (
+                        gid,
+                        image["filename"],
+                        image["thumbnail"],
+                        image["preview"],
+                        image["digest"],
+                        image["width"],
+                        image["height"],
+                        image["preview_width"],
+                        image["thumbnail_width"],
+                    ),
                 )
     except Exception:
         remove_files(root, created)
@@ -131,6 +164,8 @@ def save_garment(gid=None):
 
 @bp.route("/prendas/nueva", methods=["GET", "POST"])
 def new():
+    if not get_db().execute("SELECT 1 FROM locations LIMIT 1").fetchone():
+        return redirect(url_for("settings.onboarding"))
     if request.method == "POST":
         return save_garment()
     return render_template("garment_form.html", item=None, chosen_seasons=[])
@@ -190,6 +225,26 @@ def favorite(gid):
     db = get_db()
     with db:
         db.execute("UPDATE garments SET favorite=1-favorite WHERE id=?", (gid,))
+    if request.form.get("return_view") == "inventory":
+        return redirect(
+            url_for(
+                "inventory.index",
+                **{
+                    key: request.form[key]
+                    for key in (
+                        "q",
+                        "category_id",
+                        "location_id",
+                        "season",
+                        "favorite",
+                        "archived",
+                        "sort",
+                        "page",
+                    )
+                    if request.form.get(key)
+                },
+            )
+        )
     return redirect(url_for("inventory.detail", gid=gid))
 
 
@@ -215,7 +270,7 @@ def delete(gid):
     if request.form.get("confirm") != "1":
         raise ValueError("Confirma la eliminación.")
     photos = db.execute(
-        "SELECT filename,thumbnail FROM garment_images WHERE garment_id=?", (gid,)
+        "SELECT filename,thumbnail,preview FROM garment_images WHERE garment_id=?", (gid,)
     ).fetchall()
     with db:
         db.execute("DELETE FROM garments WHERE id=?", (gid,))
@@ -237,7 +292,10 @@ def delete_image(gid, image_id):
         abort(404)
     with db:
         db.execute("DELETE FROM garment_images WHERE id=?", (image_id,))
-    remove_files(current_app.config["DATA_DIR"] / "images", [photo["filename"], photo["thumbnail"]])
+    remove_files(
+        current_app.config["DATA_DIR"] / "images",
+        [photo["filename"], photo["thumbnail"], photo["preview"]],
+    )
     return redirect(url_for("inventory.detail", gid=gid))
 
 

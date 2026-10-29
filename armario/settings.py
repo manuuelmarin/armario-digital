@@ -18,6 +18,20 @@ from .queries import entity
 bp = Blueprint("settings", __name__)
 
 
+@bp.route("/empezar", methods=["GET", "POST"])
+def onboarding():
+    db = get_db()
+    if db.execute("SELECT 1 FROM locations LIMIT 1").fetchone():
+        return redirect(url_for("inventory.index"))
+    if request.method == "POST":
+        name = text_value(request.form, "name", 80, required=True)
+        with db:
+            db.execute("INSERT INTO locations(name) VALUES (?)", (name,))
+        flash("Tu primer espacio está listo. Añade una prenda para empezar.", "success")
+        return redirect(url_for("inventory.new"))
+    return render_template("onboarding.html")
+
+
 @bp.get("/ubicaciones")
 def locations():
     rows = (

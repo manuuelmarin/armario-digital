@@ -10,7 +10,7 @@ from werkzeug.exceptions import HTTPException, SecurityError
 
 from . import db
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 def default_data_dir():
@@ -33,6 +33,8 @@ def create_app(config=None):
         SESSION_COOKIE_SAMESITE="Strict",
         TRUSTED_HOSTS=["localhost", "127.0.0.1", "[::1]"],
         MUTATION_LOCK=threading.RLock(),
+        DEMO_MODE=False,
+        DEV_MODE=False,
     )
     if config:
         app.config.update(config)
@@ -75,7 +77,15 @@ def create_app(config=None):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; img-src 'self' blob:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
         )
-        response.headers["Cache-Control"] = "no-store"
+        if response.status_code == 200 and not app.config["DEV_MODE"]:
+            if request.endpoint == "static":
+                response.headers["Cache-Control"] = "public, max-age=86400"
+            elif request.endpoint == "inventory.image":
+                response.headers["Cache-Control"] = "private, max-age=31536000, immutable"
+            else:
+                response.headers["Cache-Control"] = "no-store"
+        else:
+            response.headers["Cache-Control"] = "no-store"
         return response
 
     @app.context_processor
@@ -88,6 +98,13 @@ def create_app(config=None):
             "categories": connection.execute("SELECT * FROM categories ORDER BY id").fetchall(),
             "seasons": SEASONS,
             "version": VERSION,
+            "demo_mode": app.config["DEMO_MODE"],
+            "view_names": {
+                "inventory": "Mi armario",
+                "looks": "Outfits",
+                "trips": "Maletas",
+                "settings": "Mi espacio",
+            },
         }
 
     @app.errorhandler(ValueError)

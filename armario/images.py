@@ -4,6 +4,8 @@ import hashlib
 import io
 import uuid
 import warnings
+from pathlib import Path
+from typing import BinaryIO, TypedDict
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
@@ -11,7 +13,18 @@ MAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_PIXELS = 24_000_000
 
 
-def store_image(upload, root):
+class ImageMetadata(TypedDict):
+    filename: str
+    thumbnail: str
+    preview: str
+    digest: str
+    width: int
+    height: int
+    preview_width: int
+    thumbnail_width: int
+
+
+def store_image(upload: BinaryIO, root: Path) -> ImageMetadata:
     data = upload.read(MAX_IMAGE_BYTES + 1)
     if len(data) > MAX_IMAGE_BYTES:
         raise ValueError("Cada fotografía debe ocupar menos de 10 MB.")
@@ -33,18 +46,33 @@ def store_image(upload, root):
     ) as exc:
         raise ValueError("No se ha podido leer la fotografía.") from exc
     token = uuid.uuid4().hex
-    names = (f"{token}.webp", f"{token}-thumb.webp")
+    names = (f"{token}.webp", f"{token}-preview.webp", f"{token}-thumb.webp")
     try:
-        image.thumbnail((2400, 2400))
-        image.save(root / names[0], "WEBP", quality=92, method=4, exif=b"")
-        image.thumbnail((560, 560))
-        image.save(root / names[1], "WEBP", quality=85, method=4, exif=b"")
+        image.thumbnail((4096, 4096), Image.Resampling.LANCZOS)
+        width, height = image.size
+        image.save(root / names[0], "WEBP", quality=94, method=4, exif=b"")
+        image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+        preview_width = image.width
+        image.save(root / names[1], "WEBP", quality=90, method=4, exif=b"")
+        image.thumbnail((512, 512), Image.Resampling.LANCZOS)
+        thumbnail_width = image.width
+        image.save(root / names[2], "WEBP", quality=87, method=4, exif=b"")
     except Exception:
         remove_files(root, names)
         raise
-    return {"filename": names[0], "thumbnail": names[1], "digest": hashlib.sha256(data).hexdigest()}
+    return {
+        "filename": names[0],
+        "preview": names[1],
+        "thumbnail": names[2],
+        "digest": hashlib.sha256(data).hexdigest(),
+        "width": width,
+        "height": height,
+        "preview_width": preview_width,
+        "thumbnail_width": thumbnail_width,
+    }
 
 
 def remove_files(root, names):
     for name in names:
-        (root / name).unlink(missing_ok=True)
+        if name:
+            (root / name).unlink(missing_ok=True)

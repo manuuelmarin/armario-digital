@@ -13,12 +13,15 @@ def index():
     outfits = [
         dict(row) for row in db.execute("SELECT * FROM outfits ORDER BY favorite DESC,id DESC")
     ]
+    by_id = {outfit["id"]: outfit for outfit in outfits}
     for outfit in outfits:
-        outfit["items"] = db.execute(
-            GARMENT_SELECT
-            + " JOIN outfit_items i ON i.garment_id=g.id WHERE i.outfit_id=? ORDER BY g.id",
-            (outfit["id"],),
-        ).fetchall()
+        outfit["items"] = []
+    if outfits:
+        for item in db.execute(
+            GARMENT_SELECT.replace("SELECT g.*", "SELECT i.outfit_id, g.*")
+            + " JOIN outfit_items i ON i.garment_id=g.id ORDER BY i.outfit_id,g.id"
+        ):
+            by_id[item["outfit_id"]]["items"].append(item)
     return render_template("outfits.html", outfits=outfits)
 
 
@@ -34,7 +37,6 @@ def edit(oid=None):
     if request.method == "POST":
         chosen = ids(request.form.getlist("garment_ids"))
         # Existing archived pieces may be kept, but cannot be newly added.
-        validate_garments(db, chosen, active=False)
         for item in validate_garments(db, chosen, active=False):
             if item["archived"] and item["id"] not in selected:
                 raise ValueError("No puedes añadir prendas archivadas.")
