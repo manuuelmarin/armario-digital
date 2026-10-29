@@ -1,0 +1,37 @@
+{% extends 'base.html' %}{% from 'macros.html' import csrf with context %}{% block content %}<a
+  class="back-link"
+  href="{{ url_for('trips.detail',tid=trip.id) }}"
+  >← Volver a la maleta</a
+>
+<section class="narrow panel">
+  <p class="eyebrow">ACTUALIZAR DÓNDE ESTÁN</p>
+  <h1>Confirmar traslado</h1>
+  <p>
+    Solo aparecen prendas marcadas como preparadas que siguen en origen. Las que
+    ya están en destino, están archivadas o se encuentran en otra ubicación se
+    conservan donde están.
+  </p>
+  {% if eligible %}<form method="post">
+    {{ csrf() }}
+    <fieldset>
+      <legend>Prendas que has llevado a destino</legend>
+      {% for item in eligible %}<label class="check-label"
+        ><input
+          type="checkbox"
+          name="garment_ids"
+          value="{{ item.garment_id }}"
+          checked
+        />{{ item.name }} · {{ item.location_name }}</label
+      >{% endfor %}
+    </fieldset>
+    <label class="check-label section-space"
+      ><input type="checkbox" name="confirm" value="1" required />Confirmo que
+      estas prendas han llegado a
+      {% for loc in locations %}{% if loc.id == trip.destination_id %}{{ loc.name }}{% endif %}{% endfor %}</label
+    ><button class="button primary section-space">
+      Confirmar cambio de ubicación
+    </button>
+  </form>{% else %}<div class="notice">
+    No hay prendas pendientes de traslado desde el origen.
+  </div>{% endif %}
+</section>{% endblock %}

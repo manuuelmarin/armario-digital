@@ -1,0 +1,133 @@
+{% extends 'base.html' %}{% from 'macros.html' import csrf,location_options,icon with context %}{% block content %}
+  <a
+    class="back-link"
+    href="{{ url_for('inventory.detail', gid=item.id) if item else url_for('inventory.index') }}"
+    >← Volver al armario</a
+  >
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">UNA PRENDA, MUCHAS COMBINACIONES</p>
+      <h1>{{ 'Editar prenda' if item else 'Nueva prenda' }}</h1>
+      <p class="subtitle">
+        Empieza con lo esencial. Completa el resto cuando quieras.
+      </p>
+    </div>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="editor">
+    <div class="form-grid">
+      {{ csrf() }}
+      <section class="panel">
+        <h2>Lo esencial</h2>
+        <label
+          >Nombre *<input
+            name="name"
+            required
+            maxlength="120"
+            value="{{ item.name if item else '' }}"
+            placeholder="Por ejemplo, camisa de lino azul"
+            autofocus
+        /></label>
+        <div class="two-columns">
+          <label
+            >Categoría *<select name="category_id" required>
+              {% for cat in categories %}<option
+                value="{{ cat.id }}"
+                {{ 'selected' if item and cat.id == item.category_id }}
+              >
+                {{ cat.name }}
+              </option>{% endfor %}
+            </select></label
+          ><label
+            >¿Dónde está? *<select name="location_id" required>
+              {{ location_options(item.location_id if item else none) }}
+            </select></label
+          >
+        </div>
+        <label class="upload-zone"
+          >{{ icon('plus') }}<strong
+            >{{ 'Añadir fotografías' if item else 'Añade sus fotografías' }}</strong
+          ><span>JPEG, PNG o WebP · hasta 6 fotos · 10 MB por foto</span
+          ><input
+            type="file"
+            name="photos"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            data-photo-input
+        /></label>
+        <div class="photo-previews" data-photo-previews></div>
+        <label class="check-label"
+          ><input
+            name="favorite"
+            value="1"
+            type="checkbox"
+            {{ 'checked' if item and item.favorite }}
+          />Marcar como favorita</label
+        >
+      </section>
+      <section class="panel">
+        <h2>Un poco más de detalle</h2>
+        <p class="muted">Todos estos campos son opcionales.</p>
+        <div class="two-columns">
+          <label
+            >Marca<input
+              name="brand"
+              maxlength="80"
+              value="{{ item.brand if item else '' }}" /></label
+          ><label
+            >Talla<input
+              name="size"
+              maxlength="30"
+              value="{{ item.size if item else '' }}"
+          /></label>
+        </div>
+        <label
+          >Color<input
+            name="color"
+            maxlength="60"
+            placeholder="Azul marino, blanco…"
+            value="{{ item.color if item else '' }}"
+        /></label>
+        <fieldset>
+          <legend>Temporadas</legend>
+          <div class="season-options">
+            {% for season in seasons %}<label class="check-label"
+              ><input
+                type="checkbox"
+                name="seasons"
+                value="{{ season }}"
+                {{ 'checked' if season in chosen_seasons }}
+              />{{ season }}</label
+            >{% endfor %}
+          </div>
+        </fieldset>
+        <details>
+          <summary>Compra y notas</summary>
+          <div class="two-columns">
+            <label
+              >Precio (€)<input
+                name="price"
+                inputmode="decimal"
+                placeholder="0,00"
+                value="{{ '%.2f'|format(item.price_cents/100) if item and item.price_cents is not none else '' }}" /></label
+            ><label
+              >Fecha de compra<input
+                name="purchased_on"
+                type="date"
+                value="{{ item.purchased_on or '' if item else '' }}"
+            /></label>
+          </div>
+          <label
+            >Notas<textarea name="notes" maxlength="3000" rows="4">
+{{ item.notes if item else '' }}</textarea>
+          </label>
+        </details>
+      </section>
+    </div>
+    <div class="form-actions">
+      <a href="{{ url_for('inventory.index') }}" class="button">Cancelar</a
+      ><button class="button primary">
+        Guardar prenda {{ icon('check') }}
+      </button>
+    </div>
+  </form>
+{% endblock %}

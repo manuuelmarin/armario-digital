@@ -1,0 +1,97 @@
+{% extends 'base.html' %}{% from 'macros.html' import csrf,photo,icon with context %}{% block content %}
+  <a class="back-link" href="{{ url_for('inventory.index') }}">← Mi armario</a>
+  <div class="detail-layout">
+    <section class="photo-gallery">
+      {% if photos %}{% for p in photos %}<div class="detail-photo">
+        <img
+          src="{{ url_for('inventory.image', name=p.filename) }}"
+          alt="{{ item.name }} · foto {{ loop.index }}"
+          width="1000"
+          height="1000"
+          {{ 'loading=lazy' if not loop.first }}
+        />
+        <form
+          method="post"
+          action="{{ url_for('inventory.delete_image',gid=item.id,image_id=p.id) }}"
+          data-confirm="¿Eliminar esta fotografía?"
+        >
+          {{ csrf() }}<button class="text-link danger">Eliminar foto</button>
+        </form>
+      </div>{% endfor %}{% else %}<div class="detail-photo">
+        {{ photo(item) }}
+      </div>{% endif %}
+    </section>
+    <section>
+      <p class="eyebrow">{{ item.category_name }}</p>
+      <h1>{{ item.name }}</h1>
+      <p class="subtitle">
+        {{ icon('pin') }}{{ item.location_name }}{{ ' · Archivada' if item.archived }}
+      </p>
+      <div class="action-row">
+        {% if not item.archived %}<a
+          class="button primary"
+          href="{{ url_for('inventory.edit',gid=item.id) }}"
+          >Editar prenda</a
+        >{% endif %}
+        <form
+          method="post"
+          action="{{ url_for('inventory.favorite',gid=item.id) }}"
+        >
+          {{ csrf() }}<button
+            class="button {{ 'is-favorite' if item.favorite }}"
+          >
+            {{ icon('heart') }}{{ 'Favorita' if item.favorite else 'Favorito' }}
+          </button>
+        </form>
+      </div>
+      <div class="panel">
+        <dl class="properties">
+          {% for label,value in [('Marca',item.brand),('Talla',item.size),('Color',item.color),('Temporadas',chosen_seasons|join(' · ')),('Precio',('%.2f €'|format(item.price_cents/100)) if item.price_cents is not none else ''),('Compra',item.purchased_on)] %}{% if value %}<div>
+            <dt>{{ label }}</dt>
+            <dd>{{ value }}</dd>
+          </div>{% endif %}{% endfor %}
+        </dl>
+        {% if item.notes %}<p class="preserve-lines">
+          {{ item.notes }}
+        </p>{% endif %}{% if not item.brand and not item.size and not item.color and not chosen_seasons and not item.notes and item.price_cents is none and not item.purchased_on %}<p
+          class="muted"
+        >
+          Sin detalles adicionales. Puedes completarlos cuando quieras.
+        </p>{% endif %}
+      </div>
+      <section class="section-space">
+        <h2>En tus outfits</h2>
+        {% for o in outfits %}<a
+          class="pill"
+          href="{{ url_for('looks.edit',oid=o.id) }}"
+          >{{ o.name }}</a
+        >{% else %}<p class="muted">
+          Aún no has guardado combinaciones con esta prenda.
+        </p>{% endfor %}
+      </section>
+      {% if movements %}<details class="panel">
+        <summary>Últimos traslados</summary>
+        {% for m in movements %}<p>
+          <strong>{{ m.origin }} → {{ m.destination }}</strong><br /><small
+            >{{ m.created_at[:10] }} · {{ m.reason }}</small
+          >
+        </p>{% endfor %}
+      </details>{% endif %}
+      <div class="secondary-actions">
+        <form
+          method="post"
+          action="{{ url_for('inventory.archive',gid=item.id) }}"
+        >
+          {{ csrf() }}<button class="text-link">
+            {{ 'Recuperar del archivo' if item.archived else 'Archivar prenda' }}
+          </button>
+        </form>
+        <a
+          class="text-link danger"
+          href="{{ url_for('inventory.delete',gid=item.id) }}"
+          >Eliminar definitivamente</a
+        >
+      </div>
+    </section>
+  </div>
+{% endblock %}

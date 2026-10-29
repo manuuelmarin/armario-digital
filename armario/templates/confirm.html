@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% from 'macros.html' import csrf with context %}{% block content %}<div
+  class="narrow panel"
+>
+  <p class="eyebrow">REVISAR ANTES DE CONTINUAR</p>
+  <h1>{{ title }}</h1>
+  <p>{{ message }}</p>
+  <form method="post">
+    {{ csrf() }}<label class="check-label"
+      ><input type="checkbox" name="confirm" value="1" required />Confirmo esta
+      operación</label
+    >
+    <div class="form-actions">
+      <a class="button" href="{{ url_for('inventory.index') }}">Cancelar</a
+      ><button class="button danger-button">{{ title }}</button>
+    </div>
+  </form>
+</div>{% endblock %}
