@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, icon with context %}
+{% block title %}Crea tu primer espacio · Armario Digital{% endblock %}
+{% block content %}
+  <div class="onboarding-layout">
+    <div class="onboarding-copy">
+      <p class="eyebrow">BIENVENIDO A TU ARMARIO</p>
+      <h1>
+        Cada prenda
+        <br>
+        merece su sitio.
+      </h1>
+      <p>Organiza por armario, habitación o lugar. Empieza con un espacio; podrás crear y cambiar los demás cuando quieras.</p>
+      <div class="onboarding-steps"><span class="step active">01 <strong>Crea un espacio</strong></span><span class="step">02 <strong>Añade tus prendas</strong></span><span class="step">03 <strong>Empieza a combinar</strong></span></div>
+    </div>
+    <form class="panel onboarding-form" method="post">
+      {{ csrf() }}<span class="form-step">PASO 01</span>
+      <h2>Tu primer espacio</h2>
+      <p class="muted">Un nombre que te ayude a saber dónde está tu ropa.</p>
+      <label for="first-space">Nombre del espacio</label><input id="first-space"
+       name="name"
+       required
+       maxlength="80"
+       placeholder="Por ejemplo, Armario principal"
+       autocomplete="off"
+       autofocus>
+      <p class="field-hint">Podrás renombrarlo o añadir otros espacios después.</p>
+      <button class="button primary">Crear espacio y continuar {{ icon("arrow") }}</button>
+    </form>
+  </div>
+{% endblock %}

@@ -1,53 +1,67 @@
-{% extends 'base.html' %}{% from 'macros.html' import csrf,location_options with context %}{% block content %}<a
-  class="back-link"
-  href="{{ url_for('trips.index') }}"
-  >← Mis maletas</a
->
-<div class="page-heading">
-  <div>
-    <p class="eyebrow">EMPIEZA POR EL DESTINO</p>
-    <h1>{{ 'Editar viaje' if trip else 'Nuevo viaje' }}</h1>
-  </div>
-</div>
-<form method="post" class="narrow panel">
-  {{ csrf() }}<label
-    >Nombre *<input
-      name="name"
-      required
-      maxlength="120"
-      placeholder="Fin de semana en La Manga"
-      value="{{ trip.name if trip else '' }}"
-  /></label>
-  <div class="two-columns">
-    <label
-      >Origen *<select name="origin_id">
-        {{ location_options(trip.origin_id if trip else none) }}
-      </select></label
-    ><label
-      >Destino *<select name="destination_id">
-        {{ location_options(trip.destination_id if trip else (locations[1].id if locations|length > 1 else none)) }}
-      </select></label
-    >
-  </div>
-  <div class="two-columns">
-    <label
-      >Salida<input
-        type="date"
-        name="starts_on"
-        value="{{ trip.starts_on or '' if trip else '' }}" /></label
-    ><label
-      >Vuelta<input
-        type="date"
-        name="ends_on"
-        value="{{ trip.ends_on or '' if trip else '' }}"
-    /></label>
-  </div>
-  <label
-    >Notas<textarea name="notes" rows="3" maxlength="3000">
-{{ trip.notes if trip else '' }}</textarea>
-  </label>
-  <div class="form-actions">
-    <a class="button" href="{{ url_for('trips.index') }}">Cancelar</a
-    ><button class="button primary">Guardar viaje</button>
-  </div>
-</form>{% endblock %}
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, location_options with context %}
+{% block content %}
+  {% if locations|length < 2 %}
+    <section class="narrow panel">
+      <p class="eyebrow">ANTES DE PREPARAR TU VIAJE</p>
+      <h1>Un origen y un destino.</h1>
+      <p>Crea al menos dos espacios para saber qué prendas necesitas llevar y cuáles ya están allí.</p>
+      <a class="button primary" href="{{ url_for('settings.locations') }}">Gestionar espacios</a>
+    </section>
+  {% else %}
+    <a class="back-link" href="{{ url_for('trips.index') }}">← Mis maletas</a>
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">EMPIEZA POR EL DESTINO</p>
+        <h1>{{ 'Editar viaje' if trip else 'Nuevo viaje' }}</h1>
+      </div>
+    </div>
+    <form method="post" class="narrow panel">
+      {{ csrf() }}
+      <label for="trip-name">Nombre *</label>
+      <input id="trip-name"
+             name="name"
+             required
+             maxlength="120"
+             placeholder="Escapada de fin de semana"
+             value="{{ trip.name if trip else '' }}">
+      <div class="two-columns">
+        <div>
+          <label for="origin">Origen *</label>
+          <select id="origin"
+                  name="origin_id">{{ location_options(trip.origin_id if trip else none) }}</select>
+        </div>
+        <div>
+          <label for="destination">Destino *</label>
+          <select id="destination"
+                  name="destination_id">{{ location_options(trip.destination_id if trip else locations[1].id) }}</select>
+        </div>
+      </div>
+      <div class="two-columns">
+        <div>
+          <label for="starts-on">Salida</label>
+          <input id="starts-on"
+                 type="date"
+                 name="starts_on"
+                 value="{{ (trip.starts_on or '') if trip else '' }}">
+        </div>
+        <div>
+          <label for="ends-on">Vuelta</label>
+          <input id="ends-on"
+                 type="date"
+                 name="ends_on"
+                 value="{{ (trip.ends_on or '') if trip else '' }}">
+        </div>
+      </div>
+      <label for="trip-notes">Notas</label>
+      <textarea id="trip-notes"
+                name="notes"
+                rows="3"
+                maxlength="3000">{{ trip.notes if trip else '' }}</textarea>
+      <div class="form-actions">
+        <a class="button" href="{{ url_for('trips.index') }}">Cancelar</a>
+        <button class="button primary">Guardar viaje</button>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}

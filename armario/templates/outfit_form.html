@@ -1,51 +1,30 @@
-{% extends 'base.html' %}{% from 'macros.html' import csrf,picker with context %}{% block content %}
-  <a class="back-link" href="{{ url_for('looks.index') }}">← Mis outfits</a>
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, picker, icon with context %}
+{% block title %}{{ 'Editar outfit' if outfit else 'Nuevo outfit' }} · Armario Digital{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('looks.index') }}">← Volver a mis outfits</a>
   <div class="page-heading">
     <div>
-      <p class="eyebrow">JUNTO, TODO TIENE MÁS SENTIDO</p>
-      <h1>{{ 'Editar outfit' if outfit else 'Nuevo outfit' }}</h1>
+      <p class="eyebrow">TU PRÓXIMA COMBINACIÓN</p>
+      <h1>{{ outfit.name if outfit else 'Mejor, en conjunto.' }}</h1>
+      <p class="subtitle">Elige prendas y dale un nombre a la combinación.</p>
     </div>
   </div>
-  <form method="post" class="editor">
-    {{ csrf() }}
-    <section class="panel">
-      <div class="two-columns">
-        <label
-          >Nombre *<input
-            name="name"
-            required
-            maxlength="120"
-            placeholder="Por ejemplo, oficina de otoño"
-            value="{{ outfit.name if outfit else '' }}" /></label
-        ><label
-          >Ocasión<input
-            name="occasion"
-            maxlength="80"
-            value="{{ outfit.occasion if outfit else '' }}"
-            placeholder="Trabajo, cena, fin de semana…"
-        /></label>
-      </div>
-      <label
-        >Notas<textarea name="notes" maxlength="3000" rows="2">
-{{ outfit.notes if outfit else '' }}</textarea></label
-      ><label class="check-label"
-        ><input
-          type="checkbox"
-          name="favorite"
-          value="1"
-          {{ 'checked' if outfit and outfit.favorite }}
-        />Favorito</label
-      >
-    </section>
-    <h2 class="section-space">Elige las prendas</h2>
-    <p class="muted">
-      Cada tarjeta indica dónde está la prenda. Puedes combinar armarios
-      distintos.
-    </p>
-    {{ picker(garments,selected) }}
-    <div class="form-actions">
-      <a class="button" href="{{ url_for('looks.index') }}">Cancelar</a
-      ><button class="button primary">Guardar outfit</button>
-    </div>
-  </form>
+  <form method="post" class="editor">{{ csrf() }}<section class="panel"><div class="two-columns"><div><label for="outfit-name">Nombre *</label><input id="outfit-name"
+       name="name"
+       required
+       maxlength="120"
+       placeholder="Por ejemplo, Un día de oficina"
+       value="{{ outfit.name if outfit else '' }}"></div><div><label for="outfit-occasion">Ocasión</label><input id="outfit-occasion"
+       name="occasion"
+       maxlength="80"
+       value="{{ outfit.occasion if outfit else '' }}"
+       placeholder="Trabajo, una cena, tiempo libre…"></div></div><label for="outfit-notes">Notas</label><textarea id="outfit-notes"
+          name="notes"
+          maxlength="3000"
+          rows="2"
+          placeholder="Lo que hace especial esta combinación">{{ outfit.notes if outfit else '' }}</textarea><label class="check-label"><input type="checkbox"
+       name="favorite"
+       value="1"
+       {% if outfit and outfit.favorite %} checked{% endif %}>Guardar entre mis favoritos</label></section><div class="section-heading section-space"><h2>Elige las prendas</h2><span class="muted">Cada tarjeta indica su espacio actual.</span></div>{{ picker(garments, selected) }}<div class="form-actions"><a class="button" href="{{ url_for('looks.index') }}">Cancelar</a><button class="button primary">Guardar outfit {{ icon("check") }}</button></div></form>
 {% endblock %}

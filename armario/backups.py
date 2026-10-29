@@ -15,7 +15,7 @@ from pathlib import Path
 
 from .db import SCHEMA_VERSION, connect
 
-IMAGE_NAME = re.compile(r"^[0-9a-f]{32}(?:-thumb)?\.webp$")
+IMAGE_NAME = re.compile(r"^[0-9a-f]{32}(?:-thumb|-preview)?\.webp$")
 MAX_UNPACKED_BYTES = 4 * 1024**3
 
 
@@ -57,8 +57,12 @@ def digest(path):
 
 def referenced_images(db):
     names = set()
-    for row in db.execute("SELECT filename,thumbnail FROM garment_images"):
+    columns = {row[1] for row in db.execute("PRAGMA table_info(garment_images)")}
+    selection = "filename,thumbnail,preview" if "preview" in columns else "filename,thumbnail"
+    for row in db.execute(f"SELECT {selection} FROM garment_images"):
         for name in row:
+            if name is None:
+                continue
             if not IMAGE_NAME.fullmatch(name):
                 raise ValueError("La base de datos contiene una ruta de imagen inválida.")
             names.add("images/" + name)

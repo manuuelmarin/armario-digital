@@ -1,68 +1,73 @@
-{% from 'macros.html' import icon with context %} <!doctype html>
+{% from 'macros.html' import icon with context %}
+<!DOCTYPE html>
 <html lang="es">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#242925">
+    <meta name="description"
+          content="Organiza tus prendas, crea outfits y prepara viajes con un armario digital local.">
     <title>{% block title %}Armario Digital{% endblock %}</title>
-    <meta name="theme-color" content="#284b3c" />
-    <link
-      rel="icon"
-      href="{{ url_for('static', filename='favicon.svg') }}"
-      type="image/svg+xml"
-    />
-    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
-    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+    <link rel="icon"
+          href="{{ url_for('static', filename='favicon.svg', v=version) }}"
+          type="image/svg+xml">
+    <link rel="preload"
+          href="{{ url_for('static', filename='fonts/dm-sans-latin.woff2') }}"
+          as="font"
+          type="font/woff2"
+          crossorigin>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='tokens.css', v=version) }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='app.css', v=version) }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='components.css', v=version) }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='responsive.css', v=version) }}">
+    <script src="{{ url_for('static', filename='app.js', v=version) }}" defer></script>
   </head>
   <body>
     <a class="skip" href="#main">Saltar al contenido</a>
     <aside class="sidebar">
-      <a class="brand" href="{{ url_for('inventory.index') }}"
-        >{{ icon('hanger', 'brand-icon') }}<span
-          >armario<span class="brand-sub">DIGITAL</span></span
-        ></a
-      >
-      <p class="nav-label">TU ESPACIO</p>
+      <a class="brand"
+         href="{{ url_for('inventory.index') }}"
+         aria-label="Armario Digital, inicio">
+        <span class="brand-symbol">{{ icon("hanger") }}</span><span>armario<span class="brand-sub">DIGITAL</span></span>
+      </a>
+      <p class="nav-label">TU BIBLIOTECA</p>
       <nav aria-label="Navegación principal">
-        {% for endpoint,label,glyph,prefix in [('inventory.index','Mi armario','grid','inventory'),('looks.index','Outfits','outfit','looks'),('trips.index','Maletas','bag','trips'),('settings.locations','Ubicaciones','pin','locations')] %}
-          <a
-            href="{{ url_for(endpoint) }}"
-            class="nav-link {{ 'active' if (request.endpoint or '').startswith(prefix) or (prefix == 'locations' and request.endpoint == 'settings.locations') }}"
-            >{{ icon(glyph) }}{{ label }}</a
-          >
+        {% for endpoint,label,glyph in [('inventory.index','Mi armario','grid'),('looks.index','Outfits','outfit'),('trips.index','Maletas','bag'),('settings.locations','Ubicaciones','pin')] %}
+          {% set active = (endpoint == 'inventory.index' and (request.blueprint == 'inventory' or request.endpoint == 'settings.onboarding')) or (endpoint == 'looks.index' and request.blueprint == 'looks') or (endpoint == 'trips.index' and request.blueprint == 'trips') or (endpoint == 'settings.locations' and request.endpoint in ['settings.locations','settings.save_location','settings.delete_location']) %}
+          <a class="nav-link{% if active %} active{% endif %}"
+             href="{{ url_for(endpoint) }}"
+             {% if active %} aria-current="page"{% endif %}>{{ icon(glyph) }}<span>{{ label }}</span>{% if active %}<span class="nav-dot"></span>{% endif %}</a>
         {% endfor %}
       </nav>
+      {% if locations %}
+        <div class="sidebar-spaces"><p class="nav-label">TUS ESPACIOS</p>{% for loc in locations[:4] %}<a href="{{ url_for('inventory.index', location_id=loc.id) }}"><span class="space-dot"></span>{{ loc.name }}</a>{% endfor %}</div>
+      {% endif %}
       <div class="sidebar-bottom">
-        <a
-          class="nav-link {{ 'active' if request.endpoint == 'settings.index' }}"
-          href="{{ url_for('settings.index') }}"
-          >{{ icon('settings') }}Ajustes</a
-        >
-        <div class="private-note">
-          <span class="status-dot"></span>Tu espacio personal<small
-            >Todo en su sitio.</small
-          >
+        <div class="sidebar-note">
+          {{ icon("leaf") }}
+          <p>
+            Más posibilidades.
+            <br>
+            <strong>Con lo que ya tienes.</strong>
+          </p>
         </div>
+        <a class="nav-link{% if request.endpoint == 'settings.index' %} active{% endif %}"
+           href="{{ url_for('settings.index') }}">{{ icon("settings") }}<span>Ajustes</span></a>
       </div>
     </aside>
     <div class="workspace">
-      <header class="topbar">
-        <span>ARMARIO DIGITAL</span
-        ><span class="topbar-note">Menos buscar. Más combinar.</span>
-      </header>
-      <main id="main">
-        {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div
-          class="notice {{ category }}"
-          role="status"
-        >
-          {{ message }}
-        </div>{% endfor %}{% endwith %}
-        {% block content %}
-        {% endblock %}
+      <header class="topbar"><div class="breadcrumb"><span>Mi espacio</span>{{ icon("chevron") }}<strong>{{ view_names.get(request.blueprint, 'Mi armario') }}</strong></div><div class="device-label"><span class="status-dot"></span>{% if demo_mode %}<strong>Demo · datos ficticios</strong>{% else %}En este dispositivo{% endif %}</div></header>
+      {% if demo_mode %}<div class="demo-banner">Modo demostración. Las prendas y los espacios son ficticios; los cambios se descartan al cerrar.</div>{% endif %}
+      <main id="main" tabindex="-1">
+        {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="notice {{ category }}" role="status">{{ icon("check") }}<span>{{ message }}</span></div>{% endfor %}{% endwith %}
+        {% block content %}{% endblock %}
       </main>
       <footer class="footer">
-        Un lugar para todas tus prendas.<span
-          >Armario Digital · {{ version }}</span
-        >
+        <span>Armario Digital</span><span>Un lugar para cada prenda.</span>
       </footer>
     </div>
   </body>

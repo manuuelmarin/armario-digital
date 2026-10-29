@@ -1,60 +1,35 @@
-{% extends 'base.html' %}{% from 'macros.html' import csrf,icon with context %}{% block content %}<div
-  class="page-heading"
->
-  <div>
-    <p class="eyebrow">UN ARMARIO EN CADA LUGAR</p>
-    <h1>Mis ubicaciones</h1>
-    <p class="subtitle">
-      Cada prenda tiene un sitio. Puedes cambiar los nombres o añadir lugares.
-    </p>
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, icon with context %}
+{% block title %}Ubicaciones · Armario Digital{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">UN SITIO PARA CADA COSA</p>
+      <h1>Tus espacios.</h1>
+      <p class="subtitle">Un armario, una habitación, otra casa. Organízalos a tu manera.</p>
+    </div>
+    <a class="button primary" href="#new-location">{{ icon("plus") }}Añadir espacio</a>
   </div>
-</div>
-<div class="collection-grid">
-  {% for loc in items %}<section class="panel location-card">
-    <span class="trip-glyph">{{ icon('pin') }}</span>
-    <h2>{{ loc.name }}</h2>
-    <p class="muted">{{ loc.total }} prendas en el armario</p>
-    <a
-      class="text-link"
-      href="{{ url_for('inventory.index',location_id=loc.id) }}"
-      >Ver sus prendas →</a
-    >
-    <details class="section-space">
-      <summary>Gestionar ubicación</summary>
-      <form
-        method="post"
-        action="{{ url_for('settings.save_location',lid=loc.id) }}"
-      >
-        {{ csrf() }}<label
-          >Nombre<input
-            name="name"
-            value="{{ loc.name }}"
-            required
-            maxlength="80" /></label
-        ><button class="button small">Guardar nombre</button>
+  <div class="collection-grid location-grid">
+    {% for loc in items %}<section class="panel location-card"><div class="location-card-top"><span class="location-number">{{ '%02d'|format(loop.index) }}</span>{{ icon("pin") }}</div><h2>{{ loc.name }}</h2><p class="muted">{{ loc.total }} prendas en este espacio</p><a class="text-link"
+   href="{{ url_for('inventory.index',location_id=loc.id) }}">Explorar armario {{ icon("arrow") }}</a><details class="section-space"><summary>Gestionar espacio</summary><form method="post"
+      action="{{ url_for('settings.save_location',lid=loc.id) }}">{{ csrf() }}<label for="location-{{ loc.id }}">Nombre del espacio</label><input id="location-{{ loc.id }}"
+       name="name"
+       value="{{ loc.name }}"
+       required
+       maxlength="80"><button class="button small">Guardar nombre</button></form><p><a class="text-link danger"
+   href="{{ url_for('settings.delete_location',lid=loc.id) }}">Eliminar espacio sin referencias</a></p></details></section>{% endfor %}
+    <section class="panel new-location" id="new-location">
+      <span class="new-location-icon">{{ icon("plus") }}</span>
+      <h2>Un lugar más.</h2>
+      <p class="muted">Amplía tu espacio cuando lo necesites.</p>
+      <form method="post" action="{{ url_for('settings.save_location') }}">
+        {{ csrf() }}<label for="new-location-name">Nombre de la ubicación</label><input id="new-location-name"
+       name="name"
+       required
+       maxlength="80"
+       placeholder="Por ejemplo, Colección de temporada"><button class="button primary">Crear espacio</button>
       </form>
-      <p>
-        <a
-          class="text-link danger"
-          href="{{ url_for('settings.delete_location',lid=loc.id) }}"
-          >Eliminar ubicación vacía</a
-        >
-      </p>
-    </details>
-  </section>{% endfor %}
-  <section class="panel location-card new-location">
-    <h2>Un lugar más</h2>
-    <p class="muted">Una ciudad, una casa, otro armario.</p>
-    <form method="post" action="{{ url_for('settings.save_location') }}">
-      {{ csrf() }}<label
-        >Nombre de la ubicación<input
-          name="name"
-          required
-          maxlength="80"
-          placeholder="Por ejemplo, Valencia" /></label
-      ><button class="button primary">
-        {{ icon('plus') }}Añadir ubicación
-      </button>
-    </form>
-  </section>
-</div>{% endblock %}
+    </section>
+  </div>
+{% endblock %}

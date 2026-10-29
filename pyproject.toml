@@ -1,6 +1,6 @@
 [project]
 name = "armario-digital"
-version = "0.1.0"
+version = "0.2.0"
 description = "Armario personal local con SQLite"
 requires-python = ">=3.11"
 
@@ -14,3 +14,10 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["E501"]
+
+[tool.djlint]
+profile = "jinja"
+indent = 2
+max_line_length = 100
+format_css = false
+format_js = false

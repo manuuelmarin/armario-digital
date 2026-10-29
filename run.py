@@ -1,8 +1,11 @@
 """Single entry point for Windows/Linux; local serving and offline recovery."""
 
 import argparse
+import sqlite3
+import tempfile
 import threading
 import webbrowser
+import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -15,6 +18,10 @@ def main():
     parser.add_argument("--data-dir", type=Path, default=default_data_dir())
     parser.add_argument("--dev", action="store_true", help="Recargar código sin depurador remoto")
     parser.add_argument("--no-browser", action="store_true")
+    parser.add_argument(
+        "--demo", action="store_true", help="Inventario ficticio en una carpeta temporal aislada"
+    )
+    parser.add_argument("--port", type=int, default=8765)
     sub = parser.add_subparsers(dest="command")
     sub.add_parser("backup")
     verify = sub.add_parser("verify")
@@ -23,6 +30,10 @@ def main():
     restore.add_argument("archive", type=Path)
     restore.add_argument("--confirm", action="store_true")
     args = parser.parse_args()
+    if not 1 <= args.port <= 65535:
+        parser.error("El puerto debe estar entre 1 y 65535.")
+    if args.demo and (args.command or args.dev):
+        parser.error("El modo demo no se combina con comandos de recuperación o --dev.")
     root = args.data_dir.expanduser().resolve()
     if args.command == "verify":
         print(verify_backup(args.archive))
@@ -41,7 +52,11 @@ def main():
 
     def serve():
         with process_lock(root):
-            app = create_app({"DATA_DIR": root})
+            app = create_app({"DATA_DIR": root, "DEMO_MODE": args.demo, "DEV_MODE": args.dev})
+            if args.demo:
+                from armario.demo import seed_demo
+
+                seed_demo(root)
             if args.command == "backup":
                 print(create_backup(root))
                 return
@@ -49,22 +64,32 @@ def main():
             if not list((root / "backups").glob(f"daily-{day}*.zip")):
                 create_backup(root, prefix="daily")
             if not args.no_browser:
-                opener = threading.Timer(1, lambda: webbrowser.open("http://127.0.0.1:8765"))
+                opener = threading.Timer(
+                    1, lambda: webbrowser.open(f"http://127.0.0.1:{args.port}")
+                )
                 opener.daemon = True
                 opener.start()
-            print("Armario Digital: http://127.0.0.1:8765 — Ctrl+C para cerrar", flush=True)
+            print(f"Armario Digital: http://127.0.0.1:{args.port} — Ctrl+C para cerrar", flush=True)
             if args.dev:
                 from werkzeug.serving import run_simple
 
-                run_simple("127.0.0.1", 8765, app, use_debugger=False, threaded=True)
+                run_simple("127.0.0.1", args.port, app, use_debugger=False, threaded=True)
             else:
                 from waitress import serve as waitress_serve
 
                 waitress_serve(
-                    app, host="127.0.0.1", port=8765, threads=4, max_request_body_size=32 * 1024**2
+                    app,
+                    host="127.0.0.1",
+                    port=args.port,
+                    threads=4,
+                    max_request_body_size=32 * 1024**2,
                 )
 
-    if args.dev and args.command is None:
+    if args.demo:
+        with tempfile.TemporaryDirectory(prefix="armario-demo-") as temporary:
+            root = Path(temporary)
+            serve()
+    elif args.dev and args.command is None:
         from werkzeug._reloader import run_with_reloader
 
         extras = [
@@ -80,5 +105,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (RuntimeError, ValueError, OSError) as error:
+    except (RuntimeError, ValueError, OSError, sqlite3.Error, zipfile.BadZipFile) as error:
         raise SystemExit(f"No se ha completado la operación: {error}") from error

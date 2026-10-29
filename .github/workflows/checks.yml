@@ -18,6 +18,7 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m ruff check .
       - run: python -m ruff format --check .
+      - run: python -m djlint armario/templates --check
       - run: python -m pytest -q
       - if: runner.os == 'Linux'
         run: python -m playwright install --with-deps chromium

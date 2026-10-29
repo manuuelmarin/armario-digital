@@ -1,7 +1,6 @@
 CREATE TABLE locations (
  id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE COLLATE NOCASE CHECK(length(name) BETWEEN 1 AND 80)
 );
-INSERT INTO locations(name) VALUES ('Albacete'), ('Madrid'), ('La Manga');
 CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE COLLATE NOCASE);
 INSERT INTO categories(name) VALUES ('Camisetas'),('Camisas'),('Punto'),('Sudaderas'),('Pantalones'),('Chaquetas'),('Abrigos'),('Calzado'),('Deporte'),('Accesorios'),('Otros');
 CREATE TABLE garments (

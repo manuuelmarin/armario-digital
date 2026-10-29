@@ -1,23 +1,23 @@
-# Siguientes pasos
+# Roadmap
 
-## Primera prueba en el Windows del propietario
+## 0.2 — Base visual y reutilizable
 
-- Instalar en una ruta con espacios, abrir desde `iniciar.cmd`, cerrar y reiniciar.
-- Catalogar unas pocas prendas reales y comprobar fotos verticales de su móvil.
-- Hacer una copia, verificarla y restaurarla en una carpeta alternativa.
-- Validar que el vocabulario, los filtros y la preparación de maletas encajan con su uso.
+- Instalación vacía y configuración de espacios.
+- Sistema visual consistente, recursos locales y fotografías adaptativas.
+- Demo ficticia aislada y documentación de producto.
+- Flujos existentes preservados y pruebas de migración/recuperación ampliadas.
 
-Esto precede a llamar «estable» a la versión. La CI aporta comprobaciones en Windows, pero no sustituye esa prueba del lanzador y del navegador en su equipo.
+## Próximas iteraciones
 
-## Siguiente iteración útil
+1. Paginación de selectores, ordenación de imágenes y duplicación controlada de prendas.
+2. Tableros de inspiración con fotos locales y enlaces, sin descargas arbitrarias del servidor.
+3. Meteorología opcional mediante un proveedor configurado, con caché, fecha de actualización y funcionamiento offline del catálogo.
+4. Retención de copias configurable y recordatorio de antigüedad dentro de la aplicación.
 
-1. Búsqueda y paginación dentro del selector de prendas de outfits/maletas, reordenación de la foto principal y duplicación controlada de una prenda.
-2. Inspiración con tableros, fotos locales y enlaces guardados sin descarga arbitraria desde el servidor.
-3. Open-Meteo con coordenadas de ciudad configurables, caché, fecha de actualización y degradación offline. Mostrar previsiones solo dentro del horizonte real disponible.
-4. Retención configurable de copias y recordatorios dentro de la app cuando lleve mucho tiempo sin una copia.
+## Según validación de uso
 
-## Según necesidad confirmada
+Etiquetas y colecciones, temporadas de outfits, espacios jerárquicos, plantillas de viaje, importación/exportación legible, modo oscuro y collage libre. El empaquetado de escritorio y la sincronización requieren evaluar instalación, seguridad y recuperación en su plataforma.
 
-Etiquetas y colecciones, ubicaciones jerárquicas, temporadas de outfits, plantillas de viaje, modo oscuro, importación CSV y exportación legible. El editor de collage, el empaquetado de escritorio y el acceso desde el móvil requieren valorar su coste antes de implementarse.
+## Distribución pública
 
-No están previstos registro diario de uso, funciones sociales, recomendaciones opacas de IA ni infraestructura cloud por defecto.
+Seleccionar la licencia, revisar el historial y los recursos, y probar instalación/actualización/restauración con los paquetes que se distribuyan. El servicio multiusuario queda fuera de la preview local. [PUBLISHING.md](PUBLISHING.md) describe esos límites.

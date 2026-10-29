@@ -23,7 +23,7 @@ def test_complete_backup_restore_roundtrip(client, add_garment, db, app, tmp_pat
     assert download.status_code == 200 and download.data.startswith(b"PK")
     path = next((app.config["DATA_DIR"] / "backups").glob("*.zip"))
     assert verify_backup(path) == {
-        "schema_version": 2,
+        "schema_version": 3,
         "garments": 1,
         "outfits": 1,
         "outfit_items": 1,
@@ -38,7 +38,7 @@ def test_complete_backup_restore_roundtrip(client, add_garment, db, app, tmp_pat
     with connect(target / "wardrobe.sqlite") as restored_db:
         assert restored_db.execute("PRAGMA foreign_key_check").fetchall() == []
         assert restored_db.execute("SELECT count(*) FROM trip_items").fetchone()[0] == 1
-    assert len(list((target / "images").glob("*.webp"))) == 2
+    assert len(list((target / "images").glob("*.webp"))) == 3
 
 
 def test_restore_preserves_existing_directory(app, add_garment):
@@ -117,6 +117,8 @@ def test_populated_v1_migration_preserves_relations_and_backs_up(tmp_path):
     script = Path(__file__).parents[1] / "armario" / "migrations" / "001_core.sql"
     db = connect(root / "wardrobe.sqlite")
     db.executescript(script.read_text(encoding="utf-8"))
+    db.execute("INSERT INTO locations(name) VALUES ('Espacio anterior')")
+    db.commit()
     with db:
         db.execute("PRAGMA user_version=1")
         db.execute("INSERT INTO garments(name,category_id,location_id) VALUES ('Anterior',1,1)")
@@ -125,7 +127,7 @@ def test_populated_v1_migration_preserves_relations_and_backs_up(tmp_path):
     db.close()
     migrate(root)
     with connect(root / "wardrobe.sqlite") as after:
-        assert after.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert after.execute("PRAGMA user_version").fetchone()[0] == 3
         assert after.execute("SELECT count(*) FROM outfit_items").fetchone()[0] == 1
         assert after.execute("SELECT name FROM garments").fetchone()[0] == "Anterior"
         assert after.execute("PRAGMA foreign_key_check").fetchall() == []

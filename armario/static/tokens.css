@@ -1,0 +1,41 @@
+@font-face {
+  font-family: "DM Sans";
+  src: url("fonts/dm-sans-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DM Serif Display";
+  src: url("fonts/dm-serif-display-latin.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --paper: #fcfbf8;
+  --surface: #ffffff;
+  --ink: #292e2a;
+  --muted: #64685f;
+  --line: #e7e5df;
+  --subtle: #f3f1eb;
+  --accent: #d7bfa6;
+  --accent-soft: #f1e9df;
+  --green: #425848;
+  --danger: #9b3e39;
+  --radius: 12px;
+  --rail: 222px;
+  --font-body: "DM Sans", "Segoe UI", sans-serif;
+  --font-display: "DM Serif Display", Georgia, serif;
+  color-scheme: light;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 14px;
+  line-height: 1.6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,56 +1,30 @@
-{% extends 'base.html' %}{% from 'macros.html' import icon,photo with context %}{% block content %}
+{% extends "base.html" %}
+{% from 'macros.html' import icon, photo with context %}
+{% block title %}Outfits · Armario Digital{% endblock %}
+{% block content %}
   <div class="page-heading">
     <div>
-      <p class="eyebrow">COMBINACIONES QUE QUIERES GUARDAR</p>
-      <h1>Mis outfits</h1>
-      <p class="subtitle">Ideas para vestirte, siempre a mano.</p>
+      <p class="eyebrow">EL ARTE DE COMBINAR</p>
+      <h1>Outfits<span class="count">{{ outfits|length }}</span></h1>
+      <p class="subtitle">Guarda las combinaciones que quieres volver a encontrar.</p>
     </div>
-    <a class="button primary" href="{{ url_for('looks.edit') }}"
-      >{{ icon('plus') }}Crear outfit</a
-    >
+    <a class="button primary" href="{{ url_for('looks.edit') }}">{{ icon("plus") }}Crear outfit</a>
   </div>
-  <div class="collection-grid">
-    {% for outfit in outfits %}<article class="panel outfit-card">
-      <a class="outfit-preview" href="{{ url_for('looks.edit',oid=outfit.id) }}"
-        >{% for item in outfit['items'][:4] %}<div>
-          {{ photo(item) }}
-        </div>{% endfor %}</a
-      >
-      <div class="card-title">
-        <h2>{{ outfit.name }}</h2>
-        {% if outfit.favorite %}{{ icon('heart') }}{% endif %}
-      </div>
-      <p class="muted">
-        {{ outfit.occasion or 'Sin ocasión definida' }} ·
-        {{ outfit['items']|length }} prendas
-      </p>
-      <div class="outfit-pieces">
-        {% for item in outfit['items'] %}<a
-          class="pill"
-          href="{{ url_for('inventory.detail',gid=item.id) }}"
-          >{{ item.name }} ·
-          {{ item.location_name }}{{ ' · Archivada' if item.archived }}</a
-        >{% endfor %}
-      </div>
-      <div class="secondary-actions">
-        <a class="text-link" href="{{ url_for('looks.edit',oid=outfit.id) }}"
-          >Editar combinación →</a
-        ><a
-          class="text-link danger"
-          href="{{ url_for('looks.delete',oid=outfit.id) }}"
-          >Eliminar</a
-        >
-      </div>
-    </article>{% else %}<div class="empty-state wide">
-      <div class="empty-icon">{{ icon('outfit') }}</div>
-      <h2>Guarda lo que combina</h2>
-      <p>
-        Elige prendas de tus armarios y crea una combinación. Sin calendarios ni
-        registros diarios.
-      </p>
-      <a class="button primary" href="{{ url_for('looks.edit') }}"
-        >Crear mi primer outfit {{ icon('arrow') }}</a
-      >
-    </div>{% endfor %}
+  <div class="collection-grid outfit-grid">
+    {% for outfit in outfits %}
+      <article class="outfit-card"><a class="outfit-preview"
+   href="{{ url_for('looks.edit',oid=outfit.id) }}"
+   aria-label="Ver combinación {{ outfit.name }}">{% for item in outfit['items'][:4] %}<div>{{ photo(item) }}</div>{% endfor %}</a><div class="outfit-caption"><p class="eyebrow">{{ outfit.occasion or 'TU COMBINACIÓN' }}</p><div class="card-title"><h2>{{ outfit.name }}</h2>{% if outfit.favorite %}{{ icon("heart") }}{% endif %}</div><p class="muted">{{ outfit['items']|length }} prendas · {% set places = outfit['items']|map(attribute='location_name')|unique|list %}{{ places|join(" / ") }}</p><div class="outfit-pieces">{% for item in outfit['items'] %}<a class="pill" href="{{ url_for('inventory.detail',gid=item.id) }}">{{ item.name }}{% if item.archived %} · Archivada{% endif %}</a>{% endfor %}</div><div class="secondary-actions"><a class="text-link" href="{{ url_for('looks.edit',oid=outfit.id) }}">Editar outfit {{ icon("arrow") }}</a><a class="text-link danger"
+   href="{{ url_for('looks.delete',oid=outfit.id) }}">Eliminar</a></div></div></article>
+    {% else %}
+      <section class="empty-state wide">
+        <div class="empty-icon">{{ icon("outfit") }}</div>
+        <p class="eyebrow">LAS MEJORES IDEAS SE GUARDAN</p>
+        <h2>Juntas, encajan.</h2>
+        <p>Combina prendas de tus espacios y crea una biblioteca de looks para cada ocasión.</p>
+        <a class="button primary"
+           href="{{ url_for('looks.edit') }}">Crear mi primer outfit {{ icon("arrow") }}</a>
+      </section>
+    {% endfor %}
   </div>
 {% endblock %}
