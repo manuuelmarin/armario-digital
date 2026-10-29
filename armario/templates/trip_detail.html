@@ -1,8 +1,4 @@
-{% extends 'base.html' %}{% from 'macros.html' import csrf,icon,photo,picker with context %}{% block content %}<a
-  class="back-link"
-  href="{{ url_for('trips.index') }}"
-  >← Mis maletas</a
->
+{% extends "base.html" %}{% from 'macros.html' import csrf,icon,photo,picker with context %}{% block content %}<a class="back-link" href="{{ url_for('trips.index') }}">← Mis maletas</a>
 <div class="page-heading">
   <div>
     <p class="eyebrow">
@@ -14,11 +10,9 @@
     <p class="subtitle">
       {{ trip.starts_on or 'Sin fecha definida' }}{% if trip.ends_on %}—
       {{ trip.ends_on }}{% endif %}
-    </p>
-  </div>
-  <a class="button" href="{{ url_for('trips.edit',tid=trip.id) }}"
-    >Editar viaje</a
-  >
+  </p>
+</div>
+<a class="button" href="{{ url_for('trips.edit',tid=trip.id) }}">Editar viaje</a>
 </div>
 {% if trip.notes %}<p class="preserve-lines">{{ trip.notes }}</p>{% endif %}
 <div class="notice">
@@ -29,106 +23,74 @@
   <section>
     <div class="section-heading">
       <h2>Tu lista</h2>
-      <span class="muted"
-        >{{ items|selectattr('packed')|list|length }} / {{ items|length }}
-        preparados</span
-      >
+      <span class="muted">{{ items|selectattr("packed")|list|length }} / {{ items|length }}
+      preparados</span>
     </div>
     <div class="checklist">
-      {% for item in items %}<article
-        class="checklist-row {{ 'packed' if item.packed }}"
-      >
-        <form
-          method="post"
-          action="{{ url_for('trips.update_item',tid=trip.id,iid=item.id,action='preparar') }}"
-        >
-          {{ csrf() }}<button
-            class="pack-button {{ 'checked' if item.packed }}"
-            aria-label="{{ 'Desmarcar' if item.packed else 'Marcar preparada' }}: {{ item.name or item.label }}"
-            aria-pressed="{{ 'true' if item.packed else 'false' }}"
-          >
-            {% if item.packed %}{{ icon('check') }}{% endif %}
-          </button>
-        </form>
-        {% if item.garment_id %}<div class="checklist-photo">
-          {{ photo(item) }}
-        </div>{% endif %}
-        <div class="checklist-copy">
-          <strong
-            >{% if item.garment_id %}<a
-              href="{{ url_for('inventory.detail',gid=item.garment_id) }}"
-              >{{ item.name }}</a
-            >{% else %}{{ item.label }}{% endif %}</strong
-          >{% if item.garment_id %}<small
-            class="{{ 'warning-text' if item.location_id not in [trip.origin_id,trip.destination_id] or item.archived }}"
-            >{{ item.location_name }} ·
-            {{ 'Ya en destino' if item.location_id == trip.destination_id else ('En origen' if item.location_id == trip.origin_id else 'En otra ubicación') }}{{ ' · Archivada' if item.archived }}</small
-          >{% else %}<small>Objeto de viaje</small>{% endif %}
+      {% for item in items %}
+        <article class="checklist-row {{ 'packed' if item.packed }}">
+          <form method="post"
+                action="{{ url_for('trips.update_item',tid=trip.id,iid=item.id,action='preparar') }}">
+            {{ csrf() }}<button class="pack-button {{ 'checked' if item.packed }}"
+        aria-label="{{ 'Desmarcar' if item.packed else 'Marcar preparada' }}: {{ item.name or item.label }}"
+        aria-pressed="{{ 'true' if item.packed else 'false' }}">
+            {% if item.packed %}{{ icon("check") }}{% endif %}
+            </button>
+          </form>
+          {% if item.garment_id %}
+            <div class="checklist-photo">{{ photo(item) }}</div>
+          {% endif %}
+          <div class="checklist-copy">
+            <strong>{% if item.garment_id %}<a href="{{ url_for('inventory.detail',gid=item.garment_id) }}">{{ item.name }}</a>{% else %}{{ item.label }}{% endif %}</strong>{% if item.garment_id %}<small class="{{ 'warning-text' if item.location_id not in [trip.origin_id,trip.destination_id] or item.archived }}">{{ item.location_name }} ·
+              {{ 'Ya en destino' if item.location_id == trip.destination_id else ('En origen' if item.location_id == trip.origin_id else 'En otra ubicación') }}{{ ' · Archivada' if item.archived }}</small>{% else %}<small>Objeto de viaje</small>{% endif %}
         </div>
-        <form
-          method="post"
-          action="{{ url_for('trips.update_item',tid=trip.id,iid=item.id,action='quitar') }}"
-        >
-          {{ csrf() }}<button
-            class="text-link muted"
-            aria-label="Quitar {{ item.name or item.label }}"
-          >
-            Quitar
-          </button>
+        <form method="post"
+              action="{{ url_for('trips.update_item',tid=trip.id,iid=item.id,action='quitar') }}">
+          {{ csrf() }}<button class="text-link muted"
+        aria-label="Quitar {{ item.name or item.label }}">Quitar</button>
         </form>
-      </article>{% else %}<div class="panel">
-        <p class="muted">
-          La maleta está vacía. Añade prendas o importa un outfit.
-        </p>
-      </div>{% endfor %}
-    </div>
-    <a
-      class="button primary section-space"
-      href="{{ url_for('trips.transfer',tid=trip.id) }}"
-      >Revisar traslado a destino {{ icon('arrow') }}</a
-    >
+      </article>
+    {% else %}
+      <div class="panel">
+        <p class="muted">La maleta está vacía. Añade prendas o importa un outfit.</p>
+      </div>
+    {% endfor %}
+  </div>
+  <a class="button primary section-space"
+     href="{{ url_for('trips.transfer',tid=trip.id) }}">Revisar traslado a destino {{ icon("arrow") }}</a>
+</section>
+<aside class="trip-tools">
+  <section class="panel">
+    <h2>Añadir un outfit</h2>
+    <form method="post" action="{{ url_for('trips.add',tid=trip.id) }}">
+      {{ csrf() }}<label>Combinación<select name="outfit_id" required>
+      <option value="">Elige un outfit</option>
+      {% for o in outfits %}
+        <option value="{{ o.id }}">{{ o.name }}</option>
+      {% endfor %}
+      </select></label><button class="button">Añadir sus prendas</button>
+    </form>
+    <p class="muted">Las prendas repetidas se guardan una sola vez.</p>
   </section>
-  <aside class="trip-tools">
-    <section class="panel">
-      <h2>Añadir un outfit</h2>
-      <form method="post" action="{{ url_for('trips.add',tid=trip.id) }}">
-        {{ csrf() }}<label
-          >Combinación<select name="outfit_id" required>
-            <option value="">Elige un outfit</option>
-            {% for o in outfits %}<option value="{{ o.id }}">
-              {{ o.name }}
-            </option>{% endfor %}
-          </select></label
-        ><button class="button">Añadir sus prendas</button>
-      </form>
-      <p class="muted">Las prendas repetidas se guardan una sola vez.</p>
-    </section>
-    <section class="panel">
-      <h2>No olvides…</h2>
-      <form method="post" action="{{ url_for('trips.add',tid=trip.id) }}">
-        {{ csrf() }}<label
-          >Otro objeto<input
-            name="label"
-            maxlength="120"
-            required
-            placeholder="Cargador, neceser…" /></label
-        ><button class="button">Añadir a la lista</button>
-      </form>
-    </section>
-  </aside>
+  <section class="panel">
+    <h2>No olvides…</h2>
+    <form method="post" action="{{ url_for('trips.add',tid=trip.id) }}">
+      {{ csrf() }}<label>Otro objeto<input name="label"
+       maxlength="120"
+       required
+       placeholder="Cargador, neceser…" /></label><button class="button">Añadir a la lista</button>
+    </form>
+  </section>
+</aside>
 </div>
 <details class="panel section-space">
   <summary>Añadir prendas del armario</summary>
   <form method="post" action="{{ url_for('trips.add',tid=trip.id) }}">
-    {{ csrf() }}{{ picker(garments) }}<button
-      class="button primary section-space"
-    >
-      Añadir selección a la maleta
-    </button>
+    {{ csrf() }}{{ picker(garments) }}<button class="button primary section-space">Añadir selección a la maleta</button>
   </form>
 </details>
 <div class="secondary-actions">
-  <a class="text-link danger" href="{{ url_for('trips.delete',tid=trip.id) }}"
-    >Eliminar maleta</a
-  >
-</div>{% endblock %}
+  <a class="text-link danger"
+     href="{{ url_for('trips.delete',tid=trip.id) }}">Eliminar maleta</a>
+</div>
+{% endblock %}

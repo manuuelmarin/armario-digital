@@ -1,44 +1,37 @@
-{% extends 'base.html' %}{% from 'macros.html' import icon with context %}{% block content %}<div
-  class="page-heading"
->
-  <div>
-    <p class="eyebrow">LLEVA LO QUE NECESITAS</p>
-    <h1>Mis maletas</h1>
-    <p class="subtitle">
-      Prepara el viaje teniendo en cuenta lo que ya está allí.
-    </p>
+{% extends "base.html" %}{% from 'macros.html' import icon with context %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">LLEVA LO QUE NECESITAS</p>
+      <h1>Mis maletas</h1>
+      <p class="subtitle">Prepara el viaje teniendo en cuenta lo que ya está allí.</p>
+    </div>
+    <a class="button primary"
+       href="{{ url_for('trips.edit') }}">{{ icon("plus") }}Preparar viaje</a>
   </div>
-  <a class="button primary" href="{{ url_for('trips.edit') }}"
-    >{{ icon('plus') }}Preparar viaje</a
-  >
-</div>
-<div class="collection-grid">
-  {% for trip in trips %}<a
-    class="panel trip-card"
-    href="{{ url_for('trips.detail',tid=trip.id) }}"
-    ><span class="trip-glyph">{{ icon('bag') }}</span>
+  <div class="collection-grid">
+  {% for trip in trips %}<a class="panel trip-card"
+   href="{{ url_for('trips.detail',tid=trip.id) }}"><span class="trip-glyph">{{ icon("bag") }}</span>
     <p class="eyebrow">{{ trip.origin }} → {{ trip.destination }}</p>
     <h2>{{ trip.name }}</h2>
     <p class="muted">
       {{ trip.starts_on or 'Sin fecha definida' }}{% if trip.ends_on %}—
       {{ trip.ends_on }}{% endif %}
-    </p>
-    <progress
-      max="{{ trip.total or 1 }}"
-      value="{{ trip.packed }}"
-      aria-label="Elementos preparados"
-    ></progress>
-    <p>{{ trip.packed }} de {{ trip.total }} preparados</p>
-    <span class="text-link">Abrir maleta →</span></a
-  >{% else %}<div class="empty-state wide">
-    <div class="empty-icon">{{ icon('bag') }}</div>
+  </p>
+  <progress max="{{ trip.total or 1 }}"
+            value="{{ trip.packed }}"
+            aria-label="Elementos preparados"></progress>
+  <p>{{ trip.packed }} de {{ trip.total }} preparados</p>
+  <span class="text-link">Abrir maleta →</span></a>{% else %}<div class="empty-state wide">
+    <div class="empty-icon">{{ icon("bag") }}</div>
     <h2>¿Próxima parada?</h2>
     <p>
       Reúne prendas y outfits en una lista. Añade también el cargador, el
       neceser o lo que no quieras olvidar.
     </p>
-    <a class="button primary" href="{{ url_for('trips.edit') }}"
-      >Preparar mi primera maleta {{ icon('arrow') }}</a
-    >
-  </div>{% endfor %}
-</div>{% endblock %}
+    <a class="button primary"
+       href="{{ url_for('trips.edit') }}">Preparar mi primera maleta {{ icon("arrow") }}</a>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

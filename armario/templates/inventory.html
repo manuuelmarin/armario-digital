@@ -1,156 +1,124 @@
-{% extends 'base.html' %}{% from 'macros.html' import csrf,icon,photo,location_options with context %}
-{% block title %}Mi armario · Armario Digital{% endblock %}{% block content %}
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, icon, photo, location_options with context %}
+{% block title %}Mi armario · Armario Digital{% endblock %}
+{% block content %}
   <div class="page-heading">
     <div>
-      <p class="eyebrow">TU ROPA, EN SU SITIO</p>
-      <h1>
-        {{ 'Prendas archivadas' if request.args.get('archived') == '1' else 'Mi armario' }}<span
-          class="count"
-          >{{ count }}</span
-        >
-      </h1>
-      <p class="subtitle">Lo que tienes. Donde lo tienes.</p>
+      <p class="eyebrow">LA COLECCIÓN</p>
+      <h1>{{ 'Prendas archivadas' if request.args.get("archived") == '1' else 'Mi armario' }}<span class="count">{{ count }}</span></h1>
+      <p class="subtitle">Una nueva perspectiva de todo lo que tienes.</p>
     </div>
-    <a class="button primary" href="{{ url_for('inventory.new') }}"
-      >{{ icon('plus') }}Añadir prenda</a
-    >
+    <a class="button primary"
+       href="{{ url_for('inventory.new') }}">{{ icon("plus") }}Añadir prenda</a>
   </div>
-  <div class="location-tabs" aria-label="Armarios por ubicación">
-    <a
-      class="tab {{ 'selected' if not request.args.get('location_id') }}"
-      href="{{ url_for('inventory.index') }}"
-      >Todos mis armarios</a
-    >{% for loc in locations %}<a
-      class="tab {{ 'selected' if request.args.get('location_id') == loc.id|string }}"
-      href="{{ url_for('inventory.index', location_id=loc.id) }}"
-      >{{ icon('pin') }}{{ loc.name }}</a
-    >{% endfor %}
-  </div>
-  <form class="filters" method="get">
-    <label class="search-label"
-      >{{ icon('search') }}<input
-        name="q"
-        aria-label="Buscar prendas"
-        value="{{ request.args.get('q','') }}"
-        placeholder="Busca una prenda, marca o color…"
-        maxlength="120" /></label
-    ><label class="sr-only" for="filter-location">Ubicación</label
-    ><select id="filter-location" name="location_id">
-      <option value="">Cualquier ubicación</option>
-      {{ location_options(request.args.get('location_id',0)|int) }}</select
-    ><label class="sr-only" for="filter-category">Categoría</label
-    ><select id="filter-category" name="category_id">
-      <option value="">Todas las categorías</option>
-      {% for cat in categories %}<option
-        value="{{ cat.id }}"
-        {{ 'selected' if request.args.get('category_id') == cat.id|string }}
-      >
-        {{ cat.name }}
-      </option>{% endfor %}</select
-    ><label class="sr-only" for="filter-season">Temporada</label
-    ><select id="filter-season" name="season">
-      <option value="">Cualquier temporada</option>
-      {% for season in seasons %}<option
-        {{ 'selected' if request.args.get('season') == season }}
-      >
-        {{ season }}
-      </option>{% endfor %}</select
-    ><label class="check-label"
-      ><input
-        type="checkbox"
-        name="favorite"
-        value="1"
-        {{ 'checked' if request.args.get('favorite') == '1' }}
-      />Favoritos</label
-    ><label class="check-label"
-      ><input
-        type="checkbox"
-        name="archived"
-        value="1"
-        {{ 'checked' if request.args.get('archived') == '1' }}
-      />Archivo</label
-    ><button class="button small">Filtrar</button>{% if request.args %}<a
-      class="text-link"
-      href="{{ url_for('inventory.index') }}"
-      >Limpiar</a
-    >{% endif %}
-  </form>
+  {% if locations %}
+    <nav class="location-tabs" aria-label="Armarios por ubicación">
+      <a class="tab{% if not request.args.get('location_id') %} selected{% endif %}"
+         href="{{ filter_url(location_id=none) }}">Todos mis armarios</a>
+      {% for loc in locations %}<a class="tab{% if request.args.get('location_id') == loc.id|string %} selected{% endif %}"
+   href="{{ filter_url(location_id=loc.id) }}">{{ loc.name }}</a>{% endfor %}
+      <a class="tab tab-manage"
+         href="{{ url_for('settings.locations') }}"
+         aria-label="Gestionar ubicaciones">{{ icon("plus") }}</a>
+    </nav>
+    <form class="filters" method="get">
+      <label class="search-field">
+        {{ icon("search") }}<input type="search"
+       name="q"
+       aria-label="Buscar prendas"
+       value="{{ request.args.get('q', '') }}"
+       placeholder="Buscar en tu armario"
+       maxlength="120">
+      </label>
+      <label class="filter-select"><span class="sr-only">Categoría</span><select name="category_id" aria-label="Filtrar por categoría"><option value="">Todas las categorías</option>{% for cat in categories %}<option value="{{ cat.id }}"
+        {% if request.args.get('category_id') == cat.id|string %} selected{% endif %}>{{ cat.name }}</option>{% endfor %}</select></label>
+      <label class="filter-select">
+        <span class="sr-only">Ubicación</span><select name="location_id"
+        aria-label="Filtrar por ubicación">
+          <option value="">Todos los espacios</option>
+          {{ location_options(request.args.get('location_id',0)|int) }}
+        </select>
+      </label>
+      <label class="filter-select"><span class="sr-only">Temporada</span><select name="season" aria-label="Filtrar por temporada"><option value="">Todo el año</option>{% for season in seasons %}<option{% if request.args.get('season') == season %} selected{% endif %}>{{ season }}</option>{% endfor %}</select></label>
+      <button class="button filter-button"
+              data-filter-toggle>{{ icon("filter") }}<span data-filter-label>Filtrar</span></button>
+      <div class="filter-options">
+        <label class="check-label"><input type="checkbox"
+       name="favorite"
+       value="1"
+       {% if request.args.get('favorite') == '1' %} checked{% endif %}>Solo favoritos</label>
+        <label class="check-label"><input type="checkbox"
+       name="archived"
+       value="1"
+       {% if request.args.get('archived') == '1' %} checked{% endif %}>Ver archivo</label>
+        {% if request.args %}<a class="text-link"
+   href="{{ url_for('inventory.index') }}">Restablecer</a>{% endif %}
+        <label class="sort-control"><span>Ordenar por</span><select name="sort" aria-label="Ordenar prendas"><option value="newest"{% if sort == 'newest' %} selected{% endif %}>Más recientes</option><option value="oldest"{% if sort == 'oldest' %} selected{% endif %}>Más antiguas</option><option value="name"{% if sort == 'name' %} selected{% endif %}>Nombre, A–Z</option><option value="name_desc"{% if sort == 'name_desc' %} selected{% endif %}>Nombre, Z–A</option></select></label>
+      </div>
+    </form>
+  {% endif %}
   {% if garments %}
-    <form
-      id="bulk"
-      method="post"
-      action="{{ url_for('inventory.move') }}"
-      class="bulk-bar"
-    >
-      {{ csrf() }}<span
-        ><strong data-selection-count>0</strong> seleccionadas</span
-      ><label for="bulk-destination">Trasladar a</label
-      ><select id="bulk-destination" name="destination_id">
-        {{ location_options() }}</select
-      ><button class="button small" type="submit">
-        Mover selección {{ icon('arrow') }}
-      </button>
+    <div class="collection-toolbar"><p><strong>{{ count }}</strong> prendas{% if count != total %} de {{ total }} en tu colección{% endif %}</p><span class="selection-hint">Selecciona prendas para trasladarlas juntas</span></div>
+    <form id="bulk"
+          class="bulk-bar"
+          method="post"
+          action="{{ url_for('inventory.move') }}"
+          data-bulk-toolbar>
+      {{ csrf() }}<span><strong data-selection-count>0</strong> seleccionadas</span><label for="bulk-destination">Trasladar a</label><select id="bulk-destination" name="destination_id">{{ location_options() }}</select><button class="button small primary">Mover selección {{ icon("arrow") }}</button><button class="icon-button"
+        type="button"
+        data-clear-selection
+        aria-label="Cancelar selección">{{ icon("close") }}</button>
     </form>
     <div class="garment-grid">
-      {% for item in garments %}<article class="garment-card">
-        <div class="card-image">
-          <a href="{{ url_for('inventory.detail', gid=item.id) }}"
-            >{{ photo(item) }}</a
-          ><input
-            class="card-checkbox"
-            type="checkbox"
-            name="garment_ids"
-            value="{{ item.id }}"
-            form="bulk"
-            aria-label="Seleccionar {{ item.name }}"
-          />{% if item.favorite %}<span
-            class="favorite-mark"
-            aria-label="Favorita"
-            >{{ icon('heart') }}</span
-          >{% endif %}
-        </div>
-        <div class="card-caption">
-          <span class="category-label">{{ item.category_name }}</span>
-          <h2>
+      {% for item in garments %}
+        <article class="garment-card">
+          <div class="card-image tone-{{ loop.index0 % 4 }}">
             <a href="{{ url_for('inventory.detail', gid=item.id) }}"
-              >{{ item.name }}</a
-            >
-          </h2>
-          <p>
-            {{ icon('pin') }}{{ item.location_name }}{% if item.brand %}<span
-              >· {{ item.brand }}</span
-            >{% endif %}
-          </p>
-        </div>
-      </article>{% endfor %}
+               class="photo-link">{{ photo(item) }}</a>
+            <input class="card-checkbox"
+                   type="checkbox"
+                   name="garment_ids"
+                   value="{{ item.id }}"
+                   form="bulk"
+                   aria-label="Seleccionar {{ item.name }}">
+            <form class="card-favorite"
+                  method="post"
+                  action="{{ url_for('inventory.favorite', gid=item.id) }}">
+              {{ csrf() }}<input type="hidden" name="return_view" value="inventory">
+              {% for key,value in request.args.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+              {% endfor %}
+              <button class="icon-button{% if item.favorite %} is-favorite{% endif %}"
+                      aria-label="{{ 'Quitar de favoritos' if item.favorite else 'Añadir a favoritos' }}: {{ item.name }}"
+                      aria-pressed="{{ 'true' if item.favorite else 'false' }}">{{ icon("heart") }}</button>
+            </form>
+            {% if item.archived %}<span class="photo-badge">Archivada</span>{% endif %}
+          </div>
+          <div class="card-caption"><span class="category-label">{{ item.category_name }}</span><h2><a href="{{ url_for('inventory.detail', gid=item.id) }}">{{ item.name }}</a></h2><p>{{ icon("pin") }}{{ item.location_name }}{% if item.color %}<span class="card-color">{{ item.color }}</span>{% endif %}</p></div>
+        </article>
+      {% endfor %}
     </div>
-    {% if page > 1 or count > page*48 %}<nav
-      class="pagination"
-      aria-label="Páginas"
-    >
-      {% if page > 1 %}<a class="button" href="{{ page_url(page-1) }}"
-        >Anterior</a
-      >{% endif %}<span>Página {{ page }}</span>{% if count > page*48 %}<a
-        class="button"
-        href="{{ page_url(page+1) }}"
-        >Siguiente</a
-      >{% endif %}
-    </nav>{% endif %}
+    {% if page > 1 or count > page*48 %}<nav class="pagination" aria-label="Páginas">{% if page > 1 %}<a class="button" href="{{ page_url(page-1) }}">Anterior</a>{% endif %}<span>Página {{ page }}</span>{% if count > page*48 %}<a class="button" href="{{ page_url(page+1) }}">Siguiente</a>{% endif %}</nav>{% endif %}
+  {% elif not locations %}
+    <section class="welcome-panel">
+      <div class="welcome-art">{{ icon('hanger', 'welcome-hanger') }}<span class="art-label">EST. AHORA</span></div>
+      <div>
+        <p class="eyebrow">TU ESPACIO, A TU MANERA</p>
+        <h2>Empieza por un lugar.</h2>
+        <p>Crea tu primer armario y añade las prendas que quieres tener a la vista. Tú eliges cómo organizarlo.</p>
+        <a class="button primary"
+           href="{{ url_for('settings.onboarding') }}">Crear mi primer espacio {{ icon("arrow") }}</a>
+        <p class="welcome-footnote">Un nombre, una foto, un sitio. El resto puede esperar.</p>
+      </div>
+    </section>
   {% else %}
-    <div class="empty-state">
-      <div class="empty-icon">{{ icon('hanger') }}</div>
-      <p class="eyebrow">UN POCO DE ORDEN, MUCHAS POSIBILIDADES</p>
-      <h2>
-        {{ 'No hay prendas con estos filtros' if request.args else 'Tu armario empieza aquí' }}
-      </h2>
-      <p>
-        {{ 'Prueba otra ubicación o limpia los filtros para ver más prendas.' if request.args else 'Añade una foto, ponle nombre y elige dónde está. El resto puede esperar.' }}
-      </p>
-      <a
-        class="button primary"
-        href="{{ url_for('inventory.index') if request.args else url_for('inventory.new') }}"
-        >{{ 'Ver todo el armario' if request.args else 'Añadir mi primera prenda' }}{{ icon('arrow') }}</a
-      >
-    </div>
+    <section class="empty-state">
+      <div class="empty-icon">{{ icon("hanger") }}</div>
+      <p class="eyebrow">TODO EMPIEZA CON UNA PRENDA</p>
+      <h2>{{ 'Ninguna prenda por aquí' if request.args else 'Dale forma a tu armario' }}</h2>
+      <p>{{ 'Prueba otros filtros o vuelve a la colección completa.' if request.args else 'Fotografía una prenda, ponle nombre y elige su espacio. Es así de sencillo.' }}</p>
+      <a class="button primary"
+         href="{{ url_for('inventory.index') if request.args else url_for('inventory.new') }}">{{ 'Ver toda la colección' if request.args else 'Añadir mi primera prenda' }}{{ icon("arrow") }}</a>
+    </section>
   {% endif %}
 {% endblock %}

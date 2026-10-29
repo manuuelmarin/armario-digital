@@ -1,4 +1,5 @@
-{% extends 'base.html' %}{% from 'macros.html' import csrf,icon with context %}{% block content %}
+{% extends "base.html" %}{% from 'macros.html' import csrf,icon with context %}
+{% block content %}
   <div class="page-heading">
     <div>
       <p class="eyebrow">TU ARMARIO, A TU MANERA</p>
@@ -13,9 +14,7 @@
         transportable.
       </p>
       <form method="post" action="{{ url_for('settings.backup') }}">
-        {{ csrf() }}<button class="button primary">
-          Crear y descargar copia {{ icon('arrow') }}
-        </button>
+        {{ csrf() }}<button class="button primary">Crear y descargar copia {{ icon("arrow") }}</button>
       </form>
       <p class="muted">
         Conserva otra copia fuera de este equipo. Al arrancar, se crea una copia
@@ -34,31 +33,26 @@
       </details>
       <h3 class="section-space">Copias guardadas</h3>
       <ul class="backup-list">
-        {% for file in copies %}<li>
-          <a href="{{ url_for('settings.download_backup',name=file.name) }}"
-            >{{ file.name }}</a
-          >
-        </li>{% else %}<li class="muted">
-          Aún no hay copias guardadas.
-        </li>{% endfor %}
+        {% for file in copies %}
+          <li>
+            <a href="{{ url_for('settings.download_backup',name=file.name) }}">{{ file.name }}</a>
+          </li>
+        {% else %}
+          <li class="muted">Aún no hay copias guardadas.</li>
+        {% endfor %}
       </ul>
     </section>
     <div>
       <section class="panel">
         <h2>Categorías</h2>
         <div class="pill-list">
-          {% for cat in categories %}<span class="pill"
-            >{{ cat.name }}</span
-          >{% endfor %}
+          {% for cat in categories %}<span class="pill">{{ cat.name }}</span>{% endfor %}
         </div>
         <form method="post" action="{{ url_for('settings.category') }}">
-          {{ csrf() }}<label
-            >Nueva categoría<input
-              name="name"
-              required
-              maxlength="80"
-              placeholder="Por ejemplo, bañadores" /></label
-          ><button class="button">Añadir categoría</button>
+          {{ csrf() }}<label>Nueva categoría<input name="name"
+       required
+       maxlength="80"
+       placeholder="Por ejemplo, bañadores" /></label><button class="button">Añadir categoría</button>
         </form>
       </section>
       <section class="panel section-space">
@@ -66,7 +60,9 @@
         <p>Tus datos se guardan en:</p>
         <p class="path">{{ data_dir }}</p>
         <p class="muted">
-          Versión {{ version }} · Interfaz en español.<br />Para cambiar de
+          Versión {{ version }} · Interfaz en español.
+          <br />
+          Para cambiar de
           carpeta, cierra la app y usa ARMARIO_DATA_DIR. Traslada tus datos
           mediante una copia verificada.
         </p>

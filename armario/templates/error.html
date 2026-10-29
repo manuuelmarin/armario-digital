@@ -1,11 +1,4 @@
-{% extends 'base.html' %}{% block content %}<section class="narrow panel">
-  <p class="eyebrow">REVISA ESTE PASO</p>
-  <h1>No se ha completado</h1>
-  <p role="alert">{{ message }}</p>
-  <div class="action-row">
-    <button class="button" type="button" data-go-back>Volver</button
-    ><a class="button primary" href="{{ url_for('inventory.index') }}"
-      >Ir al armario</a
-    >
-  </div>
-</section>{% endblock %}
+{% extends "base.html" %}
+{% from 'macros.html' import icon with context %}
+{% block title %}Revisar este paso · Armario Digital{% endblock %}
+{% block content %}<section class="narrow panel confirm-panel"><div class="empty-icon">{{ icon("hanger") }}</div><p class="eyebrow">REVISAR ESTE PASO</p><h1>No se ha completado.</h1><p role="alert">{{ message }}</p><div class="action-row"><button class="button" type="button" data-go-back>Volver y revisar</button><a class="button primary" href="{{ url_for('inventory.index') }}">Ir al armario</a></div></section>{% endblock %}
