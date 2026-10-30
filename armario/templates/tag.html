@@ -20,8 +20,7 @@
   <form method="post"
         action="{{ url_for('organization.delete',kind='etiqueta',item_id=tag.id) }}"
         data-confirm="¿Eliminar la etiqueta? Las prendas se conservarán.">
-    {{ csrf() }}<input type="hidden"
-       name="confirm"
-       value="1"><button class="text-link danger">Eliminar etiqueta</button>
+    {{ csrf() }}<label><input type="checkbox" name="confirm" value="1" required>
+    Confirmo esta eliminación</label><button class="text-link danger">Eliminar etiqueta</button>
   </form>
 {% endblock %}

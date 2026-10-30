@@ -55,9 +55,8 @@
     <form method="post"
           action="{{ url_for('boards.delete_board',bid=board.id) }}"
           data-confirm="¿Eliminar el tablero y sus imágenes?">
-      {{ csrf() }}<input type="hidden"
-       name="confirm"
-       value="1"><button class="text-link danger">Eliminar tablero</button>
+      {{ csrf() }}<label><input type="checkbox" name="confirm" value="1" required>
+      Confirmo esta eliminación</label><button class="text-link danger">Eliminar tablero</button>
     </form>
   </details>
   <script src="{{ url_for('static',filename='board.js',v=version) }}" defer></script>
