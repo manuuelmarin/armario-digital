@@ -8,7 +8,9 @@ Con la aplicación abierta: **Ajustes → Crear y descargar copia**. Con ella ce
 .venv\Scripts\python.exe run.py backup
 ```
 
-Cada ZIP incluye `wardrobe.sqlite`, exactamente sus imágenes referenciadas (master, preview y miniatura cuando existan) y `manifest.json` con esquema, fecha y hashes SHA-256. No incluye cachés, entornos, secretos de sesión ni copias anteriores. Se usa `sqlite3.Connection.backup`, no una copia ciega del archivo abierto. Las mutaciones de la app quedan bloqueadas durante el snapshot y el empaquetado de fotos.
+Cada ZIP incluye `wardrobe.sqlite`, exactamente sus imágenes referenciadas (master, preview y miniatura cuando existan) y `manifest.json` con esquema, fecha y hashes SHA-256. Incluye imágenes de prendas y tableros, y la última previsión guardada en SQLite. No incluye entornos, secretos de sesión ni copias anteriores. Se usa `sqlite3.Connection.backup`, no una copia ciega del archivo abierto. Las mutaciones de la app quedan bloqueadas durante el snapshot y el empaquetado de fotos.
+
+Desde el esquema 5, las huellas persistentes se comparan con cada imagen antes de crear una copia y durante su verificación. La primera huella de imágenes antiguas se establece al migrar: no permite detectar cambios anteriores. La limpieza de copias diarias es manual, conserva las manuales y las previas a migraciones y verifica las copias que se van a mantener antes de borrar las antiguas.
 
 La copia se escribe con extensión temporal y se renombra solo si termina. Una imagen referenciada ausente hace fallar la copia; no se entrega un archivo aparentemente completo. Las copias manuales se conservan en `DATA_DIR/backups`, además de la descarga elegida por el navegador.
 
