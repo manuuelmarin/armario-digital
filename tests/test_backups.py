@@ -186,3 +186,35 @@ def test_backup_creation_respects_restore_size_limit(app, add_garment, monkeypat
     with pytest.raises(ValueError, match="límite"):
         create_backup(root)
     assert not list((root / "backups").glob("*.zip"))
+
+
+def test_backup_rejects_a_valid_but_modified_image(client, add_garment, db, app):
+    from PIL import Image
+
+    add_garment(photos=photograph())
+    name = db.execute("SELECT thumbnail FROM garment_images").fetchone()[0]
+    path = app.config["DATA_DIR"] / "images" / name
+    Image.new("RGB", (60, 60), "red").save(path, "WEBP")
+    with pytest.raises(ValueError, match="huella original"):
+        create_backup(app.config["DATA_DIR"])
+
+
+def test_prune_daily_copies_keeps_manual_and_migration_copies(client, app, monkeypatch):
+    folder = app.config["DATA_DIR"] / "backups"
+    folder.mkdir(exist_ok=True)
+    for name in (
+        "daily-20260101.zip",
+        "daily-20260102.zip",
+        "manual-20260101.zip",
+        "before-schema-4.zip",
+    ):
+        (folder / name).write_bytes(b"test")
+    assert post(client, "/copias/limpiar", {"keep": "1"}).status_code == 400
+    assert post(client, "/copias/limpiar", {"keep": "1", "confirm": "1"}).status_code == 400
+    assert (folder / "daily-20260101.zip").exists()
+    monkeypatch.setattr("armario.settings.verify_backup", lambda path: {})
+    assert post(client, "/copias/limpiar", {"keep": "1", "confirm": "1"}).status_code == 302
+    assert not (folder / "daily-20260101.zip").exists()
+    assert (folder / "daily-20260102.zip").exists()
+    assert (folder / "manual-20260101.zip").exists()
+    assert (folder / "before-schema-4.zip").exists()

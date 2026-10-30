@@ -221,7 +221,7 @@ def test_upgrade_v3_preserves_photo_and_creates_backup(tmp_path):
     try:
         assert db.execute("SELECT is_primary FROM garment_images").fetchone()[0] == 0
         assert db.execute("PRAGMA foreign_key_check").fetchall() == []
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
     finally:
         db.close()
     assert list((root / "backups").glob("before-schema-3*.zip"))
