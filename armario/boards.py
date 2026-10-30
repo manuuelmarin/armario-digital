@@ -91,8 +91,8 @@ def add(bid):
                         if image
                         else (None, None, None)
                     ),
-                    (count % 4) * 220,
-                    (count // 4) * 260,
+                    (count % 9) * 220,
+                    (count // 9) * 170,
                 ),
             )
     except Exception:
