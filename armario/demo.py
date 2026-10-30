@@ -9,7 +9,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from .db import connect
-from .images import store_image
+from .images import record_integrity, store_image
 
 SAMPLES = (
     ("Camisa Oxford", "Camisas", "shirt", "#afc2ca", "Azul niebla", 1, 69),
@@ -203,6 +203,9 @@ def seed_demo(root: Path) -> None:
                     ),
                 ).lastrowid
                 photo = store_image(garment_illustration(kind, color), root / "images")
+                record_integrity(
+                    db, root / "images", [photo["filename"], photo["thumbnail"], photo["preview"]]
+                )
                 db.execute(
                     "INSERT INTO garment_images(garment_id,filename,thumbnail,preview,digest,width,height,preview_width,thumbnail_width) VALUES (?,?,?,?,?,?,?,?,?)",
                     (

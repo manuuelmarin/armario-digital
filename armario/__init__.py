@@ -105,6 +105,9 @@ def create_app(config=None):
                 "looks": "Outfits",
                 "trips": "Maletas",
                 "settings": "Mi espacio",
+                "organization": "Organización",
+                "boards": "Inspiración",
+                "weather": "Tiempo",
             },
         }
 
@@ -126,8 +129,8 @@ def create_app(config=None):
             return "Host no permitido.", 400
         return render_template("error.html", message=error.description), error.code
 
-    from . import inventory, looks, settings, trips
+    from . import boards, inventory, looks, organization, settings, trips, weather
 
-    for module in (inventory, looks, trips, settings):
+    for module in (inventory, looks, trips, settings, organization, boards, weather):
         app.register_blueprint(module.bp)
     return app

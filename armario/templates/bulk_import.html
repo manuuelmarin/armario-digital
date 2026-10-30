@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, location_options with context %}
+{% block title %}Importar prendas · Armario Digital{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">TU CATÁLOGO</p>
+      <h1>Importar fotografías</h1>
+      <p class="subtitle">Cada fotografía creará una prenda independiente.</p>
+    </div>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="panel editor">
+    {{ csrf() }}
+    <label for="photos">Fotografías (hasta 20)</label>
+    <input id="photos"
+           type="file"
+           name="photos"
+           accept="image/jpeg,image/png,image/webp"
+           multiple
+           required>
+    <p class="muted">JPEG, PNG o WebP. Máximo 10 MB por foto y 64 MB por envío. Se utiliza el nombre del archivo como nombre inicial; puedes editarlo después.</p>
+    <label for="category">Categoría</label><select id="category" name="category_id" required>{% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}</select>
+    <label for="location">Ubicación</label><select id="location"
+        name="location_id"
+        required>{{ location_options() }}</select>
+    <div class="action-row">
+      <button class="button primary">Importar prendas</button><a class="button"
+   href="{{ url_for('inventory.index') }}">Cancelar</a>
+    </div>
+  </form>
+{% endblock %}

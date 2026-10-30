@@ -291,3 +291,27 @@ def test_primary_photo_is_used_across_views_and_scoped_to_garment(client, add_ga
     )
     assert post(client, f"/prendas/{gid}/fotos/{images[1]['id']}/eliminar").status_code == 302
     assert images[0]["thumbnail"].encode() in client.get("/").data
+
+
+def test_bulk_import_is_atomic_and_keeps_each_photo(client, db, app):
+    invalid = post(
+        client,
+        "/prendas/importar",
+        {
+            "category_id": 2,
+            "location_id": 1,
+            "photos": [photograph(), (io.BytesIO(b"invalid"), "bad.png")],
+        },
+    )
+    assert invalid.status_code == 400
+    assert db.execute("SELECT count(*) FROM garments").fetchone()[0] == 0
+    assert not list((app.config["DATA_DIR"] / "images").iterdir())
+    response = post(
+        client,
+        "/prendas/importar",
+        {"category_id": 2, "location_id": 2, "photos": [photograph("red"), photograph("blue")]},
+    )
+    assert response.status_code == 302
+    assert db.execute("SELECT count(*) FROM garments WHERE location_id=2").fetchone()[0] == 2
+    assert db.execute("SELECT count(*) FROM garment_images").fetchone()[0] == 2
+    assert db.execute("SELECT count(*) FROM image_integrity").fetchone()[0] == 6

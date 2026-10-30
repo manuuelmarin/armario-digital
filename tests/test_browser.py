@@ -227,3 +227,52 @@ def test_demo_retina_images_searchable_picker_and_mobile_filters(tmp_path):
         page.goto(base)
         page.screenshot(path=str(screenshots / "demo-mobile.png"))
         browser.close()
+
+
+def test_organization_board_and_import_in_browser(app, tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    from .conftest import post
+
+    client = app.test_client()
+    post(client, "/inspiracion/nuevo", {"name": "Ideas"})
+    post(client, "/inspiracion/1/anadir", {"caption": "Una idea", "photo": photograph()})
+    with running_app(app) as base, sync_playwright() as playwright:
+        browser = playwright.chromium.launch(**browser_options())
+        page = browser.new_page(viewport={"width": 1440, "height": 900})
+        page.set_default_timeout(5000)
+        for width in (1440, 390):
+            page.set_viewport_size({"width": width, "height": 900})
+            for route in (
+                "/",
+                "/prendas/importar",
+                "/colecciones",
+                "/inspiracion",
+                "/inspiracion/1",
+                "/tiempo",
+                "/ajustes",
+            ):
+                page.goto(base + route)
+                assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), (
+                    route,
+                    width,
+                )
+                if route == "/inspiracion/1":
+                    assert page.locator(".board-item img").evaluate(
+                        "i => i.complete && i.naturalWidth > 0"
+                    )
+                    assert page.locator(".board-item").evaluate(
+                        "i => getComputedStyle(i).position === 'absolute'"
+                    )
+                    page.screenshot(path=str(tmp_path / f"board-{width}.png"), full_page=True)
+        page.set_viewport_size({"width": 1440, "height": 900})
+        page.goto(base + "/inspiracion/1")
+        handle = page.locator(".board-drag")
+        box = handle.bounding_box()
+        page.mouse.move(box["x"] + 5, box["y"] + 5)
+        page.mouse.down()
+        page.mouse.move(box["x"] + 80, box["y"] + 25, steps=4)
+        page.mouse.up()
+        page.wait_for_load_state("load")
+        assert int(page.locator('#board-form-1 input[name="x"]').input_value()) > 0
+        browser.close()

@@ -18,6 +18,10 @@ Aplicación local desarrollada con Python y SQLite. Los espacios son configurabl
 - **Organización flexible.** Espacios con nombres propios, búsqueda sin tildes, filtros combinables, ordenación, favoritos y archivo.
 - **Outfits.** Combinaciones guardadas con búsqueda, filtro de favoritos, vista completa y duplicación; el selector visual permite consultar dónde están las prendas.
 - **Maletas.** Listas que incorporan prendas y outfits sin duplicados, objetos adicionales, copia o vuelta y confirmación explícita de traslados. Se pueden imprimir o guardar como PDF desde el navegador.
+- **Colecciones y etiquetas.** Agrupa y filtra prendas, conservando sus ubicaciones y las relaciones con prendas archivadas.
+- **Inspiración.** Tableros locales con imágenes, notas y enlaces; collage con posición y tamaño ajustables y arrastre opcional.
+- **Fotografías por lotes.** Crea una prenda por imagen, con categoría y ubicación iniciales comunes.
+- **Tiempo opcional.** Consulta manual de Open-Meteo con coordenadas elegidas, fecha de actualización y última previsión guardada.
 - **Recuperación.** Copias consistentes de SQLite y fotografías, verificación de integridad y restauración offline con conservación del estado anterior.
 
 El archivo conserva las relaciones entre prendas, outfits y viajes. Preparar una maleta no cambia la ubicación de las prendas.
@@ -81,7 +85,7 @@ Antes de actualizar, crea una copia desde Ajustes, cierra el proceso, actualiza 
 
 ## Alcance de esta versión
 
-La versión 0.2 es una preview para uso local y monousuario. Están pendientes los tableros de inspiración, meteorología, colecciones y editor libre de collages. La compatibilidad de servidor se comprueba en Windows y Linux; el lanzador gráfico y la experiencia de instalación deben probarse en cada plataforma de distribución.
+La versión 0.2 es una preview para uso local y monousuario. El collage incluye posición y tamaño, y no incluye exportación a imagen. La meteorología requiere conexión y se consulta solo por petición expresa; Open-Meteo recibe las coordenadas y la IP. El servicio gratuito se limita a uso no comercial. La compatibilidad de servidor se comprueba en Windows y Linux; el lanzador gráfico y la experiencia de instalación deben probarse en cada plataforma de distribución.
 
 Publicar el código y ofrecer un servicio accesible por internet requieren revisiones diferentes. El proceso actual escucha únicamente en loopback y no incorpora cuentas ni controles multiusuario. La elección de licencia de distribución del código está pendiente.
 

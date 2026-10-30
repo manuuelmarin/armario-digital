@@ -8,8 +8,7 @@
       <h1>{{ 'Prendas archivadas' if request.args.get("archived") == '1' else 'Mi armario' }}<span class="count">{{ count }}</span></h1>
       <p class="subtitle">Una nueva perspectiva de todo lo que tienes.</p>
     </div>
-    <a class="button primary"
-       href="{{ url_for('inventory.new') }}">{{ icon("plus") }}Añadir prenda</a>
+    <div class="action-row"><a class="button" href="{{ url_for('inventory.bulk_import') }}">Importar fotografías</a><a class="button primary" href="{{ url_for('inventory.new') }}">{{ icon("plus") }}Añadir prenda</a></div>
   </div>
   {% if locations %}
     <nav class="location-tabs" aria-label="Armarios por ubicación">
@@ -30,6 +29,10 @@
        placeholder="Buscar en tu armario"
        maxlength="120">
       </label>
+      <label class="filter-select"><span class="sr-only">Etiqueta</span><select name="tag_id" aria-label="Filtrar por etiqueta"><option value="">Todas las etiquetas</option>{% for tag in all_tags %}<option value="{{ tag.id }}"
+        {% if request.args.get('tag_id') == tag.id|string %}selected{% endif %}>{{ tag.name }}</option>{% endfor %}</select></label>
+      <label class="filter-select"><span class="sr-only">Colección</span><select name="collection_id" aria-label="Filtrar por colección"><option value="">Todas las colecciones</option>{% for collection in all_collections %}<option value="{{ collection.id }}"
+        {% if request.args.get('collection_id') == collection.id|string %}selected{% endif %}>{{ collection.name }}</option>{% endfor %}</select></label>
       <label class="filter-select"><span class="sr-only">Categoría</span><select name="category_id" aria-label="Filtrar por categoría"><option value="">Todas las categorías</option>{% for cat in categories %}<option value="{{ cat.id }}"
         {% if request.args.get('category_id') == cat.id|string %} selected{% endif %}>{{ cat.name }}</option>{% endfor %}</select></label>
       <label class="filter-select">

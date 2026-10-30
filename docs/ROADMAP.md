@@ -10,13 +10,12 @@
 ## Próximas iteraciones
 
 1. Paginación de selectores, ordenación de imágenes y duplicación controlada de prendas.
-2. Tableros de inspiración con fotos locales y enlaces, sin descargas arbitrarias del servidor.
-3. Meteorología opcional mediante un proveedor configurado, con caché, fecha de actualización y funcionamiento offline del catálogo.
-4. Retención de copias configurable y recordatorio de antigüedad dentro de la aplicación.
+2. Mejorar la búsqueda de localidades para la meteorología y añadir exportación de collages.
+3. Ampliar el recordatorio de copias y estudiar una política automática sin riesgo de borrar la única copia válida.
 
 ## Según validación de uso
 
-Etiquetas y colecciones, temporadas de outfits, espacios jerárquicos, plantillas de viaje, importación/exportación legible, modo oscuro y collage libre. El empaquetado de escritorio y la sincronización requieren evaluar instalación, seguridad y recuperación en su plataforma.
+Temporadas de outfits, espacios jerárquicos, plantillas de viaje, importación/exportación legible y modo oscuro. El empaquetado de escritorio y la sincronización requieren evaluar instalación, seguridad y recuperación en su plataforma.
 
 ## Distribución pública
 

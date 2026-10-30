@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from flask import (
     Blueprint,
     abort,
@@ -10,7 +12,7 @@ from flask import (
     url_for,
 )
 
-from .backups import create_backup
+from .backups import create_backup, verify_backup
 from .db import get_db
 from .domain import text_value
 from .queries import entity
@@ -85,7 +87,42 @@ def index():
         if (root / "backups").exists()
         else []
     )
-    return render_template("settings.html", data_dir=root, copies=copies)
+    regular = [p for p in copies if p.name.startswith(("daily-", "manual-")) and not p.is_symlink()]
+    latest = max((p.stat().st_mtime for p in regular), default=None)
+    backup_age = max(0, int((datetime.now(UTC).timestamp() - latest) / 86400)) if latest else None
+    return render_template("settings.html", data_dir=root, copies=copies, backup_age=backup_age)
+
+
+@bp.post("/copias/limpiar")
+def prune_daily_backups():
+    """Delete only old daily backups after an explicit action; preserve all others."""
+    if request.form.get("confirm") != "1":
+        raise ValueError("Confirma la limpieza de copias automáticas.")
+    try:
+        keep = int(request.form.get("keep", ""))
+    except ValueError as exc:
+        raise ValueError("Introduce un número válido de copias.") from exc
+    if not 1 <= keep <= 365:
+        raise ValueError("Conserva entre 1 y 365 copias diarias.")
+    folder = current_app.config["DATA_DIR"] / "backups"
+    copies = sorted(
+        (p for p in folder.glob("daily-*.zip") if p.is_file() and not p.is_symlink()),
+        key=lambda p: p.name,
+        reverse=True,
+    )
+    # Never discard older copies if the retained daily archives do not verify.
+    if len(copies) > keep:
+        for copy in copies[:keep]:
+            try:
+                verify_backup(copy)
+            except Exception as exc:
+                raise ValueError(
+                    "No se ha borrado nada: una de las copias que se conservarían no supera la verificación."
+                ) from exc
+    for copy in copies[keep:]:
+        copy.unlink()
+    flash(f"Se han eliminado {max(0, len(copies) - keep)} copias diarias antiguas.", "success")
+    return redirect(url_for("settings.index"))
 
 
 @bp.post("/ajustes/categorias")

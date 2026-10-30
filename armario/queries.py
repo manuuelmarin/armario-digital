@@ -21,7 +21,7 @@ def garment(gid):
 
 
 def entity(table, item_id):
-    if table not in {"outfits", "trips", "locations"}:
+    if table not in {"outfits", "trips", "locations", "collections", "tags", "boards"}:
         raise ValueError("Unsupported entity type")
     row = get_db().execute(f"SELECT * FROM {table} WHERE id=?", (item_id,)).fetchone()
     if row is None:

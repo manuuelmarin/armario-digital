@@ -82,7 +82,7 @@ def main():
                     host="127.0.0.1",
                     port=args.port,
                     threads=4,
-                    max_request_body_size=32 * 1024**2,
+                    max_request_body_size=64 * 1024**2,
                 )
 
     if args.demo:

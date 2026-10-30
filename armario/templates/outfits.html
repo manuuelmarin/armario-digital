@@ -31,9 +31,14 @@
         <div class="empty-icon">{{ icon("outfit") }}</div>
         <p class="eyebrow">LAS MEJORES IDEAS SE GUARDAN</p>
         <h2>{{ 'No hay resultados.' if search or favorite else 'Juntas, encajan.' }}</h2>
-        <p>Combina prendas de tus espacios y crea una biblioteca de looks para cada ocasión.</p>
-        <a class="button primary"
-           href="{{ url_for('looks.edit') }}">Crear mi primer outfit {{ icon("arrow") }}</a>
+        {% if search or favorite %}
+          <p>Prueba otra búsqueda o limpia los filtros.</p>
+          <a class="button" href="{{ url_for('looks.index') }}">Limpiar filtros</a>
+        {% else %}
+          <p>Combina prendas de tus espacios y crea una biblioteca de looks para cada ocasión.</p>
+          <a class="button primary"
+             href="{{ url_for('looks.edit') }}">Crear mi primer outfit {{ icon("arrow") }}</a>
+        {% endif %}
       </section>
     {% endfor %}
   </div>
