@@ -32,13 +32,15 @@ Crea una copia desde Ajustes antes de actualizaciones o cambios importantes. Con
 
 En Colecciones puedes reunir prendas sin cambiar su espacio; las etiquetas permiten filtros adicionales en el inventario. Archivar una prenda conserva las asociaciones existentes. Eliminar una agrupación elimina su relación, no las prendas.
 
-La importación por lotes crea una prenda por fotografía con categoría y espacio comunes. Revisa después nombres y detalles. Admite hasta 20 imágenes, 10 MiB por archivo y 64 MiB por petición, incluido el contenido del formulario. Si falla un archivo, el lote se revierte completo; corrige el problema antes de repetirlo.
+La importación por lotes crea una prenda por fotografía con categoría y espacio comunes. Puedes revisar y editar los nombres antes de importar; sin JavaScript se utilizan los nombres de archivo. Revisa los demás detalles después. Admite hasta 20 imágenes, 10 MiB por archivo y 64 MiB por petición, incluido el contenido del formulario. Si falla un archivo, el lote se revierte completo; corrige el problema antes de repetirlo.
 
 ## Inspiración y tiempo
 
 Crea un tablero en Inspiración y añade imágenes, notas o enlaces HTTP/HTTPS. Ajusta posición y anchura con los campos del formulario; también puedes arrastrar si tienes JavaScript. Los cambios enviados se guardan localmente. El collage no tiene exportación a imagen.
 
 En Tiempo, introduce unas coordenadas y un nombre reconocible. Solo Actualizar consulta al proveedor; la pantalla muestra la última previsión guardada y su fecha. Las coordenadas y la IP se envían a Open-Meteo al solicitarla. Si falla la conexión, se conserva el resultado anterior: revisa su antigüedad antes de utilizarlo.
+
+Selecciona prendas en el inventario para cambiarles la categoría en lote o revisar un traslado; ninguna ubicación cambia hasta confirmar. En Ajustes puedes verificar una copia guardada sin restaurarla.
 
 ## Actualizar sin perder el inventario
 

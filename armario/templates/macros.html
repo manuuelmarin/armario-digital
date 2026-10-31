@@ -78,6 +78,9 @@
               aria-live="polite">{{ garments|length }} disponibles</span>
       </div>
     {% endif %}
+    <span class="muted"
+          data-picker-selected
+          aria-live="polite">{{ selected|length }} seleccionadas</span>
     <div class="picker-grid">
       {% for item in garments %}
         <label class="pick-card"

@@ -64,7 +64,9 @@ def test_full_browser_workflow_and_responsive_layout(app, tmp_path):
             page.get_by_role("checkbox", name="Seleccionar Camisa de prueba").check()
             assert page.locator("[data-selection-count]").inner_text() == "1"
             page.locator("#bulk-destination").select_option("2")
-            page.get_by_role("button", name="Mover selección").click()
+            page.get_by_role("button", name="Revisar traslado").click()
+            assert page.get_by_text("Destino:").is_visible()
+            page.get_by_role("button", name="Confirmar traslado").click()
             page.wait_for_url(base + "/")
             assert "Espacio B" in page.locator(".card-caption").inner_text()
             page.goto(base + "/outfits/nuevo")
@@ -266,6 +268,17 @@ def test_organization_board_and_import_in_browser(app, tmp_path):
                     )
                     page.screenshot(path=str(tmp_path / f"board-{width}.png"), full_page=True)
         page.set_viewport_size({"width": 1440, "height": 900})
+        photo = tmp_path / "imagen.jpg"
+        photo.write_bytes(photograph()[0].getvalue())
+        page.goto(base + "/prendas/importar")
+        page.locator('input[name="photos"]').set_input_files(photo)
+        assert page.locator('input[name="photo_names"]').input_value() == "imagen"
+        page.locator('input[name="photo_names"]').fill("Prenda revisada")
+        page.get_by_role("button", name="Importar prendas").click()
+        assert page.get_by_text("Prenda revisada").first.is_visible()
+        page.goto(base + "/outfits/nuevo")
+        page.locator('input[name="garment_ids"]').first.check()
+        assert page.locator("[data-picker-selected]").inner_text() == "1 seleccionadas"
         page.goto(base + "/inspiracion/1")
         handle = page.locator(".board-drag")
         box = handle.bounding_box()

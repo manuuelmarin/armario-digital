@@ -1,5 +1,11 @@
 # Changelog
 
+## Sin publicar — flujos cotidianos
+
+- Importación con nombres editables, edición de categoría en lote y filtros preservados al marcar favoritos.
+- Revisión previa de traslados, contador de selección en outfits y maletas, y prendas pendientes en maletas.
+- Confirmación de eliminación de fotografías sin JavaScript y verificación de copias guardadas desde Ajustes.
+
 ## Sin publicar — documentación del repositorio
 
 - Entrada con estado, esquema, mapa del sistema y estructura del repositorio.

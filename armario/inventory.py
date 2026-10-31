@@ -11,7 +11,16 @@ from flask import (
 )
 
 from .db import get_db
-from .domain import SEASONS, date_value, identifier, ids, move_garments, price_value, text_value
+from .domain import (
+    SEASONS,
+    date_value,
+    identifier,
+    ids,
+    move_garments,
+    price_value,
+    text_value,
+    validate_garments,
+)
 from .images import record_integrity, remove_files, store_image
 from .queries import GARMENT_SELECT, garment
 
@@ -187,13 +196,22 @@ def bulk_import():
     uploads = [file for file in request.files.getlist("photos") if file.filename]
     if not 1 <= len(uploads) <= 20:
         raise ValueError("Selecciona entre una y veinte fotografías.")
+    names_input = request.form.getlist("photo_names")
+    if names_input and len(names_input) != len(uploads):
+        raise ValueError("La lista de fotografías ha cambiado. Vuelve a seleccionarlas.")
+    if names_input and any(not n.strip() or len(n.strip()) > 120 for n in names_input):
+        raise ValueError("Cada nombre debe tener entre 1 y 120 caracteres.")
     root = current_app.config["DATA_DIR"] / "images"
     created = []
     try:
         with db:
-            for upload in uploads:
+            for index, upload in enumerate(uploads):
                 name = upload.filename.replace("\\", "/").rsplit("/", 1)[-1].rsplit(".", 1)[0]
-                name = name.strip()[:120] or "Prenda sin nombre"
+                name = (
+                    names_input[index].strip()
+                    if names_input
+                    else (name.strip()[:120] or "Prenda sin nombre")
+                )
                 gid = db.execute(
                     "INSERT INTO garments(name,category_id,location_id) VALUES (?,?,?)",
                     (name, category, location),
@@ -275,6 +293,19 @@ def detail(gid):
     )
 
 
+@bp.post("/prendas/traslado/revisar")
+def review_move():
+    selected = ids(request.form.getlist("garment_ids"))
+    db = get_db()
+    rows = validate_garments(db, selected)
+    destination = identifier(request.form, "destination_id")
+    place = db.execute("SELECT * FROM locations WHERE id=?", (destination,)).fetchone()
+    if not place:
+        raise ValueError("La ubicación de destino no existe.")
+    locations = {row["id"]: row["name"] for row in db.execute("SELECT * FROM locations")}
+    return render_template("move_review.html", garments=rows, destination=place, names=locations)
+
+
 @bp.post("/prendas/mover")
 def move():
     selected = ids(request.form.getlist("garment_ids"))
@@ -282,6 +313,28 @@ def move():
     with db:
         changed = move_garments(db, selected, identifier(request.form, "destination_id"))
     flash(f"{changed} prendas trasladadas.", "success")
+    return redirect(url_for("inventory.index"))
+
+
+@bp.post("/prendas/editar-lote")
+def bulk_edit():
+    selected = ids(request.form.getlist("garment_ids"))
+    db = get_db()
+    rows = validate_garments(db, selected)
+    if request.form.get("confirm") != "1":
+        return render_template("bulk_edit.html", garments=rows)
+    category = identifier(request.form, "category_id")
+    if not db.execute("SELECT 1 FROM categories WHERE id=?", (category,)).fetchone():
+        raise ValueError("La categoría no existe.")
+    with db:
+        validate_garments(db, selected)
+        db.executemany(
+            "UPDATE garments SET category_id=? WHERE id=?", [(category, gid) for gid in selected]
+        )
+    flash(
+        f"Categoría actualizada en {len(selected)} prendas. Sus ubicaciones no han cambiado.",
+        "success",
+    )
     return redirect(url_for("inventory.index"))
 
 
@@ -301,6 +354,8 @@ def favorite(gid):
                         "q",
                         "category_id",
                         "location_id",
+                        "tag_id",
+                        "collection_id",
                         "season",
                         "favorite",
                         "archived",
@@ -366,7 +421,7 @@ def primary_image(gid, image_id):
     return redirect(url_for("inventory.detail", gid=gid))
 
 
-@bp.post("/prendas/<int:gid>/fotos/<int:image_id>/eliminar")
+@bp.route("/prendas/<int:gid>/fotos/<int:image_id>/eliminar", methods=["GET", "POST"])
 def delete_image(gid, image_id):
     garment(gid)
     db = get_db()
@@ -375,6 +430,14 @@ def delete_image(gid, image_id):
     ).fetchone()
     if not photo:
         abort(404)
+    if request.method == "GET":
+        return render_template(
+            "confirm.html",
+            title="Eliminar fotografía",
+            message="Se eliminará esta fotografía de la prenda. Las demás fotografías se conservan.",
+        )
+    if request.form.get("confirm") != "1":
+        raise ValueError("Confirma la eliminación de la fotografía.")
     with db:
         db.execute("DELETE FROM garment_images WHERE id=?", (image_id,))
         db.executemany(
