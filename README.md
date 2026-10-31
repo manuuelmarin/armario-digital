@@ -6,7 +6,7 @@
 
 Aplicación local desarrollada con Python y SQLite. Los espacios son configurables, las fotografías permanecen en el dispositivo y la instalación empieza sin datos de ejemplo.
 
-**Preview 0.2.0 · Esquema de datos 7** · Python 3.11+ · Interfaz en español
+**Preview 0.2.0 · Esquema de datos 8** · Python 3.11+ · Interfaz en español
 
 CI: Windows y Linux con Python 3.12; macOS y los lanzadores de Windows requieren validación manual.
 

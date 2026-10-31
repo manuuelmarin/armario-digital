@@ -1,5 +1,10 @@
 # Changelog
 
+## Sin publicar — organización y fotos
+
+- Edición en lote de categoría y adición de temporada o etiqueta; paginación progresiva del selector conservando la selección.
+- Vista previa local de fotos importadas y ordenación de fotografías secundarias. Migración 8 con copia previa y compatibilidad de recuperación.
+
 ## Sin publicar — flujos cotidianos
 
 - Importación con nombres editables, edición de categoría en lote y filtros preservados al marcar favoritos.
