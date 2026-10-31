@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 — 2026-10-31 — auditoría de integridad y recomendaciones
+
+- Corrige sustituciones que podían quitar una chaqueta/accesorio opcional o convertir una pieza única en dos. Las alternativas conservan su capa y las demás prendas; el generador mantiene los controles del outfit guardado incluso sin JavaScript.
+- Vincula cada aprobación a un identificador único y las capturas de recomendación a su versión, evitando aceptar propuestas antiguas tras reutilizar un ID de prenda. Las propuestas anteriores requieren regeneración explícita; prendas, descripciones aprobadas y outfits guardados se conservan.
+- Comprueba bytes reales de fotografías al ejecutar, publicar y guardar resultados, y al aprobar descripciones. Recodifica transparencias sobre fondo claro para que prendas oscuras no desaparezcan en visión.
+- Valida tablas, columnas y ajustes obligatorios según las migraciones al arrancar, crear, verificar y restaurar copias. Rechaza metadatos de formato/esquema con tipos incorrectos.
+- Impide atribuir instrucciones nuevas a tareas con otra versión registrada. Mantiene esquema SQLite 9 y formatos de copia compatibles.
+- Auditoría completa y evidencia en [informe 0.3.1](docs/audits/2026-10-31-project.md); 114 pruebas aprobadas localmente, incluidas siete de navegador, y análisis de las 28 dependencias fijadas sin vulnerabilidades conocidas en la consulta realizada. No se han ejecutado modelos reales.
+
 ## 0.3.0 — 2026-10-31 — asistencia local opcional
 
 - Dos modelos locales independientes mediante Ollama: Qwen3-VL 4B Instruct Q4 para visión y Qwen3 4B Instruct 2507 Q4 para evaluar outfits a partir de descripciones revisadas.
