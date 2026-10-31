@@ -1,6 +1,25 @@
 "use strict";
 
 (() => {
+  const importInput = document.querySelector('#photos[name="photos"][multiple]');
+  const importPreview = document.querySelector("[data-import-preview]");
+  if (importInput && importPreview) {
+    importInput.addEventListener("change", () => {
+      importPreview.replaceChildren();
+      Array.from(importInput.files).forEach((file, index) => {
+        const label = document.createElement("label");
+        label.textContent = `Prenda ${index + 1} · ${file.name}`;
+        const input = document.createElement("input");
+        input.name = "photo_names";
+        input.required = true;
+        input.maxLength = 120;
+        input.value = file.name.replace(/\.[^.]*$/, "").trim().slice(0, 120) || "Prenda sin nombre";
+        label.append(input);
+        importPreview.append(label);
+      });
+    });
+  }
+
   const bulkForm = document.querySelector("#bulk");
   const selection = Array.from(document.querySelectorAll('input[form="bulk"]'));
   const updateSelection = () => {
@@ -49,6 +68,12 @@
     const search = picker.querySelector("[data-picker-search]");
     if (!search) return;
     const cards = Array.from(picker.querySelectorAll("[data-picker-card]"));
+    const selectedCount = picker.querySelector("[data-picker-selected]");
+    const updateCount = () => {
+      selectedCount.textContent = `${cards.filter((card) => card.querySelector('input:checked')).length} seleccionadas`;
+    };
+    picker.addEventListener("change", updateCount);
+    updateCount();
     search.addEventListener("input", () => {
       const query = normalize(search.value.trim());
       let visible = 0;
