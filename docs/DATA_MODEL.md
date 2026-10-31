@@ -1,6 +1,6 @@
 # Modelo de datos
 
-Esquema actual: `PRAGMA user_version = 7`. Las migraciones se aplican secuencialmente dentro de transacciones, con verificación de claves foráneas y copia previa de datos existentes.
+Esquema actual: `PRAGMA user_version = 8`. Las migraciones se aplican secuencialmente dentro de transacciones, con verificación de claves foráneas y copia previa de datos existentes.
 
 | Tabla | Función |
 |---|---|
@@ -38,3 +38,5 @@ Se admiten JPEG, PNG y WebP, hasta 10 MB y 24 megapíxeles por archivo; hasta se
 - `007_boards_weather`: tableros y última consulta meteorológica.
 
 Las bases de datos existentes conservan sus espacios y prendas. Las fotografías antiguas pueden tener `preview` y dimensiones a NULL; la interfaz y las copias soportan esa situación. Se aceptan copias de esquemas compatibles del 1 al 7.
+
+La migración 8 conserva las fotografías existentes y añade su orden en la galería. La imagen principal sigue mostrándose primero. Las copias anteriores se migran tras verificar y conservar un respaldo previo.

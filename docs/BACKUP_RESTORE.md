@@ -44,6 +44,6 @@ La restauración adquiere el bloqueo de instancia. Si el servidor sigue abierto,
 
 Una interrupción física entre ambos renombrados puede dejar los datos en la carpeta `-before-restore-…`: no se han borrado. Con la aplicación cerrada, renombra esa carpeta al nombre original antes de volver a arrancar. No elimines la carpeta anterior hasta revisar el inventario recuperado y descargar otra copia. El diseño no garantiza recuperación frente a cualquier fallo de hardware o corrupción del sistema de archivos.
 
-La versión 0.2 acepta copias de esquemas 1 a 7, incluidas fotos antiguas sin preview; el siguiente arranque los migra con copia previa. Se rechazan versiones futuras para impedir que código antiguo interprete datos que desconoce.
+La versión 0.2 acepta copias de esquemas 1 a 8, incluidas fotos antiguas sin preview; el siguiente arranque los migra con copia previa. Se rechazan versiones futuras para impedir que código antiguo interprete datos que desconoce.
 
 Si la base de datos o alguna imagen del estado actual está dañada, la restauración conserva la carpeta anterior completa aunque no pueda generar una copia adicional. Revisa esa carpeta antes de eliminarla.
