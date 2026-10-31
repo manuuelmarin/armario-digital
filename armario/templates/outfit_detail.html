@@ -27,10 +27,13 @@
         <div class="outfit-caption">
           <h2>{{ item.name }}</h2>
           <p class="muted">{{ item.location_name }}{% if item.archived %} · Archivada{% endif %}</p>
+          {% if not item.archived %}<a class="text-link"
+   href="{{ url_for('assistant.generate',outfit_id=outfit.id,replace=item.id) }}">Buscar alternativa manteniendo el resto</a>{% endif %}
         </div>
       </article>
     {% else %}
       <p class="muted">Este outfit todavía no tiene prendas.</p>
     {% endfor %}
   </div>
+  {% if origin %}<details class="panel section-space"><summary>Origen de esta combinación</summary><p>Propuesta local revisada y guardada por ti. Las valoraciones eran orientativas y se conservan como referencia del momento de generación.</p><p class="path">{{ origin.model }}</p><p class="path">{{ origin.digest }}</p><p>Instrucciones: {{ origin.prompt }} · {{ origin.created_at }}</p><p class="muted">Editar esta combinación manualmente retira las valoraciones originales.</p></details>{% endif %}
 {% endblock %}

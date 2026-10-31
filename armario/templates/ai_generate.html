@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, picker, location_options with context %}
+{% block title %}Generar outfits · Armario Digital{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('looks.index') }}">← Volver a mis outfits</a>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">COMBINAR CON CRITERIO</p>
+      <h1>Tu próximo outfit</h1>
+      <p class="subtitle">El modelo de texto compara las descripciones que has revisado y explica sus propuestas.</p>
+    </div>
+    <a class="button" href="{{ url_for('looks.edit') }}">Crear manualmente</a>
+  </div>
+  {% if not preferences.enabled %}<p class="notice">Para generar, activa la <a href="{{ url_for('assistant.settings') }}">asistencia local</a>. Puedes preparar descripciones manualmente sin instalar modelos.</p>{% endif %}
+  <p class="muted">{{ ready|length }} de {{ garments|length }} prendas con descripción revisada vigente y tipo reconocido. Se requiere superior + inferior (o vestido/mono) y calzado. Solo se añade una capa exterior y un accesorio como máximo.</p>
+  <form method="post" class="editor">
+    {{ csrf() }}{% for gid in constraints.excluded %}<input type="hidden"
+       name="excluded"
+       value="{{ gid }}">{% endfor %}
+    <section class="panel">
+      <div class="two-columns">
+        <div>
+          <label for="generate-mode">Modo</label><select id="generate-mode" name="mode">
+            <option value="recommended">Recomendar combinaciones</option>
+            <option value="surprise">Sorpréndeme entre combinaciones coherentes</option>
+          </select>
+        </div>
+        <div>
+          <label for="generate-location">Ubicación</label><select id="generate-location"
+        name="location_id">
+            <option value="0">Todas mis ubicaciones</option>
+            {{ location_options() }}
+          </select>
+        </div>
+      </div>
+      <div class="two-columns">
+        <div>
+          <label for="generate-jacket">Chaqueta o abrigo</label><select id="generate-jacket"
+        name="jacket">
+            <option value="any">Sin preferencia</option>
+            <option value="yes">Incluir obligatoriamente</option>
+            <option value="no">Sin chaqueta ni abrigo</option>
+          </select>
+        </div>
+        <div>
+          <label for="generate-length">Pantalón</label><select id="generate-length" name="length">
+            <option value="any">Sin preferencia (admite falda, vestido o mono)</option>
+            <option value="corto">Pantalón corto confirmado</option>
+            <option value="largo">Pantalón largo confirmado</option>
+          </select>
+        </div>
+      </div>
+      <div class="two-columns">
+        <label>
+          Ocasión (opcional)<input name="occasion"
+       maxlength="80"
+       placeholder="Por ejemplo, una cena informal"></label><label>Estilo deseado (opcional)<input name="style" maxlength="80" placeholder="Por ejemplo, minimalista">
+          </label>
+        </div>
+        <label class="check-label">
+          <input type="checkbox" name="accessories" value="1">
+          Permitir un accesorio
+        </label>
+        <p class="muted">Chaqueta, largo, ubicación y prendas fijadas son obligatorios. Ocasión y estilo orientan la valoración del modelo. Un largo sin confirmar no sirve para un filtro de corto o largo.</p>
+      </section>
+      <div class="section-heading section-space">
+        <h2>Prendas fijadas (opcional)</h2>
+      </div>
+      <p>Selecciona las prendas que quieres mantener. Para completar una camisa, fíjala aquí. Puedes dejar la selección vacía para crear un conjunto nuevo.</p>
+      {{ picker(garments, constraints.fixed) }}
+      <details class="panel section-space"><summary>Revisar descripciones disponibles</summary><ul class="ai-readiness">{% for item in garments %}<li><a class="text-link"
+   href="{{ url_for('assistant.profile',gid=item.id) }}">{{ item.name }}</a> · {{ 'Lista para combinar' if item.id in ready else 'Necesita revisión o identificación' }}</li>{% else %}<li>Añade prendas a tu armario para empezar.</li>{% endfor %}</ul><a class="button" href="{{ url_for('assistant.analyze_batch') }}">Analizar fotografías</a></details>
+      <div class="form-actions"><button class="button primary"
+        {% if not preferences.enabled %}disabled{% endif %}>Generar propuestas</button></div>
+    </form>
+{% endblock %}

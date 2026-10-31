@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, photo with context %}
+{% macro field(group, key, label, limit) %}<label for="{{ group }}-{{ key }}">{{ label }}</label><input id="{{ group }}-{{ key }}"
+       name="{{ group }}.{{ key }}"
+       maxlength="{{ limit }}"
+       value="{{ data[group][key] }}">{% endmacro %}
+{% block title %}Descripción de {{ item.name }} · Armario Digital{% endblock %}
+{% block content %}
+  <a class="back-link"
+     href="{{ url_for('inventory.detail',gid=item.id) }}">← Volver a {{ item.name }}</a>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">DESCRIPCIÓN PARA COMBINAR</p>
+      <h1>Revisar la prenda</h1>
+      <p class="subtitle">{{ item.name }} · {{ 'Propuesta del modelo de visión' if job else 'Descripción editable' }}</p>
+    </div>
+  </div>
+  {% if saved and saved.stale %}<p class="notice">La fotografía principal ha cambiado desde la última revisión. Revisa todos los campos para la foto actual antes de guardar.</p>{% endif %}
+  <div class="ai-review-layout">
+    <aside>
+      <div class="ai-review-photo">{{ photo(item) }}</div>
+      <p class="muted">Describe lo visible. Deja vacío lo que no puedas confirmar. La marca, talla, precio y composición exacta pertenecen a la ficha manual.</p>
+      <form method="post" action="{{ url_for('assistant.analyze',gid=item.id) }}">
+        {{ csrf() }}<button class="button">Solicitar análisis visual</button>
+      </form>
+      <p><a class="text-link"
+   href="{{ url_for('assistant.settings') }}">Configurar asistencia local</a></p>
+    </aside>
+    <form method="post" class="editor ai-profile-form">
+      {{ csrf() }}<input type="hidden" name="revision" value="{{ revision }}"><input type="hidden" name="source_name" value="{{ source.name }}"><input type="hidden" name="source_hash" value="{{ source.hash }}">{% if job %}<input type="hidden" name="job_id" value="{{ job.id }}">{% endif %}
+      <section class="panel">
+        <label for="profile-description">Descripción completa</label><textarea id="profile-description" name="description" maxlength="1800" rows="5">{{ data.description }}</textarea>
+        <p class="muted">Los siete grupos concretan la descripción. Tus correcciones prevalecen sobre futuros análisis.</p>
+      </section>
+      <fieldset class="panel"><legend>{{ groups[0][1] }}</legend><label for="identification-type">Tipo de prenda</label><select id="identification-type" name="identification.type">{% for value,label in types.items() %}<option value="{{ value }}"
+        {% if data.identification.type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{{ field('identification','subtype','Subtipo (opcional)',80) }}</fieldset>
+      <fieldset class="panel"><legend>{{ groups[1][1] }}</legend>{{ field('palette','main','Color principal y dominio visual',80) }}{{ field('palette', 'secondary', 'Colores secundarios y proporción', 160) }}<label for="palette-contrast">Contraste</label><select id="palette-contrast" name="palette.contrast">{% for value,label in contrasts.items() %}<option value="{{ value }}"
+        {% if data.palette.contrast == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></fieldset>
+      <fieldset class="panel">
+        <legend>{{ groups[2][1] }}</legend>
+        {{ field('pattern','kind','Tipo de estampado (o liso)',80) }}{{ field('pattern','distribution','Tamaño y distribución',200) }}
+      </fieldset>
+      <fieldset class="panel"><legend>{{ groups[3][1] }}</legend>{{ field('shape', 'silhouette', 'Silueta, ancho y proporciones', 160) }}{{ field('shape', 'sleeves', 'Mangas', 80) }}<label for="shape-leg_length">Largo de pantalón confirmado</label><select id="shape-leg_length" name="shape.leg_length">{% for value,label in lengths.items() %}<option value="{{ value }}"
+        {% if data.shape.leg_length == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><p class="muted">Para otras prendas, usa «Sin confirmar». Un pantalón corto debe tener largo corto confirmado.</p></fieldset>
+      <fieldset class="panel">
+        <legend>{{ groups[4][1] }}</legend>
+        {{ field('surface', 'texture', 'Textura visible', 160) }}{{ field('surface', 'finish', 'Acabado', 120) }}
+      </fieldset>
+      <fieldset class="panel">
+        <legend>{{ groups[5][1] }}</legend>
+        <label for="profile-details">Cuello, cierre, bolsillos, capucha y otros detalles</label><textarea id="profile-details" name="details" maxlength="500" rows="3">{{ data.details }}</textarea>
+      </fieldset>
+      <fieldset class="panel"><legend>{{ groups[6][1] }}</legend><label for="profile-styles">Estilos (hasta cinco, separados por comas)</label><input id="profile-styles"
+       name="aesthetics.styles"
+       maxlength="204"
+       value="{{ data.aesthetics.styles|join(', ') }}"><label for="profile-formality">Formalidad estimada</label><select id="profile-formality" name="aesthetics.formality">{% for value,label in [(0,'Sin estimar'),(1,'1 · Muy informal'),(2,'2 · Informal'),(3,'3 · Intermedia'),(4,'4 · Formal'),(5,'5 · Muy formal')] %}<option value="{{ value }}"
+        {% if data.aesthetics.formality == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><p class="muted">Una escala orientativa y editable; no una medición objetiva.</p></fieldset>
+      <section class="panel">
+        <label class="check-label">
+          <input type="checkbox" name="confirm" value="1" required>
+          He revisado la descripción y los siete grupos para la fotografía principal actual.</label><button class="button primary">Guardar descripción revisada</button>
+      </section>
+    </form>
+  </div>
+{% endblock %}
