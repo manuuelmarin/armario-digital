@@ -28,10 +28,9 @@
      height="125"
      loading="lazy"></button>{% if not loop.first %}<form method="post"
       action="{{ url_for('inventory.primary_image',gid=item.id,image_id=p.id) }}">{{ csrf() }}<button class="text-link"
-        aria-label="Usar foto {{ loop.index }} como principal">Hacer principal</button></form>{% else %}<small>Principal</small>{% endif %}<form method="post"
-      action="{{ url_for('inventory.delete_image',gid=item.id,image_id=p.id) }}"
-      data-confirm="¿Eliminar esta fotografía?">{{ csrf() }}<button class="text-link danger photo-delete"
-        aria-label="Eliminar foto {{ loop.index }}">Eliminar</button></form></div>{% endfor %}</div>{% endif %}
+        aria-label="Usar foto {{ loop.index }} como principal">Hacer principal</button></form>{% else %}<small>Principal</small>{% endif %}<a class="text-link danger photo-delete"
+   href="{{ url_for('inventory.delete_image',gid=item.id,image_id=p.id) }}"
+   aria-label="Eliminar foto {{ loop.index }}">Eliminar</a></div>{% endfor %}</div>{% endif %}
     </section>
     <section class="detail-copy"><p class="eyebrow">{{ item.category_name }}{% if item.archived %} · ARCHIVADA{% endif %}</p><h1>{{ item.name }}</h1><div class="location-pill">{{ icon("pin") }}{{ item.location_name }}</div>
       <div class="action-row">{% if not item.archived %}<a class="button primary"

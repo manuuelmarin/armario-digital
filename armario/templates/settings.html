@@ -47,6 +47,10 @@
         {% for file in copies %}
           <li>
             <a href="{{ url_for('settings.download_backup',name=file.name) }}">{{ file.name }}</a>
+            <form method="post"
+                  action="{{ url_for('settings.check_backup',name=file.name) }}">
+              {{ csrf() }}<button class="button small">Verificar copia</button>
+            </form>
           </li>
         {% else %}
           <li class="muted">Aún no hay copias guardadas.</li>

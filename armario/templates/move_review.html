@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf with context %}
+{% block title %}Revisar traslado · Armario Digital{% endblock %}
+{% block content %}
+  <section class="panel narrow">
+    <h1>Revisar traslado</h1>
+    <p>Destino: <strong>{{ destination.name }}</strong>. Las prendas que ya estén allí no generarán un traslado nuevo.</p>
+    <ul>{% for item in garments %}<li>{{ item.name }} · {{ names[item.location_id] }}</li>{% endfor %}</ul>
+    <form method="post" action="{{ url_for('inventory.move') }}">
+      {{ csrf() }}
+      {% for item in garments %}
+        <input type="hidden" name="garment_ids" value="{{ item.id }}">
+      {% endfor %}
+      <input type="hidden" name="destination_id" value="{{ destination.id }}">
+      <button class="button primary">Confirmar traslado</button>
+      <a class="button" href="{{ url_for('inventory.index') }}">Cancelar</a>
+    </form>
+  </section>
+{% endblock %}

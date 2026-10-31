@@ -32,8 +32,7 @@
   <section>
     <div class="section-heading">
       <h2>Tu lista</h2>
-      <span class="muted">{{ items|selectattr("packed")|list|length }} / {{ items|length }}
-      preparados</span>
+      <span class="muted">{{ items|selectattr("packed")|list|length }} / {{ items|length }} preparados · {{ items|rejectattr("packed")|list|length }} pendientes</span>
     </div>
     <div class="checklist">
       {% for item in items %}

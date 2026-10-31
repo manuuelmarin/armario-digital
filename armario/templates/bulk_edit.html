@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf with context %}
+{% block title %}Editar selección · Armario Digital{% endblock %}
+{% block content %}
+  <section class="panel narrow">
+    <h1>Revisar selección</h1>
+    <p>Se cambiará la categoría de estas {{ garments|length }} prendas. Sus ubicaciones y relaciones se conservan.</p>
+    <ul>{% for item in garments %}<li>{{ item.name }}</li>{% endfor %}</ul>
+    <form method="post" action="{{ url_for('inventory.bulk_edit') }}">
+      {{ csrf() }}
+      {% for item in garments %}
+        <input type="hidden" name="garment_ids" value="{{ item.id }}">
+      {% endfor %}
+      <label for="category">Nueva categoría</label>
+      <select id="category" name="category_id" required>{% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}</select>
+      <label class="check-label">
+        <input type="checkbox" name="confirm" value="1" required>Confirmo el cambio de categoría
+      </label>
+      <button class="button primary">Guardar cambios</button>
+      <a class="button" href="{{ url_for('inventory.index') }}">Cancelar</a>
+    </form>
+  </section>
+{% endblock %}

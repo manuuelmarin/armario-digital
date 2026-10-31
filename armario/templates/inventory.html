@@ -65,9 +65,10 @@
     <form id="bulk"
           class="bulk-bar"
           method="post"
-          action="{{ url_for('inventory.move') }}"
+          action="{{ url_for('inventory.review_move') }}"
           data-bulk-toolbar>
-      {{ csrf() }}<span><strong data-selection-count>0</strong> seleccionadas</span><label for="bulk-destination">Trasladar a</label><select id="bulk-destination" name="destination_id">{{ location_options() }}</select><button class="button small primary">Mover selección {{ icon("arrow") }}</button><button class="icon-button"
+      {{ csrf() }}<span><strong data-selection-count>0</strong> seleccionadas</span><label for="bulk-destination">Trasladar a</label><select id="bulk-destination" name="destination_id">{{ location_options() }}</select><button class="button small primary">Revisar traslado {{ icon("arrow") }}</button><button class="button small"
+        formaction="{{ url_for('inventory.bulk_edit') }}">Editar categoría</button><button class="icon-button"
         type="button"
         data-clear-selection
         aria-label="Cancelar selección">{{ icon("close") }}</button>
