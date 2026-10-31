@@ -423,3 +423,85 @@ def test_optional_assistant_review_generation_and_mobile(app, tmp_path):
         assert no_js.get_by_text("Revisión sin JavaScript.", exact=True).is_visible()
         context.close()
         browser.close()
+
+
+def test_replace_saved_outfit_keeps_optional_layers_without_javascript(app, tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    from armario.db import connect
+    from armario.profiles import save_profile
+
+    from .conftest import post
+    from .test_local_ai import FakeOllama, profile_data, worker
+
+    client = app.test_client()
+    post(client, "/ajustes/ia", {"enabled": "1"})
+    for index, (kind, length) in enumerate(
+        (
+            ("camisa", "no_visible"),
+            ("pantalon", "largo"),
+            ("calzado", "no_visible"),
+            ("chaqueta", "no_visible"),
+            ("accesorio", "no_visible"),
+            ("chaqueta", "no_visible"),
+        ),
+        1,
+    ):
+        response = post(
+            client,
+            "/prendas/nueva",
+            {
+                "name": f"Pieza {index}",
+                "category_id": "1",
+                "location_id": "1",
+                "photos": photograph(),
+            },
+        )
+        gid = int(response.location.rsplit("/", 1)[1])
+        db = connect(app.config["DATA_DIR"] / "wardrobe.sqlite")
+        try:
+            with db:
+                save_profile(db, gid, profile_data(kind, length), 0, {"origin": "synthetic_test"})
+        finally:
+            db.close()
+    post(
+        client,
+        "/outfits/nuevo",
+        {"name": "Cinco piezas", "occasion": "Cena", "garment_ids": [str(n) for n in range(1, 6)]},
+    )
+    runner = worker(app, FakeOllama())
+    with running_app(app) as base, sync_playwright() as playwright:
+        browser = playwright.chromium.launch(**browser_options())
+        context = browser.new_context(
+            java_script_enabled=False, viewport={"width": 390, "height": 950}
+        )
+        page = context.new_page()
+        page.goto(base + "/outfits/generar?outfit_id=1&replace=4")
+        assert page.locator('input[name="replacement_role"]').input_value() == "outer"
+        assert page.get_by_label("Chaqueta o abrigo", exact=True).input_value() == "yes"
+        assert page.get_by_label("Permitir un accesorio", exact=True).is_checked()
+        assert page.get_by_label("Pantalón", exact=True).input_value() == "largo"
+        assert page.get_by_label("Ocasión (opcional)", exact=True).input_value() == "Cena"
+        assert page.locator('input[name="garment_ids"]:checked').count() == 4
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        page.get_by_role("button", name="Generar propuestas").click()
+        assert runner.run_once()
+        page.get_by_role("link", name="Actualizar estado", exact=True).click()
+        assert page.locator(".ai-pieces strong").all_text_contents() == [
+            "Pieza 1",
+            "Pieza 2",
+            "Pieza 3",
+            "Pieza 5",
+            "Pieza 6",
+        ]
+        for image in page.locator(".ai-pieces img").all():
+            image.scroll_into_view_if_needed()
+            page.wait_for_function(
+                "img => img.complete && img.naturalWidth > 0", arg=image.element_handle()
+            )
+        page.screenshot(path=str(tmp_path / "audit-replacement-mobile.png"), full_page=True)
+        page.set_viewport_size({"width": 1440, "height": 1000})
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        page.screenshot(path=str(tmp_path / "audit-replacement-desktop.png"), full_page=True)
+        context.close()
+        browser.close()

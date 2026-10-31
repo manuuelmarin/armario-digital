@@ -342,7 +342,7 @@ def test_photo_tampering_fails_before_vision_call(app, client, db, enabled, add_
     fake = FakeOllama()
     assert worker(app, fake).run_once()
     assert not fake.calls
-    assert db.execute("SELECT status FROM ai_jobs").fetchone()[0] == "failed"
+    assert db.execute("SELECT status FROM ai_jobs").fetchone()[0] == "stale"
 
 
 def test_review_detects_revision_photo_and_invalid_groups(client, db, enabled, add_garment):
