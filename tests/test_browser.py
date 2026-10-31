@@ -289,3 +289,42 @@ def test_organization_board_and_import_in_browser(app, tmp_path):
         page.wait_for_load_state("load")
         assert int(page.locator('#board-form-1 input[name="x"]').input_value()) > 0
         browser.close()
+
+
+def test_picker_pagination_retains_selected_items_and_preview(app, tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    from armario.db import connect
+
+    db = connect(app.config["DATA_DIR"] / "wardrobe.sqlite")
+    with db:
+        db.executemany(
+            "INSERT INTO garments(name,category_id,location_id) VALUES (?,1,1)",
+            [(f"Prenda {n:02d}",) for n in range(30)],
+        )
+    db.close()
+    photo = tmp_path / "ejemplo.jpg"
+    photo.write_bytes(photograph()[0].getvalue())
+    with running_app(app) as base, sync_playwright() as playwright:
+        browser = playwright.chromium.launch(**browser_options())
+        page = browser.new_page(viewport={"width": 390, "height": 900})
+        page.goto(base + "/prendas/importar")
+        page.locator('input[name="photos"]').set_input_files(photo)
+        assert page.locator("[data-import-preview] img").evaluate(
+            "img => img.complete && img.naturalWidth > 0"
+        )
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        page.goto(base + "/outfits/nuevo")
+        cards = page.locator("[data-picker-card]")
+        assert page.locator("[data-picker-card]:visible").count() == 24
+        cards.nth(0).locator("input").check()
+        page.locator("[data-picker-next]").click()
+        cards.nth(24).locator("input").check()
+        assert page.locator("[data-picker-selected]").inner_text() == "2 seleccionadas"
+        page.locator("[data-picker-prev]").click()
+        assert cards.nth(0).locator("input").is_checked()
+        page.get_by_label("Nombre *", exact=True).fill("Selección paginada")
+        page.get_by_role("button", name="Guardar outfit").click()
+        page.get_by_role("link", name="Ver combinación Selección paginada").click()
+        assert page.locator(".outfit-preview").count() == 2
+        browser.close()

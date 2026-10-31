@@ -103,3 +103,82 @@ def test_photo_removal_requires_confirmation(client, add_garment, db):
     assert db.execute("SELECT count(*) FROM garment_images").fetchone()[0] == 1
     assert post(client, url, {"confirm": "1"}).status_code == 302
     assert db.execute("SELECT count(*) FROM garment_images").fetchone()[0] == 0
+
+
+def test_bulk_adds_season_and_tag_without_replacing_existing(client, add_garment, db):
+    gid = add_garment(seasons=["Verano"])
+    with db:
+        db.execute("INSERT INTO tags(name) VALUES ('Viaje')")
+    assert (
+        post(
+            client,
+            "/prendas/editar-lote",
+            {"garment_ids": [str(gid)], "season": "Invierno", "tag_id": "1", "confirm": "1"},
+        ).status_code
+        == 302
+    )
+    assert {
+        r[0] for r in db.execute("SELECT season FROM garment_seasons WHERE garment_id=?", (gid,))
+    } == {"Verano", "Invierno"}
+    assert (
+        db.execute(
+            "SELECT count(*) FROM garment_tags WHERE garment_id=? AND tag_id=1", (gid,)
+        ).fetchone()[0]
+        == 1
+    )
+    bad = post(
+        client,
+        "/prendas/editar-lote",
+        {"garment_ids": [str(gid)], "season": "Marte", "tag_id": "1", "confirm": "1"},
+    )
+    assert bad.status_code == 400
+
+
+def test_photo_reorder_is_scoped_and_persistent(client, add_garment, db, app):
+    from armario import create_app
+
+    gid = add_garment(photos=[photograph("red"), photograph("blue"), photograph("green")])
+    ids = [
+        r[0]
+        for r in db.execute("SELECT id FROM garment_images WHERE garment_id=? ORDER BY id", (gid,))
+    ]
+    assert (
+        post(
+            client, f"/prendas/{gid}/fotos/{ids[2]}/ordenar", {"direction": "anterior"}
+        ).status_code
+        == 302
+    )
+    detail = (
+        create_app({"TESTING": True, "DATA_DIR": app.config["DATA_DIR"]})
+        .test_client()
+        .get(f"/prendas/{gid}")
+        .data
+    )
+    names = {
+        r["id"]: r["filename"].encode()
+        for r in db.execute("SELECT id,filename FROM garment_images")
+    }
+    assert detail.index(names[ids[0]]) < detail.index(names[ids[2]]) < detail.index(names[ids[1]])
+    assert (
+        post(client, f"/prendas/{gid}/fotos/9999/ordenar", {"direction": "anterior"}).status_code
+        == 404
+    )
+
+
+def test_migrate_populated_v7_creates_recoverable_backup(client, add_garment, db, app):
+    from armario.db import migrate
+
+    gid = add_garment(photos=photograph())
+    with db:
+        db.execute("ALTER TABLE garment_images DROP COLUMN sort_order")
+        db.execute("PRAGMA user_version=7")
+    migrate(app.config["DATA_DIR"])
+    backup = next((app.config["DATA_DIR"] / "backups").glob("before-schema-7-*.zip"))
+    from armario.backups import verify_backup
+
+    assert verify_backup(backup)["schema_version"] == 7
+    assert db.execute("PRAGMA user_version").fetchone()[0] == 8
+    assert (
+        db.execute("SELECT sort_order FROM garment_images WHERE garment_id=?", (gid,)).fetchone()[0]
+        is not None
+    )

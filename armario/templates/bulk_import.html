@@ -20,7 +20,7 @@
            required>
     <p class="muted">JPEG, PNG o WebP. Máximo 10 MB por foto y 64 MB por envío. Se utiliza el nombre del archivo como nombre inicial; puedes editarlo después.</p>
     <div data-import-preview aria-live="polite"></div>
-    <p class="muted">Puedes revisar y editar cada nombre antes de importar. Sin JavaScript se usa el nombre del archivo.</p>
+    <p class="muted">Puedes revisar las imágenes y editar cada nombre antes de importar. Sin JavaScript se usa el nombre del archivo.</p>
     <label for="category">Categoría</label><select id="category" name="category_id" required>{% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}</select>
     <label for="location">Ubicación</label><select id="location"
         name="location_id"

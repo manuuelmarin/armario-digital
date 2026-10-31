@@ -5,10 +5,20 @@
   const importPreview = document.querySelector("[data-import-preview]");
   if (importInput && importPreview) {
     importInput.addEventListener("change", () => {
+      importPreview.querySelectorAll("img[data-object-url]").forEach((img) => URL.revokeObjectURL(img.src));
       importPreview.replaceChildren();
       Array.from(importInput.files).forEach((file, index) => {
         const label = document.createElement("label");
         label.textContent = `Prenda ${index + 1} · ${file.name}`;
+        if (file.type.startsWith("image/")) {
+          const image = document.createElement("img");
+          image.src = URL.createObjectURL(file);
+          image.dataset.objectUrl = "";
+          image.alt = `Vista previa ${index + 1}`;
+          image.width = 100;
+          image.height = 100;
+          label.append(image);
+        }
         const input = document.createElement("input");
         input.name = "photo_names";
         input.required = true;
@@ -74,16 +84,30 @@
     };
     picker.addEventListener("change", updateCount);
     updateCount();
-    search.addEventListener("input", () => {
+    const pager = picker.querySelector("[data-picker-pagination]");
+    const previous = picker.querySelector("[data-picker-prev]");
+    const next = picker.querySelector("[data-picker-next]");
+    const pageLabel = picker.querySelector("[data-picker-page]");
+    let page = 0;
+    const pageSize = 24;
+    const render = () => {
       const query = normalize(search.value.trim());
-      let visible = 0;
-      cards.forEach((card) => {
-        card.hidden = !normalize(card.dataset.search).includes(query);
-        if (!card.hidden) visible += 1;
-      });
-      picker.querySelector("[data-picker-status]").textContent = `${visible} disponibles`;
-      picker.querySelector("[data-picker-empty]").hidden = visible !== 0;
-    });
+      const matches = cards.filter((card) => normalize(card.dataset.search).includes(query));
+      const pages = Math.max(1, Math.ceil(matches.length / pageSize));
+      page = Math.min(page, pages - 1);
+      const shown = new Set(matches.slice(page * pageSize, (page + 1) * pageSize));
+      cards.forEach((card) => { card.hidden = !shown.has(card); });
+      picker.querySelector("[data-picker-status]").textContent = `${matches.length} disponibles`;
+      picker.querySelector("[data-picker-empty]").hidden = matches.length !== 0;
+      pageLabel.textContent = `Página ${page + 1} de ${pages}`;
+      previous.disabled = page === 0;
+      next.disabled = page === pages - 1;
+      pager.hidden = pages <= 1;
+    };
+    search.addEventListener("input", () => { page = 0; render(); });
+    previous.addEventListener("click", () => { page -= 1; render(); });
+    next.addEventListener("click", () => { page += 1; render(); });
+    render();
     search.addEventListener("keydown", (event) => {
       if (event.key === "Enter") event.preventDefault();
     });

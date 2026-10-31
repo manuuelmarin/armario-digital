@@ -276,7 +276,8 @@ def detail(gid):
         "garment_detail.html",
         item=item,
         photos=db.execute(
-            "SELECT * FROM garment_images WHERE garment_id=? ORDER BY is_primary DESC, id", (gid,)
+            "SELECT * FROM garment_images WHERE garment_id=? ORDER BY is_primary DESC, COALESCE(sort_order, id), id",
+            (gid,),
         ).fetchall(),
         chosen_seasons=[
             row[0]
@@ -322,18 +323,43 @@ def bulk_edit():
     db = get_db()
     rows = validate_garments(db, selected)
     if request.form.get("confirm") != "1":
-        return render_template("bulk_edit.html", garments=rows)
-    category = identifier(request.form, "category_id")
-    if not db.execute("SELECT 1 FROM categories WHERE id=?", (category,)).fetchone():
+        return render_template(
+            "bulk_edit.html",
+            garments=rows,
+            tags=db.execute("SELECT * FROM tags ORDER BY name").fetchall(),
+        )
+    category_value = request.form.get("category_id", "")
+    category = identifier(request.form, "category_id") if category_value else None
+    if category and not db.execute("SELECT 1 FROM categories WHERE id=?", (category,)).fetchone():
         raise ValueError("La categoría no existe.")
+    season = request.form.get("season", "")
+    if season and season not in SEASONS:
+        raise ValueError("La temporada no es válida.")
+    tag_value = request.form.get("tag_id", "")
+    tag = identifier(request.form, "tag_id") if tag_value else None
+    if tag and not db.execute("SELECT 1 FROM tags WHERE id=?", (tag,)).fetchone():
+        raise ValueError("La etiqueta no existe.")
+    if not any((category, season, tag)):
+        raise ValueError("Elige al menos un cambio.")
     with db:
         validate_garments(db, selected)
-        db.executemany(
-            "UPDATE garments SET category_id=? WHERE id=?", [(category, gid) for gid in selected]
-        )
+        if category:
+            db.executemany(
+                "UPDATE garments SET category_id=? WHERE id=?",
+                [(category, gid) for gid in selected],
+            )
+        if season:
+            db.executemany(
+                "INSERT OR IGNORE INTO garment_seasons(garment_id,season) VALUES (?,?)",
+                [(gid, season) for gid in selected],
+            )
+        if tag:
+            db.executemany(
+                "INSERT OR IGNORE INTO garment_tags(garment_id,tag_id) VALUES (?,?)",
+                [(gid, tag) for gid in selected],
+            )
     flash(
-        f"Categoría actualizada en {len(selected)} prendas. Sus ubicaciones no han cambiado.",
-        "success",
+        f"Cambios guardados en {len(selected)} prendas. Sus ubicaciones no han cambiado.", "success"
     )
     return redirect(url_for("inventory.index"))
 
@@ -418,6 +444,33 @@ def primary_image(gid, image_id):
         db.execute("UPDATE garment_images SET is_primary=0 WHERE garment_id=?", (gid,))
         db.execute("UPDATE garment_images SET is_primary=1 WHERE id=?", (image_id,))
     flash("Fotografía principal actualizada.", "success")
+    return redirect(url_for("inventory.detail", gid=gid))
+
+
+@bp.post("/prendas/<int:gid>/fotos/<int:image_id>/ordenar")
+def reorder_image(gid, image_id):
+    garment(gid)
+    direction = request.form.get("direction")
+    if direction not in {"anterior", "siguiente"}:
+        raise ValueError("El orden solicitado no es válido.")
+    db = get_db()
+    with db:
+        photos = db.execute(
+            "SELECT id FROM garment_images WHERE garment_id=? ORDER BY is_primary DESC, COALESCE(sort_order,id), id",
+            (gid,),
+        ).fetchall()
+        order = [row["id"] for row in photos]
+        if image_id not in order:
+            abort(404)
+        index = order.index(image_id)
+        target = index + (-1 if direction == "anterior" else 1)
+        # The cover remains first; use the separate control to change it.
+        if 0 < index < len(order) and 0 < target < len(order):
+            order[index], order[target] = order[target], order[index]
+            db.executemany(
+                "UPDATE garment_images SET sort_order=? WHERE id=? AND garment_id=?",
+                [(pos, photo_id, gid) for pos, photo_id in enumerate(order)],
+            )
     return redirect(url_for("inventory.detail", gid=gid))
 
 

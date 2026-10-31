@@ -40,7 +40,7 @@ Crea un tablero en Inspiración y añade imágenes, notas o enlaces HTTP/HTTPS. 
 
 En Tiempo, introduce unas coordenadas y un nombre reconocible. Solo Actualizar consulta al proveedor; la pantalla muestra la última previsión guardada y su fecha. Las coordenadas y la IP se envían a Open-Meteo al solicitarla. Si falla la conexión, se conserva el resultado anterior: revisa su antigüedad antes de utilizarlo.
 
-Selecciona prendas en el inventario para cambiarles la categoría en lote o revisar un traslado; ninguna ubicación cambia hasta confirmar. En Ajustes puedes verificar una copia guardada sin restaurarla.
+Selecciona prendas en el inventario para cambiarles la categoría o añadir temporada y etiqueta en lote o revisar un traslado; ninguna ubicación cambia hasta confirmar. En Ajustes puedes verificar una copia guardada sin restaurarla.
 
 ## Actualizar sin perder el inventario
 
@@ -50,3 +50,5 @@ Selecciona prendas en el inventario para cambiarles la categoría en lote o revi
 4. Arranca con la misma carpeta de datos y comprueba espacios, prendas y fotografías.
 
 Si algo falla, conserva el mensaje de error sin datos personales y consulta [recuperación](BACKUP_RESTORE.md). No borres la carpeta de datos ni intentes abrir simultáneamente dos versiones contra el mismo inventario. La demo temporal no sirve para conservar una colección real.
+
+En la ficha de una prenda, usa las flechas para ordenar las fotografías secundarias; la principal permanece al inicio. Los selectores paginan visualmente con JavaScript y conservan las selecciones entre páginas; sin JavaScript muestran todas las prendas.
