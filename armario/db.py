@@ -6,7 +6,7 @@ from pathlib import Path
 
 from flask import current_app, g
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 def connect(path):

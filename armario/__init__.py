@@ -10,7 +10,7 @@ from werkzeug.exceptions import HTTPException, SecurityError
 
 from . import db
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 
 def default_data_dir():
@@ -108,6 +108,7 @@ def create_app(config=None):
                 "organization": "Organización",
                 "boards": "Inspiración",
                 "weather": "Tiempo",
+                "assistant": "Asistencia local",
             },
         }
 
@@ -129,8 +130,8 @@ def create_app(config=None):
             return "Host no permitido.", 400
         return render_template("error.html", message=error.description), error.code
 
-    from . import boards, inventory, looks, organization, settings, trips, weather
+    from . import assistant, boards, inventory, looks, organization, settings, trips, weather
 
-    for module in (inventory, looks, trips, settings, organization, boards, weather):
+    for module in (inventory, looks, trips, settings, organization, boards, weather, assistant):
         app.register_blueprint(module.bp)
     return app
