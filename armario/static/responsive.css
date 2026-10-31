@@ -213,6 +213,25 @@
 }
 
 @media (max-width: 620px) {
+  .ai-review-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-review-photo {
+    max-width: 230px;
+  }
+
+  .ai-pieces {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ai-profile-form legend {
+    font-size: 13px;
+  }
+
+  .editor > .panel > .two-columns {
+    grid-template-columns: 1fr;
+  }
 
   .filters[data-filter-collapsed="true"] .filter-select,
   .filters[data-filter-collapsed="true"] .filter-options {
