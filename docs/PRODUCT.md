@@ -13,10 +13,10 @@ Armario Digital es un catálogo visual local para organizar prendas, componer ou
 
 ## Versión 0.2
 
-Incluye inventario con fotografías, metadatos opcionales, temporadas múltiples, favoritos, archivo, búsqueda, filtros y ordenación; espacios editables; biblioteca de outfits; listas de viaje y objetos libres; fotos adaptadas a densidad de pantalla; copias y restauración offline.
+Incluye inventario con fotografías, metadatos opcionales, temporadas múltiples, favoritos, archivo, búsqueda, filtros y ordenación; espacios editables; biblioteca de outfits; listas de viaje y objetos libres; fotos adaptadas a densidad de pantalla; colecciones y etiquetas sin cambios de ubicación; importación por lotes; tableros con imágenes, notas y enlaces; meteorología opcional; copias verificadas, limpieza manual de copias diarias y restauración offline.
 
 La primera instalación no inserta espacios ni artículos. La demo y las pruebas crean sus propias entidades ficticias en carpetas aisladas.
 
 ## Límites
 
-No incorpora cuentas, sincronización remota, funciones sociales, publicación web automática ni registro diario de uso. Inspiración, meteorología y un editor libre de collages quedan en el roadmap. El modo de distribución actual es local y monousuario.
+No incorpora cuentas, sincronización remota, funciones sociales, publicación web automática ni registro diario de uso. Incluye tableros de inspiración y collage con posición y anchura ajustables; la exportación del collage sigue pendiente. La meteorología opcional se actualiza manualmente con coordenadas y conserva la última previsión. El modo de distribución actual es local y monousuario.

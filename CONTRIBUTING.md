@@ -1,20 +1,20 @@
-# Contributing
+# Contribuir
 
-Contributions should improve the wardrobe workflow while keeping installation and maintenance straightforward.
+Las mejoras deben facilitar el uso del armario y mantener sencilla su instalación. Consulta primero las [reglas del repositorio](AGENTS.md) y el [mapa de documentación](docs/README.md).
 
-## Set up
+## Preparar el entorno
 
-Use Python 3.12 and an isolated virtual environment. Install `requirements-dev.txt` and run `python run.py --dev`. The application uses the same entry point on every platform. Windows launchers are convenience wrappers.
+Usa Python 3.12 y un entorno virtual. Instala `requirements-dev.txt` y ejecuta `python run.py --dev`. El punto de entrada es el mismo en todas las plataformas; los lanzadores de Windows son accesos auxiliares.
 
-Use `python run.py --demo` to explore the product with fictional data. The demo uses temporary storage and is separate from a normal inventory.
+Usa `python run.py --demo` para explorar con datos ficticios y temporales. Para desarrollar con persistencia, elige una carpeta de pruebas independiente mediante `--data-dir`; no utilices tu inventario real.
 
-## Propose a change
+## Preparar una propuesta
 
-Create a branch from `main` and keep the change focused. Describe the problem, the resulting behavior, how it was verified and any data or compatibility implications. Include screenshots for interface changes, generated with the demo or synthetic fixtures.
+Crea una rama desde `main` con un cambio acotado. Explica el problema, el comportamiento resultante, las comprobaciones realizadas y las implicaciones para datos o compatibilidad. Adjunta capturas de la demo si cambia la interfaz. Usa mensajes de commit descriptivos, por ejemplo `docs: aclarar recuperación` o `fix: conservar asociaciones al editar`.
 
-Existing inventory or backup data must survive an update. For schema changes, add a versioned migration and test it with populated relationships. Update the model and recovery documentation when formats change.
+Las actualizaciones deben preservar inventarios y copias compatibles. Los cambios de esquema requieren migración versionada, copia recuperable y prueba con relaciones pobladas. Actualiza las guías afectadas y el [historial](CHANGELOG.md). No modifiques recuentos históricos para hacerlos pasar por resultados nuevos.
 
-## Validate
+## Verificar
 
 ```bash
 python -m pytest -q
@@ -23,8 +23,12 @@ python -m ruff format --check .
 python -m djlint armario/templates --check
 ```
 
-For browser tests, install Chromium with `python -m playwright install chromium` and enable `RUN_BROWSER_TESTS=1`. See [TESTING.md](docs/TESTING.md) for platform-specific commands.
+Para navegador, instala Chromium con `python -m playwright install chromium` y activa `RUN_BROWSER_TESTS=1`. La [guía de pruebas](docs/TESTING.md) recoge comandos por plataforma y límites de la evidencia. Revisa el resultado de CI del commit final antes de integrar.
 
-Do not include real photographs, database files, account information, absolute user paths or conversation transcripts in issues, examples or screenshots. Fonts and other third-party assets need their license notices.
+En un cambio exclusivamente documental, comprueba enlaces relativos, rutas, comandos, coherencia con el código y renderizado Markdown. No atribuyas una nueva validación funcional a una simple revisión de texto.
 
-Licensing for public code distribution has not yet been selected. Contributions should remain within the repository's current access and distribution policy until that decision is recorded.
+## Datos y distribución
+
+No incluyas fotografías reales, bases, claves, copias, datos de cuentas, rutas privadas ni transcripciones en ejemplos, issues o capturas. Conserva las licencias de fuentes y otros recursos.
+
+La licencia de distribución pública está pendiente. Mantén el acceso actual del repositorio y el alcance local y monousuario. Publicar código, alojar un servicio y sincronizar datos son decisiones diferentes; consulta [publicación](docs/PUBLISHING.md).

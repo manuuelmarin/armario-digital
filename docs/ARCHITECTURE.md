@@ -8,6 +8,9 @@ Un proceso Python sirve HTML y recursos locales, aplica las reglas del dominio y
 |---|---|
 | `run.py` | Lanzador, exclusión de instancias, modo demo y recuperación offline |
 | `inventory.py`, `looks.py`, `trips.py`, `settings.py` | Rutas y flujos por funcionalidad |
+| `organization.py` | Colecciones, etiquetas y asociaciones con prendas |
+| `boards.py` | Tableros, enlaces y posiciones del collage local |
+| `weather.py` | Consulta explícita a Open-Meteo y última previsión guardada |
 | `domain.py` | Validaciones y operaciones compartidas |
 | `queries.py` | Lecturas de prendas con su imagen principal y entidades permitidas |
 | `db.py`, `migrations/` | Conexiones, integridad y evolución del esquema |
@@ -37,3 +40,20 @@ JavaScript mejora selección masiva, filtros móviles, búsqueda en selectores, 
 Se comparó reutilizar Libre Closet, usar NiceGUI y separar frontend y API. Se eligió Flask + Jinja + SQLite por el alcance local, la edición directa de HTML/CSS y un único proceso sin compilación frontend. El coste aceptado es implementar y mantener capacidades que otras soluciones ofrecen ya, como el collage libre o una PWA.
 
 No se han medido comparativamente esos frameworks ni se atribuyen garantías de rendimiento a alternativas no ejecutadas. Las referencias de producto están en [AUDIT.md](AUDIT.md).
+
+## Contratos que deben conservarse
+
+| Operación | Comportamiento esperado |
+|---|---|
+| Preparar una maleta | Cambia su lista; la ubicación solo cambia tras confirmar un traslado |
+| Etiquetar o añadir a una colección | Añade asociaciones sin mover la prenda |
+| Importar fotografías por lotes | Una prenda por imagen; un fallo revierte el lote y retira sus archivos nuevos |
+| Guardar inspiración | Guarda imágenes locales y enlaces; no descarga el contenido de las URL |
+| Actualizar el tiempo | Hace una petición solo al pulsar actualizar; un fallo conserva la previsión anterior |
+| Crear una copia | Usa un snapshot y verifica las imágenes referenciadas y sus hashes persistidos |
+
+La integridad de imágenes se registra desde el esquema 5. Una primera línea base no puede detectar una modificación anterior a su creación. El esquema 6 incorpora organización y el 7, tableros y caché meteorológica. Véanse [modelo](DATA_MODEL.md) y [recuperación](BACKUP_RESTORE.md).
+
+## Límite de red
+
+El catálogo no requiere red tras instalar dependencias. La meteorología es opcional y envía coordenadas e IP a Open-Meteo al actualizar; borrar su caché activa no elimina los datos de copias anteriores. Abrir un enlace de inspiración utiliza el navegador y el destino externo aplica sus propias condiciones. No hay sincronización del inventario ni geolocalización automática.
