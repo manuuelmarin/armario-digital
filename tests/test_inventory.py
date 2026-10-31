@@ -289,7 +289,12 @@ def test_primary_photo_is_used_across_views_and_scoped_to_garment(client, add_ga
     assert detail.index(images[1]["filename"].encode()) < detail.index(
         images[0]["filename"].encode()
     )
-    assert post(client, f"/prendas/{gid}/fotos/{images[1]['id']}/eliminar").status_code == 302
+    assert (
+        post(
+            client, f"/prendas/{gid}/fotos/{images[1]['id']}/eliminar", {"confirm": "1"}
+        ).status_code
+        == 302
+    )
     assert images[0]["thumbnail"].encode() in client.get("/").data
 
 
