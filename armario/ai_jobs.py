@@ -13,7 +13,14 @@ from .ai_client import (
     OllamaClient,
 )
 from .db import connect
-from .profiles import PROFILE_SCHEMA, VISION_PROMPT, image_payload, source_matches, validate_profile
+from .profiles import (
+    PROFILE_SCHEMA,
+    VISION_PROMPT,
+    image_payload,
+    source_intact,
+    source_matches,
+    validate_profile,
+)
 from .recommendations import RANKING_SCHEMA, TEXT_PROMPT, current_snapshot, prompt_data, rank_result
 
 LOG = logging.getLogger(__name__)
@@ -71,11 +78,13 @@ def decoded_job(row):
     return result
 
 
-def valid_sources(db, job):
+def valid_sources(db, job, root=None):
     if job["kind"] == "vision":
-        return source_matches(db, job["garment_id"], job["input"])
+        return source_matches(db, job["garment_id"], job["input"]) and (
+            root is None or source_intact(root, job["input"]["source"])
+        )
     if job["kind"] == "outfit":
-        return current_snapshot(db, job["input"])
+        return current_snapshot(db, job["input"], root)
     return True
 
 
@@ -143,7 +152,15 @@ class AIWorker:
                 if not row:
                     return False
                 job = decoded_job(row)
-                if not valid_sources(db, job):
+                if job["prompt_version"] != PROMPT_VERSION:
+                    self.finish(
+                        db,
+                        job["id"],
+                        "stale",
+                        error="Las instrucciones de la aplicación han cambiado. Reintenta con la versión actual.",
+                    )
+                    return True
+                if not valid_sources(db, job, self.root):
                     self.finish(
                         db,
                         job["id"],
@@ -182,7 +199,7 @@ class AIWorker:
                     self.finish(
                         db, job["id"], "cancelled", error="La asistencia local se ha desactivado."
                     )
-                elif not valid_sources(db, job):
+                elif not valid_sources(db, job, self.root):
                     self.finish(
                         db,
                         job["id"],

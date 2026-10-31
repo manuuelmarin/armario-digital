@@ -38,7 +38,7 @@ def close_db(error=None):
 
 
 def migrate(root):
-    from .backups import create_backup
+    from .backups import check_structure, create_backup
 
     root.mkdir(parents=True, exist_ok=True)
     (root / "images").mkdir(exist_ok=True)
@@ -47,6 +47,8 @@ def migrate(root):
         version = db.execute("PRAGMA user_version").fetchone()[0]
         if version > SCHEMA_VERSION:
             raise RuntimeError("Los datos pertenecen a una versión más reciente. Actualiza la app.")
+        if version:
+            check_structure(db, version)
         if version == SCHEMA_VERSION:
             return
         if version:
