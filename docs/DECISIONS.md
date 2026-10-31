@@ -21,3 +21,7 @@ Las referencias a prendas y espacios se restringen cuando su borrado destruiría
 ## Distribución
 
 La preview se ejecuta en loopback y es monousuario. Publicar el código no implica exponer automáticamente el servicio. Autenticación, sincronización, empaquetado de escritorio y licencia de distribución requieren decisiones específicas antes de ofrecer esas capacidades.
+
+## Mantener Python como base
+
+Se mantiene la lógica en Python y la interfaz en Jinja, HTML, CSS y JavaScript progresivo. No existe una medición que justifique una reescritura en Rust o C. SQLite y Pillow ya utilizan componentes nativos. Antes de extraer una tarea intensiva a otro lenguaje, hay que medirla, revisar consultas y operaciones repetidas, y evaluar el coste de empaquetado en las plataformas soportadas. Esta decisión no impide revisar un componente concreto si aparecen datos que lo justifiquen.
