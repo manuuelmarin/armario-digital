@@ -149,3 +149,23 @@ def download_backup(name):
     if not name.endswith(".zip") or "/" in name or "\\" in name or not name.isascii():
         abort(404)
     return send_from_directory(current_app.config["DATA_DIR"] / "backups", name, as_attachment=True)
+
+
+@bp.post("/copias/<name>/verificar")
+def check_backup(name):
+    if not name.endswith(".zip") or "/" in name or "\\" in name or not name.isascii():
+        abort(404)
+    path = current_app.config["DATA_DIR"] / "backups" / name
+    if path.is_symlink() or not path.is_file():
+        abort(404)
+    try:
+        info = verify_backup(path)
+    except Exception as exc:
+        raise ValueError(
+            "No se ha podido verificar la copia. Conserva el archivo y revisa otra copia."
+        ) from exc
+    flash(
+        f"Copia verificada: esquema {info['schema_version']}, {info['garments']} prendas y {info['outfits']} outfits.",
+        "success",
+    )
+    return redirect(url_for("settings.index"))
