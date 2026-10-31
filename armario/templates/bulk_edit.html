@@ -4,17 +4,21 @@
 {% block content %}
   <section class="panel narrow">
     <h1>Revisar selección</h1>
-    <p>Se cambiará la categoría de estas {{ garments|length }} prendas. Sus ubicaciones y relaciones se conservan.</p>
+    <p>Se actualizarán los campos elegidos en estas {{ garments|length }} prendas. Sus ubicaciones y relaciones se conservan.</p>
     <ul>{% for item in garments %}<li>{{ item.name }}</li>{% endfor %}</ul>
     <form method="post" action="{{ url_for('inventory.bulk_edit') }}">
       {{ csrf() }}
       {% for item in garments %}
         <input type="hidden" name="garment_ids" value="{{ item.id }}">
       {% endfor %}
-      <label for="category">Nueva categoría</label>
-      <select id="category" name="category_id" required>{% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}</select>
+      <label for="category">Categoría (opcional)</label>
+      <select id="category" name="category_id"><option value="">Sin cambiar</option>{% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}</select>
+      <label for="season">Añadir temporada (opcional)</label>
+      <select id="season" name="season"><option value="">Sin cambiar</option>{% for season in seasons %}<option value="{{ season }}">{{ season }}</option>{% endfor %}</select>
+      <label for="tag">Añadir etiqueta (opcional)</label>
+      <select id="tag" name="tag_id"><option value="">Sin cambiar</option>{% for tag in tags %}<option value="{{ tag.id }}">{{ tag.name }}</option>{% endfor %}</select>
       <label class="check-label">
-        <input type="checkbox" name="confirm" value="1" required>Confirmo el cambio de categoría
+        <input type="checkbox" name="confirm" value="1" required>Confirmo los cambios
       </label>
       <button class="button primary">Guardar cambios</button>
       <a class="button" href="{{ url_for('inventory.index') }}">Cancelar</a>

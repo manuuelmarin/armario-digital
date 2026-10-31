@@ -28,7 +28,14 @@
      height="125"
      loading="lazy"></button>{% if not loop.first %}<form method="post"
       action="{{ url_for('inventory.primary_image',gid=item.id,image_id=p.id) }}">{{ csrf() }}<button class="text-link"
-        aria-label="Usar foto {{ loop.index }} como principal">Hacer principal</button></form>{% else %}<small>Principal</small>{% endif %}<a class="text-link danger photo-delete"
+        aria-label="Usar foto {{ loop.index }} como principal">Hacer principal</button></form>{% else %}<small>Principal</small>{% endif %}{% if not loop.first %}<form method="post"
+      action="{{ url_for('inventory.reorder_image',gid=item.id,image_id=p.id) }}">{{ csrf() }}{% if loop.index > 2 %}<button class="text-link"
+        name="direction"
+        value="anterior"
+        aria-label="Mover foto {{ loop.index }} antes">←</button>{% endif %}{% if not loop.last %}<button class="text-link"
+        name="direction"
+        value="siguiente"
+        aria-label="Mover foto {{ loop.index }} después">→</button>{% endif %}</form>{% endif %}<a class="text-link danger photo-delete"
    href="{{ url_for('inventory.delete_image',gid=item.id,image_id=p.id) }}"
    aria-label="Eliminar foto {{ loop.index }}">Eliminar</a></div>{% endfor %}</div>{% endif %}
     </section>
