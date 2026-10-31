@@ -328,3 +328,98 @@ def test_picker_pagination_retains_selected_items_and_preview(app, tmp_path):
         page.get_by_role("link", name="Ver combinación Selección paginada").click()
         assert page.locator(".outfit-preview").count() == 2
         browser.close()
+
+
+def test_optional_assistant_review_generation_and_mobile(app, tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    from armario.db import connect
+    from armario.profiles import save_profile
+
+    from .conftest import post
+    from .test_local_ai import FakeOllama, profile_data, worker
+
+    client = app.test_client()
+    post(client, "/ajustes/ia", {"enabled": "1"})
+    for kind, length in (
+        ("camisa", "no_visible"),
+        ("pantalon", "largo"),
+        ("calzado", "no_visible"),
+    ):
+        response = post(
+            client,
+            "/prendas/nueva",
+            {
+                "name": f"Ejemplo {kind}",
+                "category_id": "1",
+                "location_id": "1",
+                "photos": photograph(),
+            },
+        )
+        gid = int(response.location.rsplit("/", 1)[1])
+        db = connect(app.config["DATA_DIR"] / "wardrobe.sqlite")
+        try:
+            with db:
+                save_profile(db, gid, profile_data(kind, length), 0, {"origin": "synthetic_test"})
+        finally:
+            db.close()
+    runner = worker(app, FakeOllama())
+    with running_app(app) as base, sync_playwright() as playwright:
+        browser = playwright.chromium.launch(**browser_options())
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        page.set_default_timeout(5000)
+        for width in (1440, 390):
+            page.set_viewport_size({"width": width, "height": 950})
+            for route in (
+                "/ajustes/ia",
+                "/ia/tareas",
+                "/ia/analizar",
+                "/outfits/generar",
+                "/prendas/1/descripcion",
+            ):
+                page.goto(base + route)
+                assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), (
+                    width,
+                    route,
+                )
+                for image in page.locator("main img").all():
+                    image.scroll_into_view_if_needed()
+                    page.wait_for_function(
+                        "img => img.complete && img.naturalWidth > 0", arg=image.element_handle()
+                    )
+                    assert image.evaluate("img => img.complete && img.naturalWidth > 0")
+        page.goto(base + "/prendas/1/descripcion")
+        assert page.locator("fieldset").count() == 7
+        page.get_by_label("Descripción completa", exact=True).fill(
+            "Camisa revisada en el navegador."
+        )
+        page.get_by_role("checkbox", name="He revisado la descripción").check()
+        page.get_by_role("button", name="Guardar descripción revisada").click()
+        page.get_by_role("link", name="Completar con esta prenda").click()
+        assert page.locator('input[name="garment_ids"][value="1"]').is_checked()
+        page.get_by_label("Chaqueta o abrigo", exact=True).select_option("no")
+        page.get_by_label("Pantalón", exact=True).select_option("largo")
+        page.get_by_role("button", name="Generar propuestas").click()
+        assert page.get_by_role("button", name="Cancelar tarea").is_visible()
+        assert runner.run_once()
+        page.get_by_role("link", name="Actualizar estado", exact=True).click()
+        assert page.get_by_role("heading", name="Propuesta 1", exact=True).is_visible()
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        page.screenshot(path=str(tmp_path / "assistant-mobile.png"), full_page=True)
+        page.set_viewport_size({"width": 1440, "height": 1000})
+        page.screenshot(path=str(tmp_path / "assistant-desktop.png"), full_page=True)
+        page.get_by_label("Nombre para guardar").fill("Outfit asistido de prueba")
+        page.get_by_role("button", name="Guardar propuesta 1", exact=True).click()
+        assert page.get_by_role("heading", name="Outfit asistido de prueba").is_visible()
+        assert page.locator(".outfit-preview").count() == 3
+        # Core review and generation controls also work with JavaScript disabled.
+        context = browser.new_context(java_script_enabled=False)
+        no_js = context.new_page()
+        no_js.goto(base + "/prendas/1/descripcion")
+        assert no_js.locator("fieldset").count() == 7
+        no_js.get_by_label("Descripción completa", exact=True).fill("Revisión sin JavaScript.")
+        no_js.get_by_role("checkbox", name="He revisado la descripción").check()
+        no_js.get_by_role("button", name="Guardar descripción revisada").click()
+        assert no_js.get_by_text("Revisión sin JavaScript.", exact=True).is_visible()
+        context.close()
+        browser.close()

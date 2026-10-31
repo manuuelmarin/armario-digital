@@ -9,6 +9,7 @@ Aplicación local y monousuario en Python. La versión de la aplicación se decl
 | Crear el primer espacio, añadir prendas y preparar una maleta | [Primeros pasos](GETTING_STARTED.md) |
 | Actualizar, verificar una copia o restaurar | [Copias y recuperación](BACKUP_RESTORE.md) |
 | Entender el alcance y los flujos | [Producto](PRODUCT.md) |
+| Preparar modelos locales, revisar descripciones y generar outfits | [Asistencia local](LOCAL_AI.md) |
 | Consultar límites y tratamiento de datos | [Seguridad](../SECURITY.md) |
 | Saber qué ha cambiado y qué falta | [Historial](../CHANGELOG.md) · [Hoja de ruta](ROADMAP.md) |
 
@@ -21,6 +22,7 @@ Aplicación local y monousuario en Python. La versión de la aplicación se decl
 | Entender las elecciones técnicas | [Decisiones](DECISIONS.md) |
 | Ejecutar pruebas y distinguir evidencia de cobertura | [Verificación](TESTING.md) |
 | Consultar referencias y revisiones anteriores | [Auditoría de producto](AUDIT.md) |
+| Revisar el desarrollo de la asistencia local | [Registro del cambio](changes/2026-10-31-local-ai.md) |
 | Revisar recursos y condiciones de distribución | [Terceros](THIRD_PARTY.md) · [Publicación](PUBLISHING.md) |
 
 ## Mantener las guías coherentes

@@ -6,7 +6,7 @@
 
 Aplicación local desarrollada con Python y SQLite. Los espacios son configurables, las fotografías permanecen en el dispositivo y la instalación empieza sin datos de ejemplo.
 
-**Preview 0.2.0 · Esquema de datos 8** · Python 3.11+ · Interfaz en español
+**Preview 0.3.0 · Esquema de datos 9** · Python 3.11+ · Interfaz en español
 
 CI: Windows y Linux con Python 3.12; macOS y los lanzadores de Windows requieren validación manual.
 
@@ -35,6 +35,7 @@ El proceso escucha en `127.0.0.1`; el repositorio contiene código y recursos de
 - **Catálogo visual.** Hasta seis fotos por prenda, elección de fotografía principal, imágenes adaptadas a pantallas de alta densidad y vista ampliada. Marca, talla, color, temporada, compra y notas opcionales.
 - **Organización flexible.** Espacios con nombres propios, búsqueda sin tildes, filtros combinables, ordenación, favoritos y archivo.
 - **Outfits.** Combinaciones guardadas con búsqueda, filtro de favoritos, vista completa y duplicación; el selector visual permite consultar dónde están las prendas.
+- **Asistencia local opcional.** Visión con Qwen3-VL 4B Q4 para descripciones revisables y Qwen3 4B Q4 de texto para outfits explicados, sorpresa coherente, prendas fijadas, filtros y sustitución de una pieza. Requiere Ollama preparado aparte; [guía de instalación y límites](docs/LOCAL_AI.md).
 - **Maletas.** Listas que incorporan prendas y outfits sin duplicados, objetos adicionales, copia o vuelta y confirmación explícita de traslados. Se pueden imprimir o guardar como PDF desde el navegador.
 - **Colecciones y etiquetas.** Agrupa y filtra prendas, conservando sus ubicaciones y las relaciones con prendas archivadas.
 - **Inspiración.** Tableros locales con imágenes, notas y enlaces; collage con posición y tamaño ajustables y arrastre opcional.
@@ -56,6 +57,8 @@ Requisito: [Python](https://www.python.org/downloads/) 3.11 o posterior, con el 
 4. Visita `http://127.0.0.1:8765` y crea tu primer espacio.
 
 La instalación inicial descarga las dependencias. Después, el catálogo funciona sin conexión. Cierra el servidor con **Ctrl+C**.
+
+La asistencia local está desactivada inicialmente. No hace falta descargar modelos para utilizar el catálogo. Para activarla, sigue [IA local](docs/LOCAL_AI.md): la app no instala Ollama ni sus pesos automáticamente.
 
 ### Linux y macOS
 

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf with context %}
+{% block title %}Asistencia local · Armario Digital{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('settings.index') }}">← Volver a Ajustes</a>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">OPCIONAL · EN TU EQUIPO</p>
+      <h1>Asistencia local</h1>
+      <p class="subtitle">Fotografías a descripciones revisables. Descripciones a outfits con sentido.</p>
+    </div>
+    <a class="button" href="{{ url_for('assistant.tasks') }}">Ver tareas</a>
+  </div>
+  <div class="form-grid">
+    <section class="panel">
+      <h2>Tú decides cuándo usarla</h2>
+      <p>El armario y la creación manual funcionan sin modelos. Al activarla, cada análisis o generación se solicita con su botón. No se analiza el inventario automáticamente.</p>
+      <form method="post">{{ csrf() }}<label class="check-label"><input type="checkbox"
+       name="enabled"
+       value="1"
+       {% if preferences.enabled %}checked{% endif %}> Activar asistencia local</label><button class="button primary">Guardar preferencias</button></form>
+      <p class="muted">Una tarea cada vez. Pausar detiene las siguientes; cancelar descarta el resultado de la tarea activa. Desactivar cancela los análisis y las generaciones pendientes.</p>
+      <div class="action-row section-space"><a class="button" href="{{ url_for('assistant.analyze_batch') }}">Analizar prendas</a><a class="button" href="{{ url_for('assistant.generate') }}">Generar outfits</a></div>
+    </section>
+    <section class="panel">
+      <h2>Preparar Ollama una vez</h2>
+      <p>Instala <a class="text-link"
+    href="https://ollama.com/download"
+    target="_blank"
+    rel="noopener">Ollama</a> y descarga estos dos modelos abiertos desde su terminal:</p>
+      <pre class="ai-code"><code>ollama pull {{ vision_model }}
+ollama pull {{ text_model }}</code></pre>
+      <p class="muted">La descarga necesita internet y varios GB de disco. La app no instala nada. Las inferencias usan solo Ollama en 127.0.0.1:11434; el modelo de texto no recibe fotografías.</p>
+      <p>Configura <code>OLLAMA_NO_CLOUD=1</code>, <code>OLLAMA_NUM_PARALLEL=1</code> y <code>OLLAMA_MAX_LOADED_MODELS=1</code> en el entorno de Ollama y reinícialo para limitar su ejecución a lo local y cargar un modelo cada vez. Guía completa en <code>docs/LOCAL_AI.md</code>.</p>
+      <form method="post" action="{{ url_for('assistant.check') }}">
+        {{ csrf() }}<button class="button">Comprobar Ollama y modelos</button>
+      </form>
+      {% if check %}<p class="section-space"><strong>Última comprobación:</strong> {{ states[check.status] }} · {{ check.created_at[:16]|replace('T', ' ') }} UTC</p>{% if check.result %}<ul>{% for model in [vision_model,text_model] %}<li>{{ 'Disponible' if model in check.result.models else 'Falta descargar' }}: <code>{{ model }}</code></li>{% endfor %}</ul>{% endif %}{% if check.error %}<p class="notice">{{ check.error }}</p>{% endif %}{% endif %}
+    </section>
+  </div>
+{% endblock %}

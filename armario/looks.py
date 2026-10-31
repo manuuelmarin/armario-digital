@@ -1,3 +1,5 @@
+import json
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from .db import get_db
@@ -44,7 +46,17 @@ def detail(oid):
         )
         .fetchall()
     )
-    return render_template("outfit_detail.html", outfit=outfit, items=items)
+    origin = (
+        get_db()
+        .execute("SELECT provenance_json FROM outfit_origins WHERE outfit_id=?", (oid,))
+        .fetchone()
+    )
+    return render_template(
+        "outfit_detail.html",
+        outfit=outfit,
+        items=items,
+        origin=json.loads(origin[0]) if origin else None,
+    )
 
 
 @bp.post("/outfits/<int:oid>/duplicar")
@@ -92,6 +104,8 @@ def edit(oid=None):
                     (*fields, oid),
                 )
                 db.execute("DELETE FROM outfit_items WHERE outfit_id=?", (oid,))
+                # A manually changed combination no longer carries the original model ratings.
+                db.execute("DELETE FROM outfit_origins WHERE outfit_id=?", (oid,))
             else:
                 oid = db.execute(
                     "INSERT INTO outfits(name,notes,occasion,favorite) VALUES (?,?,?,?)", fields

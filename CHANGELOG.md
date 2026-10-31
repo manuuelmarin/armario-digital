@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 — 2026-10-31 — asistencia local opcional
+
+- Dos modelos locales independientes mediante Ollama: Qwen3-VL 4B Instruct Q4 para visión y Qwen3 4B Instruct 2507 Q4 para evaluar outfits a partir de descripciones revisadas.
+- Narrativa y siete grupos editables sin duplicar identificación/función, aprobación explícita, revisiones y detección de fotografías o resultados caducados.
+- Generación recomendada y sorpresa entre candidatos valorados, prendas fijadas, filtros de ubicación/chaqueta/largo/accesorios, ocasión/estilo y sustitución de una pieza conservando las demás.
+- Cola persistente de un trabajador, análisis por lotes, pausa, cancelación, reintento explícito y recuperación de tareas interrumpidas. El armario sigue disponible durante la inferencia.
+- Validación estricta de salida e identidad, endpoint loopback fijo y ausencia de descarga o fallback cloud. Desactivado por defecto; creación manual conservada.
+- Migración 9 con copia previa y procedencia de descripciones/outfits; compatibilidad con copias de esquemas 1 a 9.
+- Guía de preparación, límites y registro de generación del cambio en [IA local](docs/LOCAL_AI.md) y [registro de revisión](docs/changes/2026-10-31-local-ai.md). La calidad y velocidad de modelos reales requieren validación independiente; los tests automatizados usan dobles.
+
 ## Sin publicar — organización y fotos
 
 - Edición en lote de categoría y adición de temporada o etiqueta; paginación progresiva del selector conservando la selección.

@@ -44,6 +44,8 @@ La restauración adquiere el bloqueo de instancia. Si el servidor sigue abierto,
 
 Una interrupción física entre ambos renombrados puede dejar los datos en la carpeta `-before-restore-…`: no se han borrado. Con la aplicación cerrada, renombra esa carpeta al nombre original antes de volver a arrancar. No elimines la carpeta anterior hasta revisar el inventario recuperado y descargar otra copia. El diseño no garantiza recuperación frente a cualquier fallo de hardware o corrupción del sistema de archivos.
 
-La versión 0.2 acepta copias de esquemas 1 a 8, incluidas fotos antiguas sin preview; el siguiente arranque los migra con copia previa. Se rechazan versiones futuras para impedir que código antiguo interprete datos que desconoce.
+La versión 0.3 acepta copias de esquemas 1 a 9, incluidas fotos antiguas sin preview; el siguiente arranque los migra con copia previa. Se rechazan versiones futuras para impedir que código antiguo interprete datos que desconoce.
+
+Desde el esquema 9 también se guardan perfiles revisados, tareas y procedencia de outfits asistidos. No se guardan los pesos ni la configuración de Ollama: prepara el servicio por separado en el equipo de destino. Las tareas en cola pueden continuar al arrancar si la asistencia estaba activa y sin pausa; las interrumpidas en curso pasan a error y requieren reintento explícito. Consulta [IA local](LOCAL_AI.md) antes de reanudar una cola restaurada.
 
 Si la base de datos o alguna imagen del estado actual está dañada, la restauración conserva la carpeta anterior completa aunque no pueda generar una copia adicional. Revisa esa carpeta antes de eliminarla.

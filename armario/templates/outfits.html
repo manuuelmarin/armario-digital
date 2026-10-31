@@ -8,7 +8,7 @@
       <h1>Outfits<span class="count">{{ outfits|length }}</span></h1>
       <p class="subtitle">Guarda las combinaciones que quieres volver a encontrar.</p>
     </div>
-    <a class="button primary" href="{{ url_for('looks.edit') }}">{{ icon("plus") }}Crear outfit</a>
+    <div class="action-row"><a class="button" href="{{ url_for('assistant.generate') }}">Generar outfits</a><a class="button primary" href="{{ url_for('looks.edit') }}">{{ icon("plus") }}Crear outfit</a></div>
   </div>
   <form method="get" class="panel section-space">
     <label for="outfit-search">Buscar por nombre, ocasión o notas</label>

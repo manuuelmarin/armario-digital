@@ -9,9 +9,11 @@
 
 ## Próximas iteraciones
 
-1. Paginación de selectores, ordenación de imágenes y duplicación controlada de prendas.
+1. Validar calidad, consumo y latencia de los dos modelos locales con un armario pequeño; la integración opcional y sus controles ya están implementados.
 2. Mejorar la búsqueda de localidades para la meteorología y añadir exportación de collages.
 3. Ampliar el recordatorio de copias y estudiar una política automática sin riesgo de borrar la única copia válida.
+
+La paginación visual de selectores y la ordenación de fotografías están implementadas. Duplicación controlada de prendas, más capas/accesorios y preselección de outfits para armarios muy grandes quedan sujetos a validación de uso, sin sustituir la edición manual.
 
 ## Según validación de uso
 

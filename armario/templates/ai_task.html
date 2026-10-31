@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from 'macros.html' import csrf, photo with context %}
+{% block title %}Tarea {{ job.id }} · Armario Digital{% endblock %}
+{% block head %}
+  {% if job.status in ["queued","running"] %}
+    <script src="{{ url_for('static',filename='ai.js',v=version) }}" defer></script>
+  {% endif %}
+{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('assistant.tasks') }}">← Tareas locales</a>
+  <div class="page-heading"><div><p class="eyebrow">TAREA #{{ job.id }}</p><h1>{{ kinds[job.kind] }}</h1><p class="subtitle"
+   role="status"
+   {% if job.status in ['queued','running'] %}data-ai-status="{{ job.status }}" data-ai-poll="{{ url_for('assistant.task_state',jid=job.id) }}"{% endif %}>{{ states[job.status] }}</p></div><a class="button" href="{{ url_for('assistant.task',jid=job.id) }}">Actualizar estado</a></div>
+  {% if job.error %}<p class="notice">{{ job.error }}</p>{% endif %}
+  {% if job.status in ["queued","running"] %}<section class="panel"><p>Puedes seguir navegando. Ollama puede tardar varios minutos según tu equipo. Esta página consulta el estado durante diez minutos; después puedes actualizarlo manualmente.</p><form method="post" action="{{ url_for('assistant.cancel',jid=job.id) }}">{{ csrf() }}<button class="button">Cancelar tarea</button></form><p class="muted">Cancelar impide aplicar el resultado. La inferencia que ya haya empezado en Ollama puede continuar hasta terminar.</p><a class="text-link" href="{{ url_for('assistant.tasks') }}">Ver o pausar la cola</a></section>{% endif %}
+  {% if job.status in ["failed","cancelled","stale"] %}<form method="post" action="{{ url_for('assistant.retry',jid=job.id) }}">{{ csrf() }}<button class="button">Reintentar con los datos actuales</button></form>{% endif %}
+  {% if job.status == "completed" and job.kind == "check" %}<section class="panel"><h2>Comprobación terminada</h2><p>La comprobación detecta modelos instalados. La calidad y velocidad se valoran después con tus prendas.</p><ul>{% for model in job.result.models %}<li><code>{{ model }}</code></li>{% else %}<li>No se han encontrado los modelos previstos. Consulta la preparación en Ajustes.</li>{% endfor %}</ul><a class="button" href="{{ url_for('assistant.settings') }}">Ver configuración</a></section>{% endif %}
+  {% if job.status == "completed" and job.kind == "vision" %}<section class="panel"><h2>Descripción propuesta</h2><p class="preserve-lines">{{ job.result.description }}</p>{% if fresh %}<a class="button primary"
+   href="{{ url_for('assistant.profile',gid=job.garment_id,job=job.id) }}">Revisar los siete grupos</a>{% else %}<p class="notice">La descripción ya se ha revisado o su fuente ha cambiado. Consulta la ficha actual de la prenda.</p>{% endif %}<p class="muted">Solo una revisión guardada se usa en las recomendaciones. El análisis no cambia automáticamente la ficha.</p></section>{% endif %}
+  {% if job.status == "completed" and job.kind == "outfit" %}
+    {% if not fresh %}<p class="notice">El armario ha cambiado desde esta generación. Puedes consultar las propuestas, pero debes volver a generar para guardarlas.</p>{% endif %}
+    <p class="muted">{{ job.result.evaluated }} {{ 'candidato evaluado' if job.result.evaluated == 1 else 'candidatos evaluados' }} de {{ job.result.candidates }}. Las valoraciones de 1 a 5 son orientativas, no probabilidades. Se muestran las propuestas mejor valoradas.</p>
+    {% for proposal in job.result.outfits %}{% set number = loop.index %}<article class="panel section-space"><h2>Propuesta {{ number }}</h2><p>{{ proposal.reason }}</p><dl class="ai-ratings"><div><dt>Armonía</dt><dd>{{ proposal.harmony }}/5</dd></div><div><dt>Estilo y ocasión</dt><dd>{{ proposal.style }}/5</dd></div><div><dt>Equilibrio</dt><dd>{{ proposal.balance }}/5</dd></div></dl><div class="ai-pieces">{% for gid in proposal.garment_ids %}<div>{% if gid in items %}<a href="{{ url_for('inventory.detail',gid=gid) }}"><div class="ai-piece-photo">{{ photo(items[gid]) }}</div><strong>{{ items[gid].name }}</strong></a><p class="muted">{{ items[gid].location_name }}</p>{% else %}<p>Prenda {{ gid }} no disponible</p>{% endif %}{% if fresh %}<form method="post" action="{{ url_for('assistant.replace',jid=job.id) }}">{{ csrf() }}<input type="hidden" name="proposal" value="{{ number }}"><button class="text-link" name="garment_id" value="{{ gid }}">Cambiar esta prenda</button></form>{% endif %}</div>{% endfor %}</div>{% if fresh %}<form method="post"
+      class="section-space"
+      action="{{ url_for('assistant.save_outfit',jid=job.id) }}">{{ csrf() }}<input type="hidden" name="proposal" value="{{ number }}"><label for="outfit-name-{{ number }}">Nombre para guardar</label><input id="outfit-name-{{ number }}"
+       name="name"
+       required
+       maxlength="120"
+       value="Propuesta {{ number }}"><button class="button primary">Guardar propuesta {{ number }}</button></form>{% endif %}</article>{% endfor %}
+    <p class="section-space"><a class="button"
+   href="{{ url_for('assistant.generate') }}">Preparar otra generación</a></p>
+  {% endif %}
+  <details class="panel section-space"><summary>Origen y versión de la tarea</summary><p>Creada: {{ job.created_at }} UTC</p>{% if job.model %}<p class="path">Modelo: {{ job.model }}</p><p class="path">Huella: {{ job.model_digest or 'Pendiente de ejecución' }}</p>{% endif %}<p>Instrucciones: {{ job.prompt_version }}</p><p class="muted">La tarea conserva los datos utilizados y el resultado validado en tu almacenamiento local. No guarda las fotografías en el historial.</p></details>
+{% endblock %}

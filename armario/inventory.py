@@ -271,10 +271,13 @@ def edit(gid):
 
 @bp.get("/prendas/<int:gid>")
 def detail(gid):
+    from .profiles import approved
+
     item, db = garment(gid), get_db()
     return render_template(
         "garment_detail.html",
         item=item,
+        visual_profile=approved(db, gid),
         photos=db.execute(
             "SELECT * FROM garment_images WHERE garment_id=? ORDER BY is_primary DESC, COALESCE(sort_order, id), id",
             (gid,),

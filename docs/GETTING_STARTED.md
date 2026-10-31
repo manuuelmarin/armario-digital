@@ -52,3 +52,7 @@ Selecciona prendas en el inventario para cambiarles la categoría o añadir temp
 Si algo falla, conserva el mensaje de error sin datos personales y consulta [recuperación](BACKUP_RESTORE.md). No borres la carpeta de datos ni intentes abrir simultáneamente dos versiones contra el mismo inventario. La demo temporal no sirve para conservar una colección real.
 
 En la ficha de una prenda, usa las flechas para ordenar las fotografías secundarias; la principal permanece al inicio. Los selectores paginan visualmente con JavaScript y conservan las selecciones entre páginas; sin JavaScript muestran todas las prendas.
+
+## Asistencia local, si decides activarla
+
+Desde **Ajustes → Configurar asistencia local**, prepara Ollama y sus dos modelos siguiendo [LOCAL_AI.md](LOCAL_AI.md). La instalación del catálogo no descarga modelos. Revisa las descripciones desde cada prenda y abre **Outfits → Generar outfits** para fijar piezas y elegir filtros. Cada resultado necesita una acción explícita para guardarse; el armario y los outfits manuales siguen disponibles si Ollama no está instalado.

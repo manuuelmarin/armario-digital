@@ -11,6 +11,9 @@ Un proceso Python sirve HTML y recursos locales, aplica las reglas del dominio y
 | `organization.py` | Colecciones, etiquetas y asociaciones con prendas |
 | `boards.py` | Tableros, enlaces y posiciones del collage local |
 | `weather.py` | Consulta explícita a Open-Meteo y última previsión guardada |
+| `assistant.py` | Rutas de configuración, revisión, cola y generación opcional |
+| `ai_client.py`, `ai_jobs.py` | Contrato Ollama loopback y trabajador secuencial persistente |
+| `profiles.py`, `recommendations.py` | Siete grupos revisados, vigencia, candidatos, restricciones y valoraciones |
 | `domain.py` | Validaciones y operaciones compartidas |
 | `queries.py` | Lecturas de prendas con su imagen principal y entidades permitidas |
 | `db.py`, `migrations/` | Conexiones, integridad y evolución del esquema |
@@ -33,7 +36,7 @@ Las fotografías usan variantes de 512, 1.024 y hasta 4.096 px y atributos `srcs
 
 Los estilos se dividen en `tokens.css` (variables y fuentes), `app.css` (base y estructura), `components.css` (pantallas y componentes) y `responsive.css` (adaptación y accesibilidad). Las plantillas usan formato Jinja verificable con djLint.
 
-JavaScript mejora selección masiva, filtros móviles, búsqueda en selectores, vista previa y galería. Los formularios siguen siendo operativos sin JavaScript. El selector de outfits todavía renderiza el armario activo completo; la paginación del selector queda pendiente para colecciones muy grandes.
+JavaScript mejora selección masiva, filtros móviles, búsqueda en selectores, vista previa, galería y consulta de estado de tareas. Los formularios siguen siendo operativos sin JavaScript. El selector de outfits pagina visualmente en cliente y conserva selecciones; todavía renderiza el armario activo completo desde el servidor.
 
 ## Decisiones
 
@@ -57,3 +60,11 @@ La integridad de imágenes se registra desde el esquema 5. Una primera línea ba
 ## Límite de red
 
 El catálogo no requiere red tras instalar dependencias. La meteorología es opcional y envía coordenadas e IP a Open-Meteo al actualizar; borrar su caché activa no elimina los datos de copias anteriores. Abrir un enlace de inspiración utiliza el navegador y el destino externo aplica sus propias condiciones. No hay sincronización del inventario ni geolocalización automática.
+
+## Asistencia local opcional
+
+La app no carga los pesos: un servicio Ollama preparado aparte atiende el endpoint fijo `127.0.0.1:11434`. Visión recibe una foto principal recodificada temporalmente y devuelve una propuesta de perfil. Solo la aprobación explícita escribe una revisión utilizable. Texto recibe resúmenes de perfiles aprobados y candidatos completos; Python aplica los filtros y verifica nuevamente el resultado antes de guardarlo. No hay llamadas cloud ni descargas de modelos desde el adaptador.
+
+`run.py` inicia un único trabajador dentro del bloqueo de instancia. La cola reside en `ai_jobs`; cada operación abre y cierra su propia conexión. Las capturas y escrituras breves comparten `MUTATION_LOCK` con las solicitudes. La inferencia transcurre fuera de ese bloqueo y fuera de una transacción, de modo que no impide seguir usando el armario o crear copias. Antes de publicar un resultado se comprueban foto, hash, revisión, ubicación y disponibilidad. El cierre descarta respuestas tardías, y un arranque marca en error las tareas interrumpidas sin reintentar inferencias automáticamente.
+
+El cliente usa JSON estructurado, límites de tamaño/contexto y `keep_alive=0`; el control de carga global se configura también en Ollama. La procedencia registra etiqueta/digest, esquema de perfil, versión de instrucciones, datos y resultado validado. Las restricciones, aproximaciones de preselección y límites de memoria/cancelación están en [LOCAL_AI.md](LOCAL_AI.md).
