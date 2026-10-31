@@ -1,5 +1,7 @@
 # Auditoría de producto y repositorio — 0.2
 
+La revisión actual, con los hallazgos y correcciones de la asistencia local, está en [Auditoría 0.3.1](audits/2026-10-31-project.md). Este documento conserva el contraste de producto y la evidencia histórica de 0.2.
+
 Fecha: 29 de octubre de 2026. Alcance: código de la preview 0.1, instalación, interfaz, datos de ejemplo, fotografías, documentación, pruebas y preparación de distribución.
 
 ## Referencias

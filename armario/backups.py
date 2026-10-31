@@ -11,6 +11,7 @@ import uuid
 import zipfile
 from contextlib import contextmanager
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
@@ -20,6 +21,43 @@ from .images import MAX_PIXELS
 
 IMAGE_NAME = re.compile(r"^[0-9a-f]{32}(?:-thumb|-preview)?\.webp$")
 MAX_UNPACKED_BYTES = 4 * 1024**3
+
+
+@lru_cache(maxsize=SCHEMA_VERSION)
+def schema_contract(version):
+    """Derive required tables/columns from the same migrations used at startup."""
+    reference = sqlite3.connect(":memory:")
+    try:
+        for number in range(1, version + 1):
+            script = next(Path(__file__).with_name("migrations").glob(f"{number:03d}_*.sql"))
+            reference.executescript(script.read_text(encoding="utf-8"))
+        return tuple(
+            (name, tuple(row[1] for row in reference.execute(f'PRAGMA table_info("{name}")')))
+            for (name,) in reference.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            )
+        )
+    finally:
+        reference.close()
+
+
+def check_structure(db, version):
+    tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    for name, required in schema_contract(version):
+        if name not in tables:
+            raise ValueError(
+                f"La estructura del esquema {version} está incompleta: falta la tabla {name}."
+            )
+        actual = {row[1] for row in db.execute(f'PRAGMA table_info("{name}")')}
+        if not set(required) <= actual:
+            raise ValueError(
+                f"La estructura del esquema {version} está incompleta: faltan columnas en {name}."
+            )
+    if (
+        version >= 9
+        and db.execute("SELECT count(*) FROM ai_settings WHERE id=1").fetchone()[0] != 1
+    ):
+        raise ValueError("La estructura de ajustes de asistencia está incompleta.")
 
 
 @contextmanager
@@ -85,10 +123,13 @@ def check_database(path, expected_version=None):
     db = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)
     try:
         version = db.execute("PRAGMA user_version").fetchone()[0]
+        if expected_version is not None and type(expected_version) is not int:
+            raise ValueError("La versión del esquema debe ser un entero.")
         if expected_version is not None and version != expected_version:
             raise ValueError("La versión del manifiesto no coincide con la base de datos.")
         if not 1 <= version <= SCHEMA_VERSION:
             raise ValueError("Esta copia pertenece a una versión incompatible.")
+        check_structure(db, version)
         if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             raise ValueError("La base de datos está dañada.")
         if db.execute("PRAGMA foreign_key_check").fetchall():
@@ -181,7 +222,9 @@ def unpack_verified(archive_path, staging):
         manifest = json.loads(archive.read("manifest.json"))
         if (
             not isinstance(manifest, dict)
+            or type(manifest.get("format")) is not int
             or manifest.get("format") != 1
+            or type(manifest.get("schema_version")) is not int
             or not isinstance(manifest.get("files"), dict)
         ):
             raise ValueError("El formato de la copia no es compatible.")

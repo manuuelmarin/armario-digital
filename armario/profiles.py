@@ -4,6 +4,7 @@ import base64
 import hashlib
 import io
 import json
+import uuid
 
 from PIL import Image
 
@@ -228,14 +229,32 @@ def image_payload(root, snapshot):
     with Image.open(io.BytesIO(data)) as picture:
         picture.thumbnail((1024, 1024))
         buffer = io.BytesIO()
-        picture.convert("RGB").save(buffer, format="JPEG", quality=88)
+        rgba = picture.convert("RGBA")
+        background = Image.new("RGB", rgba.size, (250, 250, 250))
+        background.paste(rgba, mask=rgba.getchannel("A"))
+        background.save(buffer, format="JPEG", quality=88)
     return base64.b64encode(buffer.getvalue()).decode("ascii")
+
+
+def source_intact(root, current):
+    """Compare actual bytes, including edits/deletions outside our mutation lock."""
+    from .backups import IMAGE_NAME, digest
+
+    if not current["name"]:
+        return not current["hash"]
+    if not IMAGE_NAME.fullmatch(current["name"]):
+        return False
+    try:
+        return digest(root / "images" / current["name"]) == current["hash"]
+    except OSError:
+        return False
 
 
 def save_profile(db, gid, profile, expected_revision, provenance):
     if revision(db, gid) != expected_revision:
         raise ValueError("La descripción ha cambiado en otra pestaña. Recarga antes de guardar.")
     current = source(db, gid)
+    provenance = {**provenance, "approval_id": uuid.uuid4().hex}
     db.execute(
         "INSERT INTO garment_profiles(garment_id,revision,profile_json,source_name,source_hash,provenance_json) VALUES (?,?,?,?,?,?) ON CONFLICT(garment_id) DO UPDATE SET revision=excluded.revision,profile_json=excluded.profile_json,source_name=excluded.source_name,source_hash=excluded.source_hash,provenance_json=excluded.provenance_json,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')",
         (

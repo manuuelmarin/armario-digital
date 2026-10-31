@@ -2,6 +2,8 @@
 
 La asistencia es opcional y está desactivada en una instalación nueva. El catálogo y los outfits manuales funcionan sin Ollama. Se mantienen Python, Flask, Jinja y SQLite; no se añade PyTorch ni una dependencia de pago.
 
+La revisión 0.3.1 corrige sustituciones de capas, contraste de transparencias y comprobaciones de integridad/procedencia. El [informe de auditoría](audits/2026-10-31-project.md) recoge la evidencia. Las propuestas de outfits del formato anterior necesitan regeneración explícita; se conservan las descripciones y combinaciones ya guardadas.
+
 ## Qué hace cada modelo
 
 | Trabajo | Modelo local admitido | Entrada | Resultado |
@@ -66,6 +68,8 @@ Al terminar, pulsa **Revisar los siete grupos**, corrige y **Guardar descripció
 
 Cambiar o quitar la foto principal deja caducada la revisión anterior hasta que la confirmes para la foto actual. Si cambias la foto, archivas/eliminas la prenda o corriges su descripción durante una inferencia, su resultado se descarta. Dos pestañas no pueden sobrescribir silenciosamente una revisión más reciente.
 
+También se comprueban los bytes reales al ejecutar/publicar resultados y al aprobar o guardar: una foto borrada o modificada fuera de la app no se considera vigente solo por conservar el mismo nombre. Reimporta la fotografía si no coincide con su huella. Las transparencias se componen sobre fondo claro para el JPEG temporal de visión; no se altera la foto guardada.
+
 ## Generar outfits
 
 Abre **Outfits → Generar outfits**. Se usan prendas activas con descripción revisada vigente y tipo reconocido.
@@ -78,6 +82,8 @@ Abre **Outfits → Generar outfits**. Se usan prendas activas con descripción r
 Los filtros obligatorios son ubicación, chaqueta/abrigo sí o no, pantalón corto/largo confirmado, permiso de accesorios y prendas fijadas. La ocasión y el estilo son preferencias para el modelo, no garantías verificables por un filtro. Si eliges pantalón corto/largo, no se sustituye por falda o vestido ni por un largo desconocido.
 
 Un candidato completo tiene superior + inferior + calzado, o vestido/mono + calzado. Puede incluir una chaqueta/abrigo y un accesorio. Esta versión admite como máximo una prenda por capa; no modela todavía camiseta + camisa + jersey ni varios accesorios simultáneos. La chaqueta obligatoria puede ser chaqueta o abrigo: el control lo anuncia así.
+
+Sustituir una pieza conserva su capa y el resto: una chaqueta no desaparece por ser opcional, un accesorio necesita otro accesorio y un vestido/mono no se convierte silenciosamente en dos prendas. Si no hay una alternativa revisada con esos filtros, se informa sin generar otro tipo de conjunto. Al partir de un outfit guardado se mantienen los controles de chaqueta y accesorios.
 
 ### Cómo se decide
 
@@ -105,7 +111,7 @@ No se mantiene el bloqueo de escritura ni una transacción SQLite durante las ll
 
 ## Datos, seguridad y recuperación
 
-El destino del adaptador está fijado a `127.0.0.1:11434`; no admite URL de usuario, proxy de entorno, redirecciones, descarga automática ni fallback cloud. Solo usa `/api/tags` y `/api/chat`. El modelo de texto no recibe imágenes, marca, precio, talla, notas personales ni nombres de ubicaciones. Las instrucciones no habilitan herramientas ni ejecución de código.
+El destino del adaptador está fijado a `127.0.0.1:11434`; no admite URL de usuario, proxy de entorno, redirecciones, descarga automática ni fallback cloud. Solo usa `/api/tags` y `/api/chat`. Al modelo de texto no se adjuntan imágenes ni los campos originales de marca, precio, talla, notas y nombres de ubicaciones. Los textos libres de los perfiles aprobados sí se envían al servicio local tal como se hayan revisado, incluido cualquier dato escrito en ellos. Las instrucciones no habilitan herramientas ni ejecución de código.
 
 Los resultados se validan con esquema estricto, opciones cerradas, límites de texto/listas/respuesta y rechazo de claves JSON duplicadas. Los textos se renderizan escapados. Las descripciones y preferencias se tratan como datos no confiables; un modelo puede seguir interpretándolas mal, pero no puede inventar IDs guardables, mover prendas ni ejecutar acciones de la aplicación.
 

@@ -10,7 +10,7 @@ from werkzeug.exceptions import HTTPException, SecurityError
 
 from . import db
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 
 def default_data_dir():

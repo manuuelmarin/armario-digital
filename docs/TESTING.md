@@ -1,5 +1,7 @@
 # Pruebas y evidencia de verificación
 
+Estado auditado en 0.3.1: **114 pruebas locales aprobadas**, incluidas siete de navegador. El [informe](audits/2026-10-31-project.md) detalla los seis problemas encontrados, sus reproducciones, correcciones, cobertura y límites. `tests/test_project_audit.py` conserva las regresiones; `test_browser.py` comprueba además la sustitución de una pieza de un outfit con chaqueta y accesorio sin JavaScript.
+
 ## Comandos reproducibles
 
 ```powershell

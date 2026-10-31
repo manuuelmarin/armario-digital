@@ -24,6 +24,8 @@ Se crea una copia al primer arranque de cada día UTC y antes de migrar datos ex
 
 Verifica ZIP, nombres permitidos, hashes, versión, integridad SQLite, relaciones y decodificación de imágenes. La creación verifica el archivo completo antes de darlo por terminado. Rechaza entradas duplicadas, enlaces simbólicos, rutas ajenas al formato, más de 20.002 archivos o más de 4 GB descomprimidos. Las copias están sin cifrar: guárdalas con el mismo cuidado que tus fotos.
 
+Desde 0.3.1 se comprueban también tablas/columnas obligatorias derivadas de las migraciones y la fila de ajustes del esquema 9. La ausencia de una tabla no se considera válida por el mero resultado `ok` del chequeo mecánico de SQLite. El manifiesto requiere enteros para formato y esquema. Esta validación se aplica antes de sustituir los datos al restaurar y también en el arranque; no modifica el formato ni elimina la compatibilidad de esquemas 1–9.
+
 ## Restaurar
 
 1. Cierra Armario Digital con Ctrl+C.

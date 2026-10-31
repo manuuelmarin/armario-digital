@@ -29,6 +29,7 @@ from .profiles import (
     revision,
     save_profile,
     source,
+    source_intact,
     vision_snapshot,
 )
 from .queries import active_garments, entity, garment
@@ -37,6 +38,7 @@ from .recommendations import (
     constraints_from_form,
     current_snapshot,
     make_snapshot,
+    role,
     valid_plan,
 )
 
@@ -122,7 +124,7 @@ def queue_control():
 def task(jid):
     job = job_entity(jid)
     items = {}
-    fresh = valid_sources(get_db(), job)
+    fresh = valid_sources(get_db(), job, current_app.config["DATA_DIR"])
     if job["kind"] == "outfit" and job["result"]:
         wanted = {gid for proposal in job["result"]["outfits"] for gid in proposal["garment_ids"]}
         for row in active_garments():
@@ -219,7 +221,7 @@ def profile(gid):
             job["kind"] != "vision"
             or job["garment_id"] != gid
             or job["status"] != "completed"
-            or not valid_sources(db, job)
+            or not valid_sources(db, job, current_app.config["DATA_DIR"])
         ):
             raise ValueError(
                 "Esta propuesta ya no corresponde a la foto o revisión actual. Solicita otro análisis."
@@ -240,6 +242,10 @@ def profile(gid):
             )
         if request.form.get("confirm") != "1":
             raise ValueError("Confirma que has revisado la descripción.")
+        if not source_intact(current_app.config["DATA_DIR"], current_source):
+            raise ValueError(
+                "La fotografía no coincide con su huella guardada. Reimporta la foto antes de aprobar su descripción."
+            )
         provenance = {"origin": "vision_reviewed" if job else "manual", "schema": 1}
         if job:
             provenance.update(
@@ -299,7 +305,8 @@ def generate():
             )
         except ValueError as error:
             raise ValueError("La sustitución no es válida.") from error
-        entity("outfits", outfit_id)
+        outfit = entity("outfits", outfit_id)
+        constraints["occasion"] = outfit["occasion"]
         chosen = [
             r[0]
             for r in db.execute(
@@ -310,6 +317,24 @@ def generate():
             raise ValueError("Elige una prenda del outfit para sustituir.")
         constraints["fixed"] = [gid for gid in chosen if gid != replacement]
         constraints["excluded"] = [replacement]
+        saved = {gid: approved(db, gid) for gid in chosen}
+        if any(
+            not entry or entry["stale"] or not role(entry["profile"]) for entry in saved.values()
+        ):
+            raise ValueError(
+                "Revisa las descripciones de las prendas del outfit antes de buscar alternativas."
+            )
+        roles = {role(entry["profile"]) for entry in saved.values()}
+        constraints["replacement_role"] = role(saved[replacement]["profile"])
+        constraints["accessories"] = "accessory" in roles
+        constraints["jacket"] = "yes" if "outer" in roles else "no"
+        for entry in saved.values():
+            description = entry["profile"]
+            if (
+                description["identification"]["type"] in {"pantalon", "pantalon_corto"}
+                and description["shape"]["leg_length"] != "no_visible"
+            ):
+                constraints["length"] = description["shape"]["leg_length"]
     if constraints["fixed"]:
         validate_garments(db, constraints["fixed"])
     garments = active_garments()
@@ -334,7 +359,7 @@ def result_proposal(job, number):
             raise IndexError
     except (ValueError, TypeError, IndexError) as error:
         raise ValueError("La propuesta seleccionada no existe.") from error
-    if not current_snapshot(get_db(), job["input"]):
+    if not current_snapshot(get_db(), job["input"], current_app.config["DATA_DIR"]):
         raise ValueError(
             "El armario ha cambiado desde la generación. Vuelve a generar antes de guardar o sustituir."
         )
@@ -399,6 +424,9 @@ def replace(jid):
         "mode": "recommended",
         "fixed": [other for other in proposal["garment_ids"] if other != gid],
         "excluded": [gid],
+        "replacement_role": next(
+            item["role"] for item in job["input"]["items"] if item["id"] == gid
+        ),
     }
     db = get_db()
     with db:

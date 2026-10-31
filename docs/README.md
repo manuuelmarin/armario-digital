@@ -22,6 +22,7 @@ Aplicación local y monousuario en Python. La versión de la aplicación se decl
 | Entender las elecciones técnicas | [Decisiones](DECISIONS.md) |
 | Ejecutar pruebas y distinguir evidencia de cobertura | [Verificación](TESTING.md) |
 | Consultar referencias y revisiones anteriores | [Auditoría de producto](AUDIT.md) |
+| Consultar la auditoría del estado actual y sus correcciones | [Auditoría 0.3.1](audits/2026-10-31-project.md) |
 | Revisar el desarrollo de la asistencia local | [Registro del cambio](changes/2026-10-31-local-ai.md) |
 | Revisar recursos y condiciones de distribución | [Terceros](THIRD_PARTY.md) · [Publicación](PUBLISHING.md) |
 

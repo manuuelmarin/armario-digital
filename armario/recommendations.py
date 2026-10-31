@@ -5,7 +5,9 @@ import itertools
 import json
 import secrets
 
-from .profiles import approved, object_schema, source, string_schema, validate_schema
+from .profiles import approved, object_schema, source, source_intact, string_schema, validate_schema
+
+SNAPSHOT_VERSION = 2
 
 ROLE_TYPES = {
     "upper": {"camisa", "camiseta", "blusa", "top", "jersey", "sudadera"},
@@ -63,9 +65,12 @@ def constraints_from_form(form):
         "style": text_value(form, "style", 80),
         "fixed": ids(form.getlist("garment_ids")),
         "excluded": [],
+        "replacement_role": form.get("replacement_role", ""),
     }
     if constraints["mode"] not in {"recommended", "surprise"}:
         raise ValueError("Elige un modo de generación válido.")
+    if constraints["replacement_role"] and constraints["replacement_role"] not in ROLE_TYPES:
+        raise ValueError("El tipo de sustitución no es válido.")
     if constraints["jacket"] not in {"any", "yes", "no"} or constraints["length"] not in {
         "any",
         "corto",
@@ -91,6 +96,7 @@ def fingerprint(row, profile):
         profile["profile"],
         profile["source_name"],
         profile["source_hash"],
+        profile["provenance_json"],
     ]
     return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
@@ -134,6 +140,8 @@ def valid_plan(chosen, items, constraints):
     if not set(constraints["fixed"]).issubset(chosen) or set(constraints["excluded"]) & set(chosen):
         return False
     roles = [items[gid]["role"] for gid in chosen]
+    if constraints.get("replacement_role") and constraints["replacement_role"] not in roles:
+        return False
     core = sorted(key for key in roles if key not in {"outer", "accessory"})
     if core not in [["footwear", "lower", "upper"], ["footwear", "one_piece"]]:
         return False
@@ -215,14 +223,16 @@ def make_snapshot(db, constraints):
         pools[key] = fixed or options[:5]
     outer = (
         pools["outer"]
-        if constraints["jacket"] == "yes" or "outer" in fixed_roles
+        if constraints["jacket"] == "yes"
+        or "outer" in fixed_roles
+        or constraints.get("replacement_role") == "outer"
         else [None, *pools["outer"][:2]]
         if constraints["jacket"] == "any"
         else [None]
     )
     accessories = (
         pools["accessory"]
-        if "accessory" in fixed_roles
+        if "accessory" in fixed_roles or constraints.get("replacement_role") == "accessory"
         else [None, *pools["accessory"][:1]]
         if constraints["accessories"]
         else [None]
@@ -249,7 +259,12 @@ def make_snapshot(db, constraints):
         raise ValueError(
             "No hay un outfit completo con esos filtros. Revisa las descripciones de superior + inferior (o vestido/mono), calzado y chaqueta si es obligatoria."
         )
-    snapshot = {"constraints": constraints, "plans": selected, "items": list(items.values())}
+    snapshot = {
+        "version": SNAPSHOT_VERSION,
+        "constraints": constraints,
+        "plans": selected,
+        "items": list(items.values()),
+    }
     while (
         len(json.dumps(prompt_data(snapshot), ensure_ascii=False)) > 12000
         and len(snapshot["plans"]) > 1
@@ -260,7 +275,9 @@ def make_snapshot(db, constraints):
     return snapshot
 
 
-def current_snapshot(db, snapshot):
+def current_snapshot(db, snapshot, root=None):
+    if snapshot.get("version") != SNAPSHOT_VERSION:
+        return False
     for item in snapshot["items"]:
         row = db.execute(
             "SELECT * FROM garments WHERE id=? AND archived=0", (item["id"],)
@@ -269,6 +286,8 @@ def current_snapshot(db, snapshot):
         if not saved or saved["stale"] or fingerprint(row, saved) != item["fingerprint"]:
             return False
         if source(db, item["id"]) != {"name": saved["source_name"], "hash": saved["source_hash"]}:
+            return False
+        if root is not None and not source_intact(root, source(db, item["id"])):
             return False
     return True
 
