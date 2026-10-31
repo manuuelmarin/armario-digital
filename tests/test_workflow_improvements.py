@@ -166,10 +166,12 @@ def test_photo_reorder_is_scoped_and_persistent(client, add_garment, db, app):
 
 
 def test_migrate_populated_v7_creates_recoverable_backup(client, add_garment, db, app):
-    from armario.db import migrate
+    from armario.db import SCHEMA_VERSION, migrate
 
     gid = add_garment(photos=photograph())
     with db:
+        for table in ("outfit_origins", "ai_jobs", "garment_profiles", "ai_settings"):
+            db.execute(f"DROP TABLE {table}")
         db.execute("ALTER TABLE garment_images DROP COLUMN sort_order")
         db.execute("PRAGMA user_version=7")
     migrate(app.config["DATA_DIR"])
@@ -177,7 +179,7 @@ def test_migrate_populated_v7_creates_recoverable_backup(client, add_garment, db
     from armario.backups import verify_backup
 
     assert verify_backup(backup)["schema_version"] == 7
-    assert db.execute("PRAGMA user_version").fetchone()[0] == 8
+    assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
     assert (
         db.execute("SELECT sort_order FROM garment_images WHERE garment_id=?", (gid,)).fetchone()[0]
         is not None
