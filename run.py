@@ -70,20 +70,28 @@ def main():
                 opener.daemon = True
                 opener.start()
             print(f"Armario Digital: http://127.0.0.1:{args.port} — Ctrl+C para cerrar", flush=True)
-            if args.dev:
-                from werkzeug.serving import run_simple
+            from armario.ai_jobs import AIWorker
 
-                run_simple("127.0.0.1", args.port, app, use_debugger=False, threaded=True)
-            else:
-                from waitress import serve as waitress_serve
+            worker = AIWorker(root, app.config["MUTATION_LOCK"])
+            app.extensions["ai_worker"] = worker
+            worker.start()
+            try:
+                if args.dev:
+                    from werkzeug.serving import run_simple
 
-                waitress_serve(
-                    app,
-                    host="127.0.0.1",
-                    port=args.port,
-                    threads=4,
-                    max_request_body_size=64 * 1024**2,
-                )
+                    run_simple("127.0.0.1", args.port, app, use_debugger=False, threaded=True)
+                else:
+                    from waitress import serve as waitress_serve
+
+                    waitress_serve(
+                        app,
+                        host="127.0.0.1",
+                        port=args.port,
+                        threads=4,
+                        max_request_body_size=64 * 1024**2,
+                    )
+            finally:
+                worker.stop()
 
     if args.demo:
         with tempfile.TemporaryDirectory(prefix="armario-demo-") as temporary:

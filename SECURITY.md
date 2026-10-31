@@ -15,3 +15,11 @@ Include the application version, operating system, reproduction steps using fict
 ## Before network hosting
 
 Internet or shared-network hosting needs a separate review of authentication, authorization, TLS, process-level concurrency, upload limits and operational recovery. The local preview does not claim those capabilities.
+
+## Optional local models
+
+AI assistance is disabled by default. Users prepare Ollama and explicitly request analysis or generation. The adapter only connects to `127.0.0.1:11434`, ignores environment proxies, rejects redirects and never downloads models or falls back to cloud. Only two explicit local model tags are admitted. Configure Ollama itself with `OLLAMA_NO_CLOUD=1` and a loopback bind; the application does not reconfigure another process.
+
+Vision receives a resized main photograph after its SHA-256 check. Text receives approved descriptions and candidate IDs, without photos, personal notes, purchase data or location names. Model output and user descriptions are untrusted data: bounded JSON/schema validation, escaped HTML, real-ID/constraint checks and source/revision revalidation precede use. No model receives executable application tools. Human approval is required to replace a reviewed description or save an outfit.
+
+The queue does not hold a mutation lock or database transaction during inference. Cancellation discards late responses but may not stop an already running Ollama inference. A timeout pauses subsequent inference. Profiles, task snapshots and generation provenance are private local data included in unencrypted backups. Clearing the active task history does not erase prior backups. Model weights, Ollama configuration and its own logs are managed separately. See [local AI](docs/LOCAL_AI.md) for setup and verification limits.
