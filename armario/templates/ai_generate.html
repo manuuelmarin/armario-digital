@@ -14,6 +14,9 @@
   {% if not preferences.enabled %}<p class="notice">Para generar, activa la <a href="{{ url_for('assistant.settings') }}">asistencia local</a>. Puedes preparar descripciones manualmente sin instalar modelos.</p>{% endif %}
   <p class="muted">{{ ready|length }} de {{ garments|length }} prendas con descripción revisada vigente y tipo reconocido. Se requiere superior + inferior (o vestido/mono) y calzado. Solo se añade una capa exterior y un accesorio como máximo.</p>
   <form method="post" class="editor">
+    <input type="hidden"
+           name="replacement_role"
+           value="{{ constraints.replacement_role }}">
     {{ csrf() }}{% for gid in constraints.excluded %}<input type="hidden"
        name="excluded"
        value="{{ gid }}">{% endfor %}
@@ -21,8 +24,10 @@
       <div class="two-columns">
         <div>
           <label for="generate-mode">Modo</label><select id="generate-mode" name="mode">
-            <option value="recommended">Recomendar combinaciones</option>
-            <option value="surprise">Sorpréndeme entre combinaciones coherentes</option>
+            <option value="recommended"
+                    {% if constraints.mode == 'recommended' %}selected{% endif %}>Recomendar combinaciones</option>
+            <option value="surprise"
+                    {% if constraints.mode == 'surprise' %}selected{% endif %}>Sorpréndeme entre combinaciones coherentes</option>
           </select>
         </div>
         <div>
@@ -37,28 +42,38 @@
         <div>
           <label for="generate-jacket">Chaqueta o abrigo</label><select id="generate-jacket"
         name="jacket">
-            <option value="any">Sin preferencia</option>
-            <option value="yes">Incluir obligatoriamente</option>
-            <option value="no">Sin chaqueta ni abrigo</option>
+            <option value="any"
+                    {% if constraints.jacket == 'any' %}selected{% endif %}>Sin preferencia</option>
+            <option value="yes"
+                    {% if constraints.jacket == 'yes' %}selected{% endif %}>Incluir obligatoriamente</option>
+            <option value="no"
+                    {% if constraints.jacket == 'no' %}selected{% endif %}>Sin chaqueta ni abrigo</option>
           </select>
         </div>
         <div>
           <label for="generate-length">Pantalón</label><select id="generate-length" name="length">
-            <option value="any">Sin preferencia (admite falda, vestido o mono)</option>
-            <option value="corto">Pantalón corto confirmado</option>
-            <option value="largo">Pantalón largo confirmado</option>
+            <option value="any"
+                    {% if constraints.length == 'any' %}selected{% endif %}>Sin preferencia (admite falda, vestido o mono)</option>
+            <option value="corto"
+                    {% if constraints.length == 'corto' %}selected{% endif %}>Pantalón corto confirmado</option>
+            <option value="largo"
+                    {% if constraints.length == 'largo' %}selected{% endif %}>Pantalón largo confirmado</option>
           </select>
         </div>
       </div>
       <div class="two-columns">
         <label>
           Ocasión (opcional)<input name="occasion"
+       value="{{ constraints.occasion }}"
        maxlength="80"
        placeholder="Por ejemplo, una cena informal"></label><label>Estilo deseado (opcional)<input name="style" maxlength="80" placeholder="Por ejemplo, minimalista">
           </label>
         </div>
         <label class="check-label">
-          <input type="checkbox" name="accessories" value="1">
+          <input type="checkbox"
+                 name="accessories"
+                 value="1"
+                 {% if constraints.accessories %}checked{% endif %}>
           Permitir un accesorio
         </label>
         <p class="muted">Chaqueta, largo, ubicación y prendas fijadas son obligatorios. Ocasión y estilo orientan la valoración del modelo. Un largo sin confirmar no sirve para un filtro de corto o largo.</p>
@@ -66,6 +81,7 @@
       <div class="section-heading section-space">
         <h2>Prendas fijadas (opcional)</h2>
       </div>
+      {% if constraints.replacement_role %}<p class="notice">Se mantendrá la estructura del outfit y las demás prendas fijadas.</p>{% endif %}
       <p>Selecciona las prendas que quieres mantener. Para completar una camisa, fíjala aquí. Puedes dejar la selección vacía para crear un conjunto nuevo.</p>
       {{ picker(garments, constraints.fixed) }}
       <details class="panel section-space"><summary>Revisar descripciones disponibles</summary><ul class="ai-readiness">{% for item in garments %}<li><a class="text-link"
