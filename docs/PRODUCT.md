@@ -17,6 +17,10 @@ Incluye inventario con fotografías, metadatos opcionales, temporadas múltiples
 
 La primera instalación no inserta espacios ni artículos. La demo y las pruebas crean sus propias entidades ficticias en carpetas aisladas.
 
+## Versión 0.3: asistencia local opcional
+
+Conserva los flujos existentes e incorpora descripciones visuales con siete grupos revisables y generación de outfits a partir de perfiles aprobados. Dos modelos locales mediante Ollama separan visión y evaluación textual. Permite recomendación, sorpresa entre candidatos valorados, prendas fijadas, filtros y cambio de una pieza. No cambia ubicaciones ni guarda automáticamente propuestas del modelo. La creación manual continúa disponible sin instalar modelos. Véase [IA local](LOCAL_AI.md).
+
 ## Límites
 
 No incorpora cuentas, sincronización remota, funciones sociales, publicación web automática ni registro diario de uso. Incluye tableros de inspiración y collage con posición y anchura ajustables; la exportación del collage sigue pendiente. La meteorología opcional se actualiza manualmente con coordenadas y conserva la última previsión. El modo de distribución actual es local y monousuario.

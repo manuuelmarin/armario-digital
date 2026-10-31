@@ -59,6 +59,12 @@ No elimines pruebas por similitud de título: compara entradas, aserciones, efec
 
 ## Evidencia histórica y límites
 
+### Asistencia local (0.3)
+
+`tests/test_local_ai.py` verifica revisión manual, dos llamadas independientes de visión/texto, filtros, prendas fijadas, sustitución, rechazo de resultados caducados, cambios de foto/revisión/archivo/ubicación/borrado, integridad, concurrencia, pausa/cancelación/reinicio y migración/recuperación. `tests/test_ai_protocol.py` usa HTTP real contra un doble en loopback para comprobar el contrato, límites, redirecciones, respuesta incompleta y ausencia de descarga/fallback. No ejecutan pesos de modelos ni predicen calidad o velocidad.
+
+El recorrido de navegador de asistencia verifica siete grupos, revisión y generación con una respuesta simulada, guardado de outfit, formularios sin JavaScript, imágenes y desbordamiento a 1.440 y 390 px. El [registro del cambio](changes/2026-10-31-local-ai.md) conserva el resultado concreto de la revisión. La prueba de modelos reales en un equipo de 32 GB queda descrita en [LOCAL_AI.md](LOCAL_AI.md).
+
 Verificación local del 29 de octubre de 2026: **39 pruebas aprobadas en aquella revisión**, incluidas las tres de navegador. Ruff y el formato de plantillas pasan sin incidencias. Se utiliza Linux, Python 3.12.14, SQLite 3.53.1 y Chromium 153. El Chromium local procede de una herramienta temporal de QA externa al proyecto; CI usa la instalación estándar de Playwright.
 
 Se revisan ocho pantallas con axe-core, a 1.600 y 390 px, para las reglas WCAG A/AA 2.0 y 2.1. Resultado: cero incidencias automáticas en las 16 vistas y ningún desbordamiento horizontal. La comprobación automática se complementa con revisión visual de escritorio y móvil. No equivale a una certificación ni sustituye una prueba con lector de pantalla.
