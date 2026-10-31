@@ -1,5 +1,13 @@
 # Changelog
 
+## Sin publicar — documentación del repositorio
+
+- Entrada con estado, esquema, mapa del sistema y estructura del repositorio.
+- Índice de guías y contribución en español.
+- Arquitectura y primeros pasos ampliados para organización, tableros, importación y tiempo opcional.
+- Guía de pruebas corregida: inventario reproducible, evidencia histórica y límites de validación explícitos.
+- Decisión de mantener Python; sin cambios de ejecución, esquema ni formatos de copias.
+
 ## En desarrollo
 
 - Añade importación por lotes, colecciones, etiquetas y filtros combinables.

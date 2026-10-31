@@ -1,16 +1,34 @@
 # Armario Digital
 
+[![Calidad](https://github.com/manuuelmarin/armario-digital/actions/workflows/checks.yml/badge.svg)](https://github.com/manuuelmarin/armario-digital/actions)
+
 **Un catálogo visual para organizar prendas, crear outfits y preparar viajes.**
 
 Aplicación local desarrollada con Python y SQLite. Los espacios son configurables, las fotografías permanecen en el dispositivo y la instalación empieza sin datos de ejemplo.
 
-**Preview 0.2.0** · Python 3.11+ · Windows / Linux / macOS · Interfaz en español
+**Preview 0.2.0 · Esquema de datos 7** · Python 3.11+ · Interfaz en español
 
-[Primeros pasos](docs/GETTING_STARTED.md) · [Arquitectura](docs/ARCHITECTURE.md) · [Auditoría](docs/AUDIT.md) · [Comprobaciones](https://github.com/manuuelmarin/armario-digital/actions)
+CI: Windows y Linux con Python 3.12; macOS y los lanzadores de Windows requieren validación manual.
+
+[Primeros pasos](docs/GETTING_STARTED.md) · [Documentación](docs/README.md) · [Pruebas](docs/TESTING.md) · [Historial](CHANGELOG.md) · [Pendientes](docs/ROADMAP.md)
 
 ![Inventario de demostración de Armario Digital](docs/assets/desktop.png)
 
 *Captura real de la aplicación. Todas las prendas, ilustraciones y ubicaciones de esta demo son ficticias.*
+
+## Cómo funciona
+
+```mermaid
+flowchart TD
+    UI["Navegador: HTML, CSS y formularios"] --> App["Proceso Python local: Flask y Waitress"]
+    App --> DB["SQLite: inventario y relaciones"]
+    App --> Images["Fotografías y variantes locales"]
+    DB --> Copy["Copia verificada: SQLite y fotografías"]
+    Images --> Copy
+    App -->|"Solo al solicitar actualización"| Weather["Open-Meteo: coordenadas e IP"]
+```
+
+El proceso escucha en `127.0.0.1`; el repositorio contiene código y recursos de demostración. La base, las fotografías y las copias de cada instalación se guardan fuera del código. No hace falta publicar una web para usar el catálogo.
 
 ## Qué ofrece
 
@@ -90,3 +108,17 @@ La versión 0.2 es una preview para uso local y monousuario. El collage incluye 
 Publicar el código y ofrecer un servicio accesible por internet requieren revisiones diferentes. El proceso actual escucha únicamente en loopback y no incorpora cuentas ni controles multiusuario. La elección de licencia de distribución del código está pendiente.
 
 [Preparar una publicación](docs/PUBLISHING.md) · [Seguridad](SECURITY.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
+
+## Mapa del repositorio
+
+| Ruta | Contenido |
+|---|---|
+| `run.py`, `instalar.cmd`, `iniciar.cmd` | Arranque local, instalación en Windows y comandos de recuperación |
+| `armario/` | Rutas por funcionalidad y servicios de datos, imágenes y copias |
+| `armario/migrations/` | Evolución versionada de SQLite |
+| `armario/templates/`, `armario/static/` | Interfaz, estilos y mejoras opcionales con JavaScript |
+| `tests/` | Casos de servidor, integridad, migración y navegador con datos ficticios |
+| `docs/` | Uso, arquitectura, decisiones, recuperación y evidencia de revisión |
+| `.github/workflows/` | Comprobaciones automáticas en Windows y Linux |
+
+Consulta el [índice de documentación](docs/README.md) para elegir la guía adecuada. Los resultados históricos de auditoría describen una revisión concreta; la evidencia de un cambio nuevo debe proceder de sus propias comprobaciones.
