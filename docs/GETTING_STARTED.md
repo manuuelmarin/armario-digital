@@ -58,7 +58,7 @@ Crea una copia desde Ajustes antes de actualizaciones o cambios importantes. Con
 
 En Colecciones puedes reunir prendas sin cambiar su espacio; las etiquetas permiten filtros adicionales en el inventario. Archivar una prenda conserva las asociaciones existentes. Eliminar una agrupación elimina su relación, no las prendas.
 
-La importación por lotes crea una prenda por fotografía con categoría y espacio comunes. Puedes revisar y editar los nombres antes de importar; sin JavaScript se utilizan los nombres de archivo. Revisa los demás detalles después. Admite hasta 20 imágenes, 10 MiB por archivo y 64 MiB por petición, incluido el contenido del formulario. Si falla un archivo, el lote se revierte completo; corrige el problema antes de repetirlo.
+Cada fotografía inicia una prenda. Asigna el mismo número a varias imágenes para agruparlas. La primera fila del grupo aporta el nombre y la categoría. Puedes elegir otra foto del grupo como portada. Puedes revisar y editar los nombres antes de importar; sin JavaScript se utilizan los nombres de archivo. Revisa los demás detalles después. Admite hasta 20 imágenes, 10 MiB por archivo y 64 MiB por petición, incluido el contenido del formulario. Si falla un archivo, el lote se revierte completo; corrige el problema antes de repetirlo.
 
 ## Inspiración y tiempo
 
@@ -82,3 +82,7 @@ En la ficha de una prenda, usa las flechas para ordenar las fotografías secunda
 ## Asistencia local, si decides activarla
 
 Desde **Ajustes → Configurar asistencia local**, prepara Ollama y sus dos modelos siguiendo [LOCAL_AI.md](LOCAL_AI.md). La instalación del catálogo no descarga modelos. Revisa las descripciones desde cada prenda y abre **Outfits → Generar outfits** para fijar piezas y elegir filtros. Cada resultado necesita una acción explícita para guardarse; el armario y los outfits manuales siguen disponibles si Ollama no está instalado.
+
+En Windows, el instalador ofrece un acceso directo al escritorio. Elige un archivo ICO propio o cancela el selector para usar la percha incluida. El acceso abre la instancia personal en su puerto activo. Puedes volver a ejecutar escritorio.ps1 desde PowerShell para actualizarlo.
+
+En Outfits, selecciona tu espacio para consultar qué piezas están allí. Resumen abre el inventario por espacio y categoría e indica cuántas prendas tienen precio. Ajustes permite seguir la apariencia del sistema o elegir claro u oscuro.

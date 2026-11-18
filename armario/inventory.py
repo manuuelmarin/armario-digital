@@ -104,6 +104,24 @@ def index():
     )
 
 
+@bp.get("/resumen")
+def summary():
+    rows = (
+        get_db()
+        .execute("""
+        SELECT g.location_id, l.name location, g.category_id, c.name category,
+               count(*) total, count(g.price_cents) priced, sum(g.price_cents) cents
+        FROM garments g JOIN locations l ON l.id=g.location_id
+        JOIN categories c ON c.id=g.category_id WHERE g.archived=0
+        GROUP BY g.location_id,g.category_id ORDER BY l.name,c.name
+    """)
+        .fetchall()
+    )
+    return render_template(
+        "summary.html", rows=rows, maximum=max((r["total"] for r in rows), default=1)
+    )
+
+
 def save_garment(gid=None):
     form, db = request.form, get_db()
     old = garment(gid) if gid else None
@@ -201,6 +219,22 @@ def bulk_import():
         raise ValueError("La lista de fotografías ha cambiado. Vuelve a seleccionarlas.")
     if names_input and any(not n.strip() or len(n.strip()) > 120 for n in names_input):
         raise ValueError("Cada nombre debe tener entre 1 y 120 caracteres.")
+    groups = request.form.getlist("photo_groups") or [str(i + 1) for i in range(len(uploads))]
+    categories = request.form.getlist("photo_categories") or [str(category)] * len(uploads)
+    if len(groups) != len(uploads) or len(categories) != len(uploads):
+        raise ValueError("Revisa la agrupación de las fotografías.")
+    if any(not g.isdecimal() or not 1 <= int(g) <= len(uploads) for g in groups):
+        raise ValueError("Grupo de fotografías no válido.")
+    groups = [int(g) for g in groups]
+    if any(groups.count(g) > 6 for g in set(groups)):
+        raise ValueError("Máximo seis fotos por prenda.")
+    covers = request.form.getlist("cover_index")
+    if any(not i.isdecimal() or int(i) >= len(uploads) for i in covers):
+        raise ValueError("Portada no válida.")
+    cover_groups = [groups[int(i)] for i in covers]
+    if len(set(cover_groups)) != len(cover_groups):
+        raise ValueError("Elige una sola portada por prenda.")
+    group_ids = {}
     root = current_app.config["DATA_DIR"] / "images"
     created = []
     try:
@@ -212,10 +246,13 @@ def bulk_import():
                     if names_input
                     else (name.strip()[:120] or "Prenda sin nombre")
                 )
-                gid = db.execute(
-                    "INSERT INTO garments(name,category_id,location_id) VALUES (?,?,?)",
-                    (name, category, location),
-                ).lastrowid
+                group = groups[index]
+                if group not in group_ids:
+                    group_ids[group] = db.execute(
+                        "INSERT INTO garments(name,category_id,location_id) VALUES (?,?,?)",
+                        (name, categories[index] or category, location),
+                    ).lastrowid
+                gid = group_ids[group]
                 image = store_image(upload, root)
                 names = [image["filename"], image["thumbnail"], image["preview"]]
                 created.extend(names)
@@ -239,10 +276,15 @@ def bulk_import():
                         ),
                     ),
                 )
+                if str(index) in covers:
+                    db.execute(
+                        "UPDATE garment_images SET is_primary=1 WHERE garment_id=? AND filename=?",
+                        (gid, image["filename"]),
+                    )
     except Exception:
         remove_files(root, created)
         raise
-    flash(f"Se han importado {len(uploads)} prendas. Puedes editar sus datos después.", "success")
+    flash(f"Se han importado {len(group_ids)} prendas. Puedes editar sus datos después.", "success")
     return redirect(url_for("inventory.index"))
 
 
@@ -252,7 +294,7 @@ def new():
         return redirect(url_for("settings.onboarding"))
     if request.method == "POST":
         return save_garment()
-    return render_template("garment_form.html", item=None, chosen_seasons=[])
+    return garment_form(None, [])
 
 
 @bp.route("/prendas/<int:gid>/editar", methods=["GET", "POST"])
@@ -266,7 +308,27 @@ def edit(gid):
         row[0]
         for row in get_db().execute("SELECT season FROM garment_seasons WHERE garment_id=?", (gid,))
     ]
-    return render_template("garment_form.html", item=item, chosen_seasons=seasons)
+    return garment_form(item, seasons)
+
+
+def garment_form(item, seasons):
+    db = get_db()
+    suggestions = {
+        field: [
+            row[0]
+            for row in db.execute(
+                f"SELECT DISTINCT {field} FROM garments WHERE {field} != '' ORDER BY {field} COLLATE NOCASE"
+            )
+        ]
+        for field in ("brand", "size", "color")
+    }
+    return render_template(
+        "garment_form.html",
+        item=item,
+        chosen_seasons=seasons,
+        suggestions=suggestions,
+        initial_location=request.args.get("location_id", type=int),
+    )
 
 
 @bp.get("/prendas/<int:gid>")
@@ -372,7 +434,13 @@ def favorite(gid):
     garment(gid)
     db = get_db()
     with db:
-        db.execute("UPDATE garments SET favorite=1-favorite WHERE id=?", (gid,))
+        value = request.form.get("desired")
+        if value is None:  # Forms from earlier versions toggle once.
+            db.execute("UPDATE garments SET favorite=1-favorite WHERE id=?", (gid,))
+        elif value in {"0", "1"}:
+            db.execute("UPDATE garments SET favorite=? WHERE id=?", (int(value), gid))
+        else:
+            raise ValueError("Estado no válido.")
     if request.form.get("return_view") == "inventory":
         return redirect(
             url_for(

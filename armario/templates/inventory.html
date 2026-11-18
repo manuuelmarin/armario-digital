@@ -8,7 +8,8 @@
       <h1>{{ 'Prendas archivadas' if request.args.get("archived") == '1' else 'Mi armario' }}<span class="count">{{ count }}</span></h1>
       <p class="subtitle">Una nueva perspectiva de todo lo que tienes.</p>
     </div>
-    <div class="action-row"><a class="button" href="{{ url_for('inventory.bulk_import') }}">Importar fotografías</a><a class="button primary" href="{{ url_for('inventory.new') }}">{{ icon("plus") }}Añadir prenda</a></div>
+    <div class="action-row"><a class="button" href="{{ url_for('inventory.bulk_import') }}">Importar fotografías</a><a class="button" href="{{ url_for('inventory.summary') }}">Resumen</a><a class="button primary"
+   href="{{ url_for('inventory.new',location_id=request.args.get('location_id')) }}">{{ icon("plus") }}Añadir prenda</a></div>
   </div>
   {% if locations %}
     <nav class="location-tabs" aria-label="Armarios por ubicación">
@@ -88,7 +89,9 @@
             <form class="card-favorite"
                   method="post"
                   action="{{ url_for('inventory.favorite', gid=item.id) }}">
-              {{ csrf() }}<input type="hidden" name="return_view" value="inventory">
+              {{ csrf() }}<input type="hidden"
+       name="desired"
+       value="{{ 0 if item.favorite else 1 }}"><input type="hidden" name="return_view" value="inventory">
               {% for key,value in request.args.items() %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
               {% endfor %}
@@ -122,7 +125,7 @@
       <h2>{{ 'Ninguna prenda por aquí' if request.args else 'Dale forma a tu armario' }}</h2>
       <p>{{ 'Prueba otros filtros o vuelve a la colección completa.' if request.args else 'Fotografía una prenda, ponle nombre y elige su espacio. Es así de sencillo.' }}</p>
       <a class="button primary"
-         href="{{ url_for('inventory.index') if request.args else url_for('inventory.new') }}">{{ 'Ver toda la colección' if request.args else 'Añadir mi primera prenda' }}{{ icon("arrow") }}</a>
+         href="{{ url_for('inventory.index') if request.args else url_for('inventory.new',location_id=request.args.get('location_id')) }}">{{ 'Ver toda la colección' if request.args else 'Añadir mi primera prenda' }}{{ icon("arrow") }}</a>
     </section>
   {% endif %}
 {% endblock %}

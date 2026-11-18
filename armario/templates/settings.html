@@ -64,6 +64,12 @@
         <a class="button" href="{{ url_for('assistant.settings') }}">Configurar asistencia local</a>
       </section>
       <section class="panel section-space">
+        <label for="appearance">Apariencia</label>
+        <select id="appearance">
+          <option value="system">Según el sistema</option>
+          <option value="light">Claro</option>
+          <option value="dark">Oscuro</option>
+        </select>
         <h2>Categorías</h2>
         <div class="pill-list">
           {% for cat in categories %}<span class="pill">{{ cat.name }}</span>{% endfor %}

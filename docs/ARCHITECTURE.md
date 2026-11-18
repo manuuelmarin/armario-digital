@@ -47,7 +47,7 @@ Las fotografías usan variantes de 512, 1.024 y hasta 4.096 px y atributos `srcs
 
 Los estilos se dividen en `tokens.css` (variables y fuentes), `app.css` (base y estructura), `components.css` (pantallas y componentes) y `responsive.css` (adaptación y accesibilidad). Las plantillas usan formato Jinja verificable con djLint.
 
-JavaScript mejora selección masiva, filtros móviles, búsqueda en selectores, vista previa, galería y consulta de estado de tareas. Los formularios siguen siendo operativos sin JavaScript. El selector de outfits pagina visualmente en cliente y conserva selecciones; todavía renderiza el armario activo completo desde el servidor.
+JavaScript mejora selección masiva, filtros móviles, búsqueda en selectores, vista previa, galería y consulta de estado de tareas. Los formularios siguen siendo operativos sin JavaScript. El selector de outfits pagina visualmente en cliente y conserva selecciones; todavía renderiza el armario activo completo desde el servidor. En maletas se abre un selector independiente con búsqueda SQL y páginas de 24 prendas. Con JavaScript, la selección se conserva entre páginas y búsquedas. Sin JavaScript se puede añadir una página de prendas y repetir la operación.
 
 ## Decisiones
 
@@ -61,7 +61,7 @@ No se han medido comparativamente esos frameworks ni se atribuyen garantías de 
 |---|---|
 | Preparar una maleta | Cambia su lista; la ubicación solo cambia tras confirmar un traslado |
 | Etiquetar o añadir a una colección | Añade asociaciones sin mover la prenda |
-| Importar fotografías por lotes | Una prenda por imagen; un fallo revierte el lote y retira sus archivos nuevos |
+| Importar fotografías por lotes | Una prenda por grupo de fotos, con hasta seis fotos y una portada elegida; un fallo revierte el lote y retira sus archivos nuevos |
 | Guardar inspiración | Guarda imágenes locales y enlaces; no descarga el contenido de las URL |
 | Actualizar el tiempo | Hace una petición solo al pulsar actualizar; un fallo conserva la previsión anterior |
 | Crear una copia | Usa un snapshot y verifica las imágenes referenciadas y sus hashes persistidos |

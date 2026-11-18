@@ -30,7 +30,7 @@
        placeholder="Por ejemplo, Camisa de lino"
        autofocus>
         <div class="two-columns"><div><label for="garment-category">Categoría *</label><select id="garment-category" name="category_id" required>{% for cat in categories %}<option value="{{ cat.id }}"
-        {% if item and cat.id == item.category_id %} selected{% endif %}>{{ cat.name }}</option>{% endfor %}</select></div><div><label for="garment-location">Espacio *</label><select id="garment-location" name="location_id" required>{{ location_options(item.location_id if item else none) }}</select></div></div>
+        {% if item and cat.id == item.category_id %} selected{% endif %}>{{ cat.name }}</option>{% endfor %}</select></div><div><label for="garment-location">Espacio *</label><select id="garment-location" name="location_id" required>{{ location_options(item.location_id if item else initial_location) }}</select></div></div>
         <label class="upload-zone" for="garment-photos">
           {{ icon("plus") }}<strong>{{ 'Añadir fotografías' if item else 'Una imagen dice más' }}</strong><span>JPEG, PNG o WebP · hasta 6 fotos · 10 MB por foto</span><input id="garment-photos"
        type="file"
@@ -56,6 +56,7 @@
         <div class="two-columns">
           <div>
             <label for="garment-brand">Marca</label><input id="garment-brand"
+       list="values-brand"
        name="brand"
        maxlength="80"
        value="{{ item.brand if item else '' }}"
@@ -63,6 +64,7 @@
           </div>
           <div>
             <label for="garment-size">Talla</label><input id="garment-size"
+       list="values-size"
        name="size"
        maxlength="30"
        value="{{ item.size if item else '' }}"
@@ -70,6 +72,7 @@
           </div>
         </div>
         <label for="garment-color">Color</label><input id="garment-color"
+       list="values-color"
        name="color"
        maxlength="60"
        placeholder="Azul marino, blanco…"
@@ -99,6 +102,11 @@
         </details>
       </section>
     </div>
+    {% for field, values in suggestions.items() %}
+      <datalist id="values-{{ field }}">
+        {% for value in values %}<option value="{{ value }}"></option>{% endfor %}
+      </datalist>
+    {% endfor %}
     <div class="form-actions">
       <span class="field-hint">* Campos obligatorios</span><a href="{{ url_for('inventory.index') }}" class="button">Cancelar</a><button class="button primary">Guardar prenda {{ icon("check") }}</button>
     </div>

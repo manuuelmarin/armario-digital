@@ -356,7 +356,7 @@
   align-items: center;
   justify-content: center;
   gap: 15px;
-  color: #8c9684;
+  color: var(--muted);
 }
 
 .photo-placeholder span {

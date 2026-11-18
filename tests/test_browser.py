@@ -505,3 +505,37 @@ def test_replace_saved_outfit_keeps_optional_layers_without_javascript(app, tmp_
         page.screenshot(path=str(tmp_path / "audit-replacement-desktop.png"), full_page=True)
         context.close()
         browser.close()
+
+
+def test_mobile_theme_and_trip_picker_across_pages(app, db):
+    from playwright.sync_api import expect, sync_playwright
+
+    with db:
+        db.executemany(
+            "INSERT INTO garments(name,category_id,location_id) VALUES (?,1,1)",
+            [(f"Camisa {i:02d}",) for i in range(30)],
+        )
+        db.execute("INSERT INTO trips(name,origin_id,destination_id) VALUES ('Viaje',1,2)")
+    with running_app(app) as base, sync_playwright() as playwright:
+        browser = playwright.chromium.launch(**browser_options())
+        page = browser.new_page(viewport={"width": 390, "height": 844}, color_scheme="light")
+        page.goto(base)
+        page.locator(".mobile-more summary").click()
+        page.get_by_role("link", name="Ajustes", exact=True).click()
+        page.get_by_label("Apariencia").select_option("dark")
+        page.reload()
+        expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+        page.goto(base + "/maletas/1")
+        expect(page.get_by_role("checkbox")).to_have_count(0)
+        page.get_by_role("link", name="Añadir prendas del armario").click()
+        expect(page.get_by_role("checkbox")).to_have_count(24)
+        page.get_by_role("checkbox").first.check()
+        page.get_by_role("link", name="Siguiente").click()
+        expect(page.get_by_role("checkbox")).to_have_count(6)
+        page.get_by_role("checkbox").first.check()
+        page.get_by_label("Buscar prendas").fill("Camisa 29")
+        page.get_by_role("button", name="Buscar", exact=True).click()
+        expect(page.get_by_role("checkbox")).to_have_count(1)
+        page.get_by_role("button", name="Añadir selección").click()
+        expect(page.locator(".checklist-row")).to_have_count(2)
+        browser.close()

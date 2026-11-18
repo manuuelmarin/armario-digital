@@ -17,6 +17,12 @@
        name="favorite"
        value="1"
        {% if favorite %}checked{% endif %}> Solo favoritos</label>
+    <label>¿Qué me puedo poner aquí?<select name="location_id"><option value="">Todos los espacios</option>{% for loc in locations %}<option value="{{ loc.id }}"
+        {% if place and loc.id == place.id %}selected{% endif %}>{{ loc.name }}</option>{% endfor %}</select></label>
+    <label><input type="checkbox"
+       name="complete"
+       value="1"
+       {% if complete_only %}checked{% endif %}> Solo completos en el espacio elegido</label>
     <button class="button">Buscar</button>
     <a class="text-link" href="{{ url_for('looks.index') }}">Limpiar</a>
   </form>
@@ -24,7 +30,7 @@
     {% for outfit in outfits %}
       <article class="outfit-card"><a class="outfit-preview"
    href="{{ url_for('looks.detail',oid=outfit.id) }}"
-   aria-label="Ver combinación {{ outfit.name }}">{% for item in outfit['items'][:4] %}<div>{{ photo(item) }}</div>{% endfor %}</a><div class="outfit-caption"><p class="eyebrow">{{ outfit.occasion or 'TU COMBINACIÓN' }}</p><div class="card-title"><h2>{{ outfit.name }}</h2>{% if outfit.favorite %}{{ icon("heart") }}{% endif %}</div><p class="muted">{{ outfit['items']|length }} prendas · {% set places = outfit['items']|map(attribute='location_name')|unique|list %}{{ places|join(" / ") }}</p><div class="outfit-pieces">{% for item in outfit['items'] %}<a class="pill" href="{{ url_for('inventory.detail',gid=item.id) }}">{{ item.name }}{% if item.archived %} · Archivada{% endif %}</a>{% endfor %}</div><div class="secondary-actions"><a class="text-link" href="{{ url_for('looks.edit',oid=outfit.id) }}">Editar outfit {{ icon("arrow") }}</a><a class="text-link danger"
+   aria-label="Ver combinación {{ outfit.name }}">{% for item in outfit['items'][:4] %}<div>{{ photo(item) }}</div>{% endfor %}</a><div class="outfit-caption"><p class="eyebrow">{{ outfit.occasion or 'TU COMBINACIÓN' }}</p><div class="card-title"><h2>{{ outfit.name }}</h2>{% if outfit.favorite %}{{ icon("heart") }}{% endif %}</div><p class="muted">{{ outfit['items']|length }} prendas · {% set places = outfit['items']|map(attribute='location_name')|unique|list %}{{ places|join(" / ") }}</p>{% if place %}<p>{% if not outfit["items"] %}Sin prendas{% elif not outfit.missing %}Completo en {{ place.name }}{% else %}{{ outfit['items']|length - outfit.missing|length }} de {{ outfit['items']|length }} en {{ place.name }} · {% for item in outfit.missing %}{{ item.name }} ({{ 'archivada' if item.archived else item.location_name }}){{ ', ' if not loop.last }}{% endfor %}{% endif %}</p>{% endif %}<div class="outfit-pieces">{% for item in outfit['items'] %}<a class="pill" href="{{ url_for('inventory.detail',gid=item.id) }}">{{ item.name }}{% if item.archived %} · Archivada{% endif %}</a>{% endfor %}</div><div class="secondary-actions"><a class="text-link" href="{{ url_for('looks.edit',oid=outfit.id) }}">Editar outfit {{ icon("arrow") }}</a><a class="text-link danger"
    href="{{ url_for('looks.delete',oid=outfit.id) }}">Eliminar</a></div></div></article>
     {% else %}
       <section class="empty-state wide">
