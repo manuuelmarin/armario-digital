@@ -1,5 +1,20 @@
 # Roadmap
 
+## Estado de auditoría independiente — 18 de noviembre de 2026
+
+La rama `main` consultada está en el commit `78793ddc458ad0e3a917fe5b77c8ead4fab83d4b`, preview 0.3.1, esquema 9. La PR #10 está integrada y el workflow de calidad de ese commit concluyó correctamente. Los resultados históricos no sustituyen una nueva ejecución.
+
+Una auditoría independiente del 1 de noviembre examinó una copia local 0.3.1 sin metadatos Git; no pudo cotejarla con el remoto. Reprodujo los siguientes hallazgos, que **deben verificarse de nuevo en el commit indicado antes de afirmar que afectan a main**:
+
+- [ ] H01: unificar la selección de portada tras reordenar y borrar fotografías; comprobar ficha, catálogo y fuente de visión.
+- [ ] H02: conservar ubicación y estilo al sustituir desde un outfit guardado, con valores explícitos para los que carecen de procedencia.
+- [ ] H03: comprobar identidad estable de prendas fijadas y excluidas al reintentar una tarea; tratar capturas antiguas sin identidad inequívoca.
+- [ ] H04: validar claves externas y restricciones relevantes por esquema al verificar y restaurar copias; probar esquemas 1–9 y restauraciones rechazadas.
+- [ ] H05: definir y conservar exclusiones al realizar sustituciones sucesivas.
+- [ ] H06: comunicar la ausencia de la foto fuente antes de presentar una prenda como lista o de encolar una tarea.
+
+En una sesión posterior se informó de un parche 0.3.2 y pruebas, pero esa copia temporal se perdió y no se publicó. **No considerar esos cambios integrados ni sus pruebas verificadas en main.** Tras reproducir y corregir, ejecutar regresiones, suite completa, navegador, controles de formato y CI Windows/Linux; revisar además los textos sobre sustituciones y validación de copias. La instalación interactiva en Windows y la calidad, latencia y memoria de los modelos reales en el equipo objetivo siguen pendientes.
+
 ## 0.2 — Base visual y reutilizable
 
 - Instalación vacía y configuración de espacios.
