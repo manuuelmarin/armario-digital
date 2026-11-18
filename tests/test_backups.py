@@ -218,3 +218,46 @@ def test_prune_daily_copies_keeps_manual_and_migration_copies(client, app, monke
     assert (folder / "daily-20260102.zip").exists()
     assert (folder / "manual-20260101.zip").exists()
     assert (folder / "before-schema-4.zip").exists()
+
+
+@pytest.mark.parametrize("version", range(1, SCHEMA_VERSION + 1))
+def test_restore_each_supported_schema_with_photos_and_outfit(tmp_path, version):
+    from PIL import Image
+
+    from armario.backups import digest
+
+    root = tmp_path / "source"
+    images = root / "images"
+    images.mkdir(parents=True)
+    names = ["1" * 32 + suffix for suffix in (".webp", "-thumb.webp")]
+    for name in names:
+        Image.new("RGB", (8, 8), "green").save(images / name)
+    db = connect(root / "wardrobe.sqlite")
+    try:
+        for script in sorted((Path(__file__).parents[1] / "armario/migrations").glob("*.sql"))[
+            :version
+        ]:
+            db.executescript(script.read_text(encoding="utf-8"))
+        with db:
+            db.execute(f"PRAGMA user_version={version}")
+            db.execute("INSERT INTO locations(name) VALUES ('Espacio A')")
+            db.execute("INSERT INTO garments(name,category_id,location_id) VALUES ('Camisa',1,1)")
+            db.execute("INSERT INTO outfits(name) VALUES ('Conjunto')")
+            db.execute("INSERT INTO outfit_items VALUES (1,1)")
+            db.execute(
+                "INSERT INTO garment_images(garment_id,filename,thumbnail,digest) VALUES (1,?,?,?)",
+                (*names, digest(images / names[0])),
+            )
+            if version >= 5:
+                db.executemany(
+                    "INSERT INTO image_integrity VALUES (?,?)",
+                    [(n, digest(images / n)) for n in names],
+                )
+    finally:
+        db.close()
+    archive = create_backup(root, expected_version=version)
+    target = tmp_path / "restored"
+    info, _ = restore_backup(archive, target)
+    assert info == dict(schema_version=version, garments=1, outfits=1, outfit_items=1)
+    for name in names:
+        assert (target / "images" / name).read_bytes() == (images / name).read_bytes()

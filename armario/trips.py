@@ -2,7 +2,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from .db import get_db
 from .domain import add_trip_garments, date_value, identifier, ids, move_garments, text_value
-from .queries import active_garments, entity
+from .queries import PHOTO_ORDER, active_garments, entity
 
 bp = Blueprint("trips", __name__)
 
@@ -11,9 +11,9 @@ def trip_items(tid):
     return (
         get_db()
         .execute(
-            """
+            f"""
         SELECT i.*,g.name,g.archived,g.location_id,l.name location_name,
-        (SELECT thumbnail FROM garment_images WHERE garment_id=g.id ORDER BY is_primary DESC, id LIMIT 1) thumbnail
+        (SELECT thumbnail FROM garment_images WHERE garment_id=g.id ORDER BY {PHOTO_ORDER} LIMIT 1) thumbnail
         FROM trip_items i LEFT JOIN garments g ON g.id=i.garment_id
         LEFT JOIN locations l ON l.id=g.location_id WHERE trip_id=? ORDER BY i.id
     """,

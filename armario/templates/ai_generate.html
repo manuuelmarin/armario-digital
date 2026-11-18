@@ -34,7 +34,7 @@
           <label for="generate-location">Ubicación</label><select id="generate-location"
         name="location_id">
             <option value="0">Todas mis ubicaciones</option>
-            {{ location_options() }}
+            {{ location_options(constraints.location_id) }}
           </select>
         </div>
       </div>
@@ -66,7 +66,10 @@
           Ocasión (opcional)<input name="occasion"
        value="{{ constraints.occasion }}"
        maxlength="80"
-       placeholder="Por ejemplo, una cena informal"></label><label>Estilo deseado (opcional)<input name="style" maxlength="80" placeholder="Por ejemplo, minimalista">
+       placeholder="Por ejemplo, una cena informal"></label><label>Estilo deseado (opcional)<input name="style"
+       value="{{ constraints.style }}"
+       maxlength="80"
+       placeholder="Por ejemplo, minimalista">
           </label>
         </div>
         <label class="check-label">

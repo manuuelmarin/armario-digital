@@ -2,14 +2,16 @@ from flask import abort
 
 from .db import get_db
 
-GARMENT_SELECT = """
+PHOTO_ORDER = "is_primary DESC, COALESCE(sort_order, id), id"
+
+GARMENT_SELECT = f"""
  SELECT g.*, c.name category_name, l.name location_name,
  img.thumbnail, img.filename, img.preview, img.width, img.height,
  img.preview_width, img.thumbnail_width
  FROM garments g
  JOIN categories c ON c.id=g.category_id
  JOIN locations l ON l.id=g.location_id
- LEFT JOIN garment_images img ON img.id=(SELECT id FROM garment_images WHERE garment_id=g.id ORDER BY is_primary DESC, id LIMIT 1)
+ LEFT JOIN garment_images img ON img.id=(SELECT id FROM garment_images WHERE garment_id=g.id ORDER BY {PHOTO_ORDER} LIMIT 1)
 """
 
 

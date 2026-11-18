@@ -22,7 +22,7 @@ from .domain import (
     validate_garments,
 )
 from .images import record_integrity, remove_files, store_image
-from .queries import GARMENT_SELECT, garment
+from .queries import GARMENT_SELECT, PHOTO_ORDER, garment
 
 bp = Blueprint("inventory", __name__)
 SORT_OPTIONS = {
@@ -277,9 +277,9 @@ def detail(gid):
     return render_template(
         "garment_detail.html",
         item=item,
-        visual_profile=approved(db, gid),
+        visual_profile=approved(db, gid, current_app.config["DATA_DIR"]),
         photos=db.execute(
-            "SELECT * FROM garment_images WHERE garment_id=? ORDER BY is_primary DESC, COALESCE(sort_order, id), id",
+            f"SELECT * FROM garment_images WHERE garment_id=? ORDER BY {PHOTO_ORDER}",
             (gid,),
         ).fetchall(),
         chosen_seasons=[
@@ -459,7 +459,7 @@ def reorder_image(gid, image_id):
     db = get_db()
     with db:
         photos = db.execute(
-            "SELECT id FROM garment_images WHERE garment_id=? ORDER BY is_primary DESC, COALESCE(sort_order,id), id",
+            f"SELECT id FROM garment_images WHERE garment_id=? ORDER BY {PHOTO_ORDER}",
             (gid,),
         ).fetchall()
         order = [row["id"] for row in photos]
@@ -496,6 +496,10 @@ def delete_image(gid, image_id):
         raise ValueError("Confirma la eliminación de la fotografía.")
     with db:
         db.execute("DELETE FROM garment_images WHERE id=?", (image_id,))
+        db.execute(
+            f"UPDATE garment_images SET is_primary=1 WHERE id=(SELECT id FROM garment_images WHERE garment_id=? ORDER BY {PHOTO_ORDER} LIMIT 1)",
+            (gid,),
+        )
         db.executemany(
             "DELETE FROM image_integrity WHERE name=?",
             [(photo[key],) for key in ("filename", "thumbnail", "preview") if photo[key]],

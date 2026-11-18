@@ -1,5 +1,11 @@
 # Roadmap
 
+## Auditoría independiente de noviembre de 2026
+
+La revisión 0.3.2 corrige los seis casos reproducidos sobre 0.3.1 (commit `78793dd`). Las regresiones de portada, ubicación y estilo, identidad en reintentos, claves externas, exclusiones y disponibilidad de fotos están en [las pruebas de auditoría](../tests/test_independent_audit.py). La recuperación con fotos y relaciones se comprueba en los nueve esquemas admitidos.
+
+Siguen pendientes la instalación interactiva en Windows y las mediciones con los dos modelos reales en el equipo de destino.
+
 ## 0.2 — Base visual y reutilizable
 
 - Instalación vacía y configuración de espacios.

@@ -9,6 +9,7 @@ import uuid
 from PIL import Image
 
 from .ai_client import ModelError
+from .queries import PHOTO_ORDER
 
 TYPES = {
     "desconocido": "Sin identificar",
@@ -176,7 +177,7 @@ def profile_from_form(form):
 
 def source(db, gid):
     row = db.execute(
-        "SELECT i.filename, h.sha256 FROM garment_images i LEFT JOIN image_integrity h ON h.name=i.filename WHERE i.garment_id=? ORDER BY i.is_primary DESC,i.id LIMIT 1",
+        f"SELECT i.filename, h.sha256 FROM garment_images i LEFT JOIN image_integrity h ON h.name=i.filename WHERE i.garment_id=? ORDER BY {PHOTO_ORDER} LIMIT 1",
         (gid,),
     ).fetchone()
     return (
@@ -184,13 +185,16 @@ def source(db, gid):
     )
 
 
-def approved(db, gid):
+def approved(db, gid, root=None):
     row = db.execute("SELECT * FROM garment_profiles WHERE garment_id=?", (gid,)).fetchone()
     if not row:
         return None
     result = dict(row)
     result["profile"] = validate_profile(json.loads(row["profile_json"]))
-    result["stale"] = source(db, gid) != {"name": row["source_name"], "hash": row["source_hash"]}
+    current = source(db, gid)
+    result["stale"] = current != {"name": row["source_name"], "hash": row["source_hash"]} or (
+        root is not None and not source_intact(root, current)
+    )
     return result
 
 
@@ -250,11 +254,23 @@ def source_intact(root, current):
         return False
 
 
+def garment_identity(db, gid):
+    row = db.execute(
+        "SELECT provenance_json FROM garment_profiles WHERE garment_id=?", (gid,)
+    ).fetchone()
+    provenance = json.loads(row[0]) if row else {}
+    return provenance.get("garment_identity") or provenance.get("approval_id")
+
+
 def save_profile(db, gid, profile, expected_revision, provenance):
     if revision(db, gid) != expected_revision:
         raise ValueError("La descripción ha cambiado en otra pestaña. Recarga antes de guardar.")
     current = source(db, gid)
-    provenance = {**provenance, "approval_id": uuid.uuid4().hex}
+    provenance = {
+        **provenance,
+        "approval_id": uuid.uuid4().hex,
+        "garment_identity": garment_identity(db, gid) or uuid.uuid4().hex,
+    }
     db.execute(
         "INSERT INTO garment_profiles(garment_id,revision,profile_json,source_name,source_hash,provenance_json) VALUES (?,?,?,?,?,?) ON CONFLICT(garment_id) DO UPDATE SET revision=excluded.revision,profile_json=excluded.profile_json,source_name=excluded.source_name,source_hash=excluded.source_hash,provenance_json=excluded.provenance_json,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')",
         (

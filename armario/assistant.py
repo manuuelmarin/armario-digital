@@ -39,6 +39,7 @@ from .recommendations import (
     current_snapshot,
     make_snapshot,
     role,
+    selection_identities,
     valid_plan,
 )
 
@@ -164,7 +165,15 @@ def retry(jid):
             validate_garments(db, [job["garment_id"]])
             snapshot = vision_snapshot(db, job["garment_id"])
         elif job["kind"] == "outfit":
-            snapshot = make_snapshot(db, job["input"]["constraints"])
+            constraints = job["input"]["constraints"]
+            identities = selection_identities(db, constraints)
+            if identities and (
+                not all(identities.values()) or identities != job["input"].get("identities")
+            ):
+                raise ValueError(
+                    "Vuelve al generador y selecciona las prendas. No se puede confirmar su identidad original."
+                )
+            snapshot = make_snapshot(db, constraints, current_app.config["DATA_DIR"])
         else:
             snapshot = {}
         new_id = enqueue(db, job["kind"], snapshot, job["garment_id"])
@@ -207,7 +216,7 @@ def profile(gid):
     if item["archived"]:
         raise ValueError("Recupera la prenda del archivo antes de revisar su descripción.")
     db = get_db()
-    saved = approved(db, gid)
+    saved = approved(db, gid, current_app.config["DATA_DIR"])
     job_id = (
         request.form.get("job_id", "") if request.method == "POST" else request.args.get("job", "")
     )
@@ -293,7 +302,9 @@ def generate():
         if constraints["location_id"]:
             entity("locations", constraints["location_id"])
         with db:
-            jid = enqueue(db, "outfit", make_snapshot(db, constraints))
+            jid = enqueue(
+                db, "outfit", make_snapshot(db, constraints, current_app.config["DATA_DIR"])
+            )
         return task_redirect(jid)
     constraints = default_constraints()
     constraints["fixed"] = ids(request.args.getlist("fixed"))
@@ -307,6 +318,22 @@ def generate():
             raise ValueError("La sustitución no es válida.") from error
         outfit = entity("outfits", outfit_id)
         constraints["occasion"] = outfit["occasion"]
+        origin = db.execute(
+            "SELECT provenance_json FROM outfit_origins WHERE outfit_id=?", (outfit_id,)
+        ).fetchone()
+        if origin:
+            previous = json.loads(origin[0]).get("constraints", {})
+            constraints["location_id"] = previous.get("location_id", 0)
+            constraints["style"] = previous.get("style", "")
+            if (
+                constraints["location_id"]
+                and not db.execute(
+                    "SELECT 1 FROM locations WHERE id=?", (constraints["location_id"],)
+                ).fetchone()
+            ):
+                raise ValueError(
+                    "La ubicación original ya no existe. Elige una ubicación en una nueva generación."
+                )
         chosen = [
             r[0]
             for r in db.execute(
@@ -317,7 +344,7 @@ def generate():
             raise ValueError("Elige una prenda del outfit para sustituir.")
         constraints["fixed"] = [gid for gid in chosen if gid != replacement]
         constraints["excluded"] = [replacement]
-        saved = {gid: approved(db, gid) for gid in chosen}
+        saved = {gid: approved(db, gid, current_app.config["DATA_DIR"]) for gid in chosen}
         if any(
             not entry or entry["stale"] or not role(entry["profile"]) for entry in saved.values()
         ):
@@ -340,7 +367,7 @@ def generate():
     garments = active_garments()
     # Include jackets and accessories in the readiness count, independent of the default filters.
     all_constraints = {**default_constraints(), "accessories": True}
-    ready = set(catalog(db, all_constraints))
+    ready = set(catalog(db, all_constraints, current_app.config["DATA_DIR"]))
     return render_template(
         "ai_generate.html",
         constraints=constraints,
@@ -423,12 +450,14 @@ def replace(jid):
         **job["input"]["constraints"],
         "mode": "recommended",
         "fixed": [other for other in proposal["garment_ids"] if other != gid],
-        "excluded": [gid],
+        "excluded": list(dict.fromkeys([*job["input"]["constraints"]["excluded"], gid])),
         "replacement_role": next(
             item["role"] for item in job["input"]["items"] if item["id"] == gid
         ),
     }
     db = get_db()
     with db:
-        new_id = enqueue(db, "outfit", make_snapshot(db, constraints))
+        new_id = enqueue(
+            db, "outfit", make_snapshot(db, constraints, current_app.config["DATA_DIR"])
+        )
     return task_redirect(new_id)

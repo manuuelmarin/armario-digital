@@ -51,3 +51,5 @@ La versión 0.3 acepta copias de esquemas 1 a 9, incluidas fotos antiguas sin pr
 Desde el esquema 9 también se guardan perfiles revisados, tareas y procedencia de outfits asistidos. No se guardan los pesos ni la configuración de Ollama: prepara el servicio por separado en el equipo de destino. Las tareas en cola pueden continuar al arrancar si la asistencia estaba activa y sin pausa; las interrumpidas en curso pasan a error y requieren reintento explícito. Consulta [IA local](LOCAL_AI.md) antes de reanudar una cola restaurada.
 
 Si la base de datos o alguna imagen del estado actual está dañada, la restauración conserva la carpeta anterior completa aunque no pueda generar una copia adicional. Revisa esa carpeta antes de eliminarla.
+
+La verificación compara también las claves externas declaradas, las columnas relacionadas y sus acciones de actualización y borrado con las migraciones de la versión indicada. Una estructura incompleta impide restaurar la copia.
