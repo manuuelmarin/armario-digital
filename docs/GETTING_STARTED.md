@@ -82,3 +82,7 @@ En la ficha de una prenda, usa las flechas para ordenar las fotografías secunda
 ## Asistencia local, si decides activarla
 
 Desde **Ajustes → Configurar asistencia local**, prepara Ollama y sus dos modelos siguiendo [LOCAL_AI.md](LOCAL_AI.md). La instalación del catálogo no descarga modelos. Revisa las descripciones desde cada prenda y abre **Outfits → Generar outfits** para fijar piezas y elegir filtros. Cada resultado necesita una acción explícita para guardarse; el armario y los outfits manuales siguen disponibles si Ollama no está instalado.
+
+En Windows, el instalador ofrece un acceso directo al escritorio. Elige un archivo ICO propio o cancela el selector para usar la percha incluida. El acceso abre la instancia personal en su puerto activo. Puedes volver a ejecutar escritorio.ps1 desde PowerShell para actualizarlo.
+
+En la importación por lotes, asigna el mismo número a las imágenes de una pieza. La primera fila del grupo define su nombre y categoría. Puedes elegir una portada por grupo. En Outfits, selecciona tu espacio para consultar qué piezas están allí. Resumen abre el inventario por espacio y categoría e indica cuántas prendas tienen precio. Ajustes permite seguir la apariencia del sistema o elegir claro u oscuro.

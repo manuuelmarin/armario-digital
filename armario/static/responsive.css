@@ -634,3 +634,30 @@
   .printable-trip .workspace, .printable-trip main { margin: 0; padding: 0; width: 100%; }
   .printable-trip { background: white; color: black; }
 }
+
+.mobile-more { display: none; }
+@media (max-width: 900px) {
+  .sidebar nav > .nav-link:nth-of-type(n+4), .sidebar-bottom { display: none; }
+  .mobile-more { display: block; position: relative; }
+  .mobile-more summary { padding: 8px 12px; cursor: pointer; }
+  .mobile-more a { display: block; padding: 8px; }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #20231f;
+  --surface: #292d28;
+  --ink: #f4f1e9;
+  --muted: #c5c8bd;
+  --line: #61675c;
+  --subtle: #353a32;
+  --green: #b5d5ac;
+  --danger: #ffb5ad;
+}
+[data-theme="dark"] :is(.panel,.topbar,.pick-card,.outfit-card,.checklist-row,.filter-select,.location-pill,input:not([type=checkbox]),select,textarea,.button) {
+  background: var(--surface); color: var(--ink);
+}
+[data-theme="dark"] :is(.button.primary,.nav-link.active) { background: #dde3d1; color: #252a23; }
+[data-theme="dark"] :is(.nav-link,.tab,.eyebrow,.text-link,.search-field) { color: var(--muted); }
+[data-theme="dark"] :is(.card-image,.pick-photo,.detail-photo,.outfit-preview,.photo-placeholder) { color: #555c50; }
+[data-theme="dark"] :is(.icon-button,.pill,.photo-badge,.bulk-bar,.notice,.welcome-panel) { color: #30362e; }
+[data-theme="dark"] :is(.tab.selected,.nav-link:hover,.button:hover) { color: var(--ink); background: var(--subtle); }

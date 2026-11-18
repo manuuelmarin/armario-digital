@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+  <a href="{{ url_for('inventory.index') }}">← Mi armario</a>
+  <h1>Resumen del armario</h1>
+  {% for place, items in rows|groupby("location") %}
+    <section class="panel"><h2>{{ place }}</h2>
+      {% for row in items %}
+        <p><a class="text-link" href="{{ url_for('inventory.index',location_id=row.location_id,category_id=row.category_id) }}">{{ row.category }} · {{ row.total }} prendas</a>
+          <progress value="{{ row.total }}" max="{{ maximum }}" aria-label="{{ row.category }}"></progress>
+          Precio registrado en {{ row.priced }} de {{ row.total }}{% if row.priced %} · {{ ('%.2f'|format(row.cents/100))|replace('.',',') }} €{% endif %}</p>
+      {% endfor %}
+    </section>
+  {% else %}
+    <p>Añade tu primera prenda para ver el resumen.</p>
+  {% endfor %}
+{% endblock %}

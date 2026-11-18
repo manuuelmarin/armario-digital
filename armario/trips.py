@@ -2,7 +2,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from .db import get_db
 from .domain import add_trip_garments, date_value, identifier, ids, move_garments, text_value
-from .queries import active_garments, entity
+from .queries import GARMENT_SELECT, entity
 
 bp = Blueprint("trips", __name__)
 
@@ -84,9 +84,21 @@ def detail(tid):
         "trip_detail.html",
         trip=trip,
         items=trip_items(tid),
-        garments=active_garments(),
+
         outfits=get_db().execute("SELECT * FROM outfits ORDER BY name").fetchall(),
     )
+
+
+@bp.get("/maletas/<int:tid>/seleccionar")
+def select_garments(tid):
+    trip = entity("trips", tid)
+    page = max(1, request.args.get("page", 1, type=int))
+    query = text_value(request.args, "q")
+    rows = get_db().execute(
+        GARMENT_SELECT + " WHERE g.archived=0 AND instr(fold(g.name || ' ' || g.color || ' ' || l.name || ' ' || c.name),fold(?))>0 ORDER BY g.name,g.id LIMIT 25 OFFSET ?",
+        (query, (min(page, 100000)-1)*24),
+    ).fetchall()
+    return render_template("trip_picker.html", trip=trip, rows=rows[:24], more=len(rows)>24, page=page, query=query)
 
 
 @bp.get("/maletas/<int:tid>/imprimir")
@@ -156,7 +168,13 @@ def update_item(tid, iid, action):
         abort(404)
     with db:
         if action == "preparar":
-            db.execute("UPDATE trip_items SET packed=1-packed WHERE id=?", (iid,))
+            value = request.form.get("desired")
+            if value is None:  # Forms from earlier versions toggle once.
+                db.execute("UPDATE trip_items SET packed=1-packed WHERE id=?", (iid,))
+            elif value in {"0", "1"}:
+                db.execute("UPDATE trip_items SET packed=? WHERE id=?", (int(value), iid))
+            else:
+                raise ValueError("Estado no válido.")
         else:
             db.execute("DELETE FROM trip_items WHERE id=?", (iid,))
     return redirect(url_for("trips.detail", tid=tid))

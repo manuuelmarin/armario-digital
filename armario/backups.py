@@ -60,6 +60,10 @@ def check_structure(db, version):
         raise ValueError("La estructura de ajustes de asistencia está incompleta.")
 
 
+class InstanceBusy(RuntimeError):
+    pass
+
+
 @contextmanager
 def process_lock(root):
     """One server or recovery command per data directory, including on Windows."""
@@ -82,7 +86,7 @@ def process_lock(root):
             fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError as exc:
         handle.close()
-        raise RuntimeError(
+        raise InstanceBusy(
             "Cierra Armario Digital antes de iniciar otra instancia o restaurar."
         ) from exc
     try:

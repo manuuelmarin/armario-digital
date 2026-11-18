@@ -17,6 +17,8 @@ if not exist ".venv\Scripts\python.exe" py -3 -m venv .venv
 if errorlevel 1 goto fail
 ".venv\Scripts\python.exe" -m pip install -r requirements.txt
 if errorlevel 1 goto fail
+choice /M "Crear acceso directo en el escritorio"
+if not errorlevel 2 powershell.exe -NoProfile -STA -File "%~dp0escritorio.ps1"
 echo Instalacion completada. Abre iniciar.cmd.
 pause
 exit /b 0
