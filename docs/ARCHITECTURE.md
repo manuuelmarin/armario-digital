@@ -1,5 +1,16 @@
 # Arquitectura
 
+```mermaid
+flowchart TD
+    UI["Navegador: HTML, CSS y formularios"] --> App["Proceso Python local: Flask y Waitress"]
+    App --> DB["SQLite: inventario y relaciones"]
+    App --> Images["Fotografías y variantes locales"]
+    App -->|"Asistencia opcional"| AI["Ollama local"]
+    DB --> Copy["Copia verificada: SQLite y fotografías"]
+    Images --> Copy
+    App -->|"Solo al solicitar actualización"| Weather["Open-Meteo: coordenadas e IP"]
+```
+
 ## Componentes
 
 Un proceso Python sirve HTML y recursos locales, aplica las reglas del dominio y accede a SQLite. No hay una SPA ni una compilación frontend. Waitress es el servidor normal; el modo de desarrollo utiliza recarga de archivos sin depurador interactivo.
