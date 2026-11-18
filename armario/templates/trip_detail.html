@@ -91,7 +91,8 @@
   </section>
 </aside>
 </div>
-<a class="button" href="{{ url_for('trips.select_garments',tid=trip.id) }}">Añadir prendas del armario</a>
+<a class="button"
+   href="{{ url_for('trips.select_garments',tid=trip.id) }}">Añadir prendas del armario</a>
 <div class="secondary-actions">
   <a class="text-link danger"
      href="{{ url_for('trips.delete',tid=trip.id) }}">Eliminar maleta</a>

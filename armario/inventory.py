@@ -106,14 +106,20 @@ def index():
 
 @bp.get("/resumen")
 def summary():
-    rows = get_db().execute("""
+    rows = (
+        get_db()
+        .execute("""
         SELECT g.location_id, l.name location, g.category_id, c.name category,
                count(*) total, count(g.price_cents) priced, sum(g.price_cents) cents
         FROM garments g JOIN locations l ON l.id=g.location_id
         JOIN categories c ON c.id=g.category_id WHERE g.archived=0
         GROUP BY g.location_id,g.category_id ORDER BY l.name,c.name
-    """).fetchall()
-    return render_template("summary.html", rows=rows, maximum=max((r["total"] for r in rows), default=1))
+    """)
+        .fetchall()
+    )
+    return render_template(
+        "summary.html", rows=rows, maximum=max((r["total"] for r in rows), default=1)
+    )
 
 
 def save_garment(gid=None):
@@ -213,7 +219,7 @@ def bulk_import():
         raise ValueError("La lista de fotografías ha cambiado. Vuelve a seleccionarlas.")
     if names_input and any(not n.strip() or len(n.strip()) > 120 for n in names_input):
         raise ValueError("Cada nombre debe tener entre 1 y 120 caracteres.")
-    groups = request.form.getlist("photo_groups") or [str(i+1) for i in range(len(uploads))]
+    groups = request.form.getlist("photo_groups") or [str(i + 1) for i in range(len(uploads))]
     categories = request.form.getlist("photo_categories") or [str(category)] * len(uploads)
     if len(groups) != len(uploads) or len(categories) != len(uploads):
         raise ValueError("Revisa la agrupación de las fotografías.")
@@ -271,8 +277,10 @@ def bulk_import():
                     ),
                 )
                 if str(index) in covers:
-                    db.execute("UPDATE garment_images SET is_primary=1 WHERE garment_id=? AND filename=?",
-                               (gid, image["filename"]))
+                    db.execute(
+                        "UPDATE garment_images SET is_primary=1 WHERE garment_id=? AND filename=?",
+                        (gid, image["filename"]),
+                    )
     except Exception:
         remove_files(root, created)
         raise
@@ -306,13 +314,21 @@ def edit(gid):
 def garment_form(item, seasons):
     db = get_db()
     suggestions = {
-        field: [row[0] for row in db.execute(
-            f"SELECT DISTINCT {field} FROM garments WHERE {field} != '' ORDER BY {field} COLLATE NOCASE"
-        )]
+        field: [
+            row[0]
+            for row in db.execute(
+                f"SELECT DISTINCT {field} FROM garments WHERE {field} != '' ORDER BY {field} COLLATE NOCASE"
+            )
+        ]
         for field in ("brand", "size", "color")
     }
-    return render_template("garment_form.html", item=item, chosen_seasons=seasons,
-                           suggestions=suggestions, initial_location=request.args.get("location_id", type=int))
+    return render_template(
+        "garment_form.html",
+        item=item,
+        chosen_seasons=seasons,
+        suggestions=suggestions,
+        initial_location=request.args.get("location_id", type=int),
+    )
 
 
 @bp.get("/prendas/<int:gid>")

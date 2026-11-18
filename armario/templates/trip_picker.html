@@ -4,11 +4,21 @@
   <a href="{{ url_for('trips.detail',tid=trip.id) }}">← {{ trip.name }}</a>
   <h1>Añadir prendas del armario</h1>
   <section data-trip-picker>
-    <form method="get" data-search><label>Buscar prendas<input name="q" value="{{ query }}"></label><button>Buscar</button></form>
-    <form method="post" action="{{ url_for('trips.add',tid=trip.id) }}" data-add>{{ csrf() }}
+    <form method="get" data-search>
+      <label>
+        Buscar prendas<input name="q" value="{{ query }}"></label><button>Buscar</button>
+    </form>
+    <form method="post"
+          action="{{ url_for('trips.add',tid=trip.id) }}"
+          data-add>
+      {{ csrf() }}
       <div class="picker-grid">
         {% for item in rows %}
-          <label class="pick-card"><input type="checkbox" name="garment_ids" value="{{ item.id }}">{{ photo(item) }}{{ item.name }} · {{ item.location_name }}</label>
+          <label class="pick-card">
+            <input type="checkbox"
+                   name="garment_ids"
+                   value="{{ item.id }}">{{ photo(item) }}{{ item.name }} · {{ item.location_name }}
+          </label>
         {% else %}
           <p>Sin resultados.</p>
         {% endfor %}
@@ -17,7 +27,7 @@
     </form>
     <nav aria-label="Páginas">{% if page > 1 %}<a href="{{ url_for('trips.select_garments',tid=trip.id,q=query,page=page-1) }}">Anterior</a>{% endif %}
       Página {{ page }}
-      {% if more %}<a href="{{ url_for('trips.select_garments',tid=trip.id,q=query,page=page+1) }}">Siguiente</a>{% endif %}</nav>
+    {% if more %}<a href="{{ url_for('trips.select_garments',tid=trip.id,q=query,page=page+1) }}">Siguiente</a>{% endif %}</nav>
   </section>
   <script src="{{ url_for('static',filename='trip-picker.js') }}" defer></script>
 {% endblock %}

@@ -26,7 +26,7 @@
           href="{{ url_for('static', filename='responsive.css', v=version) }}">
     <script src="{{ url_for('static', filename='app.js', v=version) }}" defer></script>
     {% block head %}{% endblock %}
-  <script src="{{ url_for('static',filename='theme.js') }}"></script>
+    <script src="{{ url_for('static',filename='theme.js') }}"></script>
   </head>
   <body {% if request.endpoint == "trips.printable" %} class="printable-trip"{% endif %}>
     <a class="skip" href="#main">Saltar al contenido</a>
@@ -44,7 +44,8 @@
              href="{{ url_for(endpoint) }}"
              {% if active %} aria-current="page"{% endif %}>{{ icon(glyph) }}<span>{{ label }}</span>{% if active %}<span class="nav-dot"></span>{% endif %}</a>
         {% endfor %}
-        <details class="mobile-more"><summary>Más</summary>
+        <details class="mobile-more">
+          <summary>Más</summary>
           {% for endpoint,label in [('organization.index','Colecciones'),('boards.index','Inspiración'),('weather.index','Tiempo'),('settings.locations','Ubicaciones'),('settings.index','Ajustes')] %}
             <a href="{{ url_for(endpoint) }}">{{ label }}</a>
           {% endfor %}

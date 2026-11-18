@@ -84,7 +84,6 @@ def detail(tid):
         "trip_detail.html",
         trip=trip,
         items=trip_items(tid),
-
         outfits=get_db().execute("SELECT * FROM outfits ORDER BY name").fetchall(),
     )
 
@@ -94,11 +93,18 @@ def select_garments(tid):
     trip = entity("trips", tid)
     page = max(1, request.args.get("page", 1, type=int))
     query = text_value(request.args, "q")
-    rows = get_db().execute(
-        GARMENT_SELECT + " WHERE g.archived=0 AND instr(fold(g.name || ' ' || g.color || ' ' || l.name || ' ' || c.name),fold(?))>0 ORDER BY g.name,g.id LIMIT 25 OFFSET ?",
-        (query, (min(page, 100000)-1)*24),
-    ).fetchall()
-    return render_template("trip_picker.html", trip=trip, rows=rows[:24], more=len(rows)>24, page=page, query=query)
+    rows = (
+        get_db()
+        .execute(
+            GARMENT_SELECT
+            + " WHERE g.archived=0 AND instr(fold(g.name || ' ' || g.color || ' ' || l.name || ' ' || c.name),fold(?))>0 ORDER BY g.name,g.id LIMIT 25 OFFSET ?",
+            (query, (min(page, 100000) - 1) * 24),
+        )
+        .fetchall()
+    )
+    return render_template(
+        "trip_picker.html", trip=trip, rows=rows[:24], more=len(rows) > 24, page=page, query=query
+    )
 
 
 @bp.get("/maletas/<int:tid>/imprimir")

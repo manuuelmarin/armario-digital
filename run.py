@@ -91,8 +91,13 @@ def main():
                 else:
                     from waitress import create_server
 
-                    server = create_server(app, host="127.0.0.1", port=args.port, threads=4,
-                                           max_request_body_size=64 * 1024**2)
+                    server = create_server(
+                        app,
+                        host="127.0.0.1",
+                        port=args.port,
+                        threads=4,
+                        max_request_body_size=64 * 1024**2,
+                    )
                     try:
                         instance_file.write_text(f"{args.port} {nonce}", encoding="ascii")
                         if not args.no_browser:

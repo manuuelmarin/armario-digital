@@ -661,3 +661,11 @@
 [data-theme="dark"] :is(.card-image,.pick-photo,.detail-photo,.outfit-preview,.photo-placeholder) { color: #555c50; }
 [data-theme="dark"] :is(.icon-button,.pill,.photo-badge,.bulk-bar,.notice,.welcome-panel) { color: #30362e; }
 [data-theme="dark"] :is(.tab.selected,.nav-link:hover,.button:hover) { color: var(--ink); background: var(--subtle); }
+[data-theme="dark"] :is(.checklist,.board-item,.new-location,.new-location-icon,.trip-glyph,.sidebar-note,.empty-state,.welcome-panel,.bulk-bar,.pill,.upload-zone,.notice,.demo-banner,.board-canvas) {
+  background: var(--subtle); color: var(--ink);
+}
+[data-theme="dark"] :is(.warning-text,.notice.error) { color: #ffcf90 !important; }
+[data-theme="dark"] .button.primary:hover { background: #c5d1b8; color: #252a23; }
+[data-theme="dark"] .is-favorite { color: #ffbd99 !important; }
+[data-theme="dark"] .card-favorite .is-favorite { color: #71371c !important; }
+[data-theme="dark"] .sidebar nav > .nav-link.active { color: #252a23; }

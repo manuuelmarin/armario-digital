@@ -17,7 +17,7 @@ La paginación visual de selectores y la ordenación de fotografías están impl
 
 ## Según validación de uso
 
-Temporadas de outfits, espacios jerárquicos, plantillas de viaje, importación/exportación legible y modo oscuro. El empaquetado de escritorio y la sincronización requieren evaluar instalación, seguridad y recuperación en su plataforma.
+Temporadas de outfits, espacios jerárquicos, plantillas de viaje, e importación/exportación legible. El empaquetado de escritorio y la sincronización requieren evaluar instalación, seguridad y recuperación en su plataforma.
 
 ## Distribución pública
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## Próxima versión
+
+- Importación con agrupación de fotos y portada, sugerencias de metadatos y espacio inicial.
+- Disponibilidad de outfits por ubicación y resumen navegable con cobertura de precios.
+- Apariencia clara, oscura o del sistema, contraste del catálogo y navegación móvil compacta.
+- Favoritos y preparación con estado explícito, selección paginada para maletas y acceso directo opcional en Windows.
+
 ## 0.3.1 — 2026-10-31 — auditoría de integridad y recomendaciones
 
 - Corrige sustituciones que podían quitar una chaqueta/accesorio opcional o convertir una pieza única en dos. Las alternativas conservan su capa y las demás prendas; el generador mantiene los controles del outfit guardado incluso sin JavaScript.
@@ -80,10 +87,3 @@
 ## 0.1.0 — 2026-10-29
 
 Initial preview: inventory, local photographs, locations, outfits, packing lists, SQLite migrations and recoverable backups.
-
-### Próxima versión
-
-- Importación con agrupación de fotos y portada, sugerencias de metadatos y espacio inicial.
-- Disponibilidad de outfits por ubicación y resumen navegable con cobertura de precios.
-- Apariencia clara, oscura o del sistema, contraste del catálogo y navegación móvil compacta.
-- Favoritos y preparación con estado explícito, selección paginada para maletas y acceso directo opcional en Windows.
