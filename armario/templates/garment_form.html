@@ -56,21 +56,24 @@
         <div class="two-columns">
           <div>
             <label for="garment-brand">Marca</label><input id="garment-brand"
-       list="values-brand" name="brand"
+       list="values-brand"
+       name="brand"
        maxlength="80"
        value="{{ item.brand if item else '' }}"
        placeholder="Marca o diseñador">
           </div>
           <div>
             <label for="garment-size">Talla</label><input id="garment-size"
-       list="values-size" name="size"
+       list="values-size"
+       name="size"
        maxlength="30"
        value="{{ item.size if item else '' }}"
        placeholder="M, 38, única…">
           </div>
         </div>
         <label for="garment-color">Color</label><input id="garment-color"
-       list="values-color" name="color"
+       list="values-color"
+       name="color"
        maxlength="60"
        placeholder="Azul marino, blanco…"
        value="{{ item.color if item else '' }}">
@@ -99,7 +102,11 @@
         </details>
       </section>
     </div>
-    {% for field, values in suggestions.items() %}<datalist id="values-{{ field }}">{% for value in values %}<option value="{{ value }}"></option>{% endfor %}</datalist>{% endfor %}
+    {% for field, values in suggestions.items() %}
+      <datalist id="values-{{ field }}">
+        {% for value in values %}<option value="{{ value }}"></option>{% endfor %}
+      </datalist>
+    {% endfor %}
     <div class="form-actions">
       <span class="field-hint">* Campos obligatorios</span><a href="{{ url_for('inventory.index') }}" class="button">Cancelar</a><button class="button primary">Guardar prenda {{ icon("check") }}</button>
     </div>

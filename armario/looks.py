@@ -36,11 +36,21 @@ def index():
     complete_only = request.args.get("complete") == "1"
     if place:
         for outfit in outfits:
-            outfit["missing"] = [item for item in outfit["items"] if item["archived"] or item["location_id"] != place_id]
+            outfit["missing"] = [
+                item
+                for item in outfit["items"]
+                if item["archived"] or item["location_id"] != place_id
+            ]
         if complete_only:
             outfits = [o for o in outfits if o["items"] and not o["missing"]]
-    return render_template("outfits.html", outfits=outfits, search=search, favorite=favorite,
-                           place=place, complete_only=complete_only)
+    return render_template(
+        "outfits.html",
+        outfits=outfits,
+        search=search,
+        favorite=favorite,
+        place=place,
+        complete_only=complete_only,
+    )
 
 
 @bp.get("/outfits/<int:oid>")
