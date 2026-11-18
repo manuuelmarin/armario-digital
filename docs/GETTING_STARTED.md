@@ -1,5 +1,33 @@
 # Primeros pasos
 
+## Instalar y abrir
+
+### Windows
+
+1. Instala [Python](https://www.python.org/downloads/) 3.11 o posterior con el lanzador `py`.
+2. Clona el repositorio o descarga **Code → Download ZIP** y extrae la carpeta completa.
+3. Ejecuta `instalar.cmd` para crear el entorno e instalar las dependencias. La primera instalación requiere conexión.
+4. Abre `iniciar.cmd`. Si el navegador no se abre, visita `http://127.0.0.1:8765`. Para cerrar el servidor, pulsa `Ctrl+C` en la consola.
+
+### Linux y macOS
+
+Desde la carpeta del proyecto, con Python 3.11 o posterior:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+python run.py
+```
+
+La integración continua comprueba el servidor en Windows y Linux con Python 3.12. La instalación interactiva en Windows y la compatibilidad con macOS requieren validación manual.
+
+## Probar la demo
+
+Después de instalar, abre PowerShell en la carpeta del proyecto y ejecuta `.\iniciar.cmd --demo`. En Linux o macOS, con el entorno virtual activo, ejecuta `python run.py --demo`.
+
+La demo crea prendas, ilustraciones y espacios ficticios en una carpeta temporal que se elimina al cerrar. Si ya tienes el catálogo abierto, añade `--port 8766` al comando para usar ambos a la vez.
+
 ## Crear un inventario
 
 Una instalación nueva empieza vacía. Abre la aplicación, crea un espacio con el nombre que tenga sentido para la colección y añade una prenda. Nombre, categoría y espacio son obligatorios; la fotografía y los demás detalles se pueden completar después.
@@ -20,13 +48,11 @@ Marcar un elemento como preparado no cambia su ubicación. Cuando las prendas ha
 
 ## Guardar y recuperar
 
+La aplicación guarda los datos fuera del código, en `%LOCALAPPDATA%\ArmarioDigital` en Windows y `~/.local/share/armario-digital` en sistemas Unix. Puedes elegir otra carpeta con `--data-dir` o la variable `ARMARIO_DATA_DIR`.
+
 Los cambios se guardan al enviar los formularios y permanecen al cerrar. Archivar una prenda conserva outfits y maletas. La eliminación definitiva se bloquea mientras existan referencias que la utilicen.
 
 Crea una copia desde Ajustes antes de actualizaciones o cambios importantes. Conserva otra copia fuera del equipo. El procedimiento de verificación y recuperación está en [BACKUP_RESTORE.md](BACKUP_RESTORE.md).
-
-## Probar sin un inventario real
-
-`python run.py --demo` abre una colección ficticia en una carpeta temporal. Todas las ilustraciones se generan desde código original y no representan artículos poseídos por una persona real. Al cerrar se elimina la carpeta de demo. Para usarla al mismo tiempo que un inventario habitual, elige otro puerto con `--port`.
 
 ## Organizar e importar
 
