@@ -141,3 +141,5 @@ Consultadas el 31 de octubre de 2026:
 - [Modelo de texto, tamaño y licencia](https://ollama.com/library/qwen3:4b-instruct-2507-q4_K_M).
 - [Contrato de `/api/chat`](https://docs.ollama.com/api/chat) y [modelos instalados](https://docs.ollama.com/api/tags).
 - [Configuración, memoria y ejecución local de Ollama](https://docs.ollama.com/faq).
+
+Al buscar una alternativa desde una combinación guardada, el formulario recupera ubicación y estilo si hay preferencias registradas. Las sustituciones sucesivas de una propuesta acumulan las prendas descartadas. Para reconsiderarlas, inicia una generación nueva. Si una tarea antigua no permite identificar las prendas fijadas o excluidas, vuelve a seleccionarlas en el generador. Una foto ausente o con una huella distinta requiere revisión antes de combinar la prenda.

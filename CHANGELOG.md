@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 — 2026-11-18
+
+- La ficha, el catálogo, las maletas y el análisis visual comparten el orden de portada. Al borrar una foto, se conserva como principal la primera restante.
+- Las alternativas recuperan ubicación y estilo del outfit y acumulan las exclusiones de cada sustitución de la propuesta.
+- Reintentar comprueba la identidad de las prendas fijadas y excluidas. La disponibilidad tiene en cuenta el archivo de imagen actual.
+- El arranque y las copias comparan las claves externas y sus acciones con las migraciones del esquema correspondiente. Se mantiene SQLite 9.
+
 ## 0.3.1 — 2026-10-31 — auditoría de integridad y recomendaciones
 
 - Corrige sustituciones que podían quitar una chaqueta/accesorio opcional o convertir una pieza única en dos. Las alternativas conservan su capa y las demás prendas; el generador mantiene los controles del outfit guardado incluso sin JavaScript.

@@ -5,7 +5,15 @@ import itertools
 import json
 import secrets
 
-from .profiles import approved, object_schema, source, source_intact, string_schema, validate_schema
+from .profiles import (
+    approved,
+    garment_identity,
+    object_schema,
+    source,
+    source_intact,
+    string_schema,
+    validate_schema,
+)
 
 SNAPSHOT_VERSION = 2
 
@@ -101,7 +109,7 @@ def fingerprint(row, profile):
     return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-def catalog(db, constraints):
+def catalog(db, constraints, root=None):
     result = {}
     for row in db.execute("SELECT * FROM garments WHERE archived=0 ORDER BY favorite DESC,id"):
         gid = row["id"]
@@ -109,7 +117,7 @@ def catalog(db, constraints):
             constraints["location_id"] and row["location_id"] != constraints["location_id"]
         ):
             continue
-        saved = approved(db, gid)
+        saved = approved(db, gid, root)
         if not saved or saved["stale"] or not role(saved["profile"]):
             continue
         item = {
@@ -204,8 +212,17 @@ def prompt_data(snapshot):
     }
 
 
-def make_snapshot(db, constraints):
-    items = catalog(db, constraints)
+def selection_identities(db, constraints):
+    return {
+        str(gid): garment_identity(db, gid)
+        for gid in constraints["fixed"] + constraints["excluded"]
+    }
+
+
+def make_snapshot(db, constraints, root=None):
+    if len(constraints["excluded"]) > 20:
+        raise ValueError("Hay demasiadas exclusiones. Crea una nueva generación.")
+    items = catalog(db, constraints, root)
     if any(gid not in items for gid in constraints["fixed"]):
         raise ValueError(
             "Una prenda fijada no tiene descripción revisada vigente o contradice los filtros. Revisa su ficha."
@@ -261,6 +278,7 @@ def make_snapshot(db, constraints):
         )
     snapshot = {
         "version": SNAPSHOT_VERSION,
+        "identities": selection_identities(db, constraints),
         "constraints": constraints,
         "plans": selected,
         "items": list(items.values()),

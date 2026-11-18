@@ -6,7 +6,7 @@
 
 Aplicación local desarrollada con Python y SQLite. Los espacios son configurables, las fotografías permanecen en el dispositivo y la instalación empieza sin datos de ejemplo.
 
-**Preview 0.3.1 · Esquema de datos 9** · Python 3.11+ · Interfaz en español
+**Preview 0.3.2 · Esquema de datos 9** · Python 3.11+ · Interfaz en español
 
 CI: Windows y Linux con Python 3.12; macOS y los lanzadores de Windows requieren validación manual.
 
@@ -106,7 +106,7 @@ Antes de actualizar, crea una copia desde Ajustes, cierra el proceso, actualiza 
 
 ## Alcance de esta versión
 
-La versión 0.3.1 es una preview para uso local y monousuario. El collage incluye posición y tamaño, y no incluye exportación a imagen. La meteorología requiere conexión y se consulta solo por petición expresa; Open-Meteo recibe las coordenadas y la IP. El servicio gratuito se limita a uso no comercial. La compatibilidad de servidor se comprueba en Windows y Linux; el lanzador gráfico y la experiencia de instalación deben probarse en cada plataforma de distribución.
+Esta versión es una preview para uso local y monousuario. El collage incluye posición y tamaño, y no incluye exportación a imagen. La meteorología requiere conexión y se consulta solo por petición expresa; Open-Meteo recibe las coordenadas y la IP. El servicio gratuito se limita a uso no comercial. La compatibilidad de servidor se comprueba en Windows y Linux; el lanzador gráfico y la experiencia de instalación deben probarse en cada plataforma de distribución.
 
 Publicar el código y ofrecer un servicio accesible por internet requieren revisiones diferentes. El proceso actual escucha únicamente en loopback y no incorpora cuentas ni controles multiusuario. La elección de licencia de distribución del código está pendiente.
 

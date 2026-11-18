@@ -23,6 +23,14 @@ IMAGE_NAME = re.compile(r"^[0-9a-f]{32}(?:-thumb|-preview)?\.webp$")
 MAX_UNPACKED_BYTES = 4 * 1024**3
 
 
+def foreign_keys(db, table):
+    # IDs depend on declaration order. Group columns within each composite key.
+    groups = {}
+    for row in db.execute(f'PRAGMA foreign_key_list("{table}")'):
+        groups.setdefault(row[0], []).append(tuple(row)[1:])
+    return sorted(tuple(sorted(parts)) for parts in groups.values())
+
+
 @lru_cache(maxsize=SCHEMA_VERSION)
 def schema_contract(version):
     """Derive required tables/columns from the same migrations used at startup."""
@@ -32,7 +40,11 @@ def schema_contract(version):
             script = next(Path(__file__).with_name("migrations").glob(f"{number:03d}_*.sql"))
             reference.executescript(script.read_text(encoding="utf-8"))
         return tuple(
-            (name, tuple(row[1] for row in reference.execute(f'PRAGMA table_info("{name}")')))
+            (
+                name,
+                tuple(row[1] for row in reference.execute(f'PRAGMA table_info("{name}")')),
+                foreign_keys(reference, name),
+            )
             for (name,) in reference.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             )
@@ -43,12 +55,16 @@ def schema_contract(version):
 
 def check_structure(db, version):
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    for name, required in schema_contract(version):
+    for name, required, keys in schema_contract(version):
         if name not in tables:
             raise ValueError(
                 f"La estructura del esquema {version} está incompleta: falta la tabla {name}."
             )
         actual = {row[1] for row in db.execute(f'PRAGMA table_info("{name}")')}
+        if keys != foreign_keys(db, name):
+            raise ValueError(
+                f"La estructura del esquema {version} tiene claves externas incorrectas en {name}."
+            )
         if not set(required) <= actual:
             raise ValueError(
                 f"La estructura del esquema {version} está incompleta: faltan columnas en {name}."

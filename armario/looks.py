@@ -72,6 +72,10 @@ def duplicate(oid):
             "INSERT INTO outfit_items(outfit_id,garment_id) SELECT ?,garment_id FROM outfit_items WHERE outfit_id=?",
             (new_id, oid),
         )
+        db.execute(
+            "INSERT INTO outfit_origins(outfit_id,provenance_json) SELECT ?,provenance_json FROM outfit_origins WHERE outfit_id=?",
+            (new_id, oid),
+        )
     flash("Outfit duplicado. Las prendas mantienen su ubicación.", "success")
     return redirect(url_for("looks.detail", oid=new_id))
 
@@ -105,7 +109,15 @@ def edit(oid=None):
                 )
                 db.execute("DELETE FROM outfit_items WHERE outfit_id=?", (oid,))
                 # A manually changed combination no longer carries the original model ratings.
-                db.execute("DELETE FROM outfit_origins WHERE outfit_id=?", (oid,))
+                origin = db.execute(
+                    "SELECT provenance_json FROM outfit_origins WHERE outfit_id=?", (oid,)
+                ).fetchone()
+                if origin:
+                    prefs = json.loads(origin[0]).get("constraints", {})
+                    db.execute(
+                        "UPDATE outfit_origins SET provenance_json=? WHERE outfit_id=?",
+                        (json.dumps({"constraints": prefs}), oid),
+                    )
             else:
                 oid = db.execute(
                     "INSERT INTO outfits(name,notes,occasion,favorite) VALUES (?,?,?,?)", fields
