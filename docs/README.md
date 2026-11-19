@@ -1,5 +1,9 @@
 # Documentación de Armario Digital
 
+Para la versión de GitHub Pages consulta [uso e importación en Windows](WINDOWS_PAGES.md) y [arquitectura, pruebas y despliegue](MIGRACION_PAGES.md).
+
+## Referencia de la aplicación Python
+
 [Volver a la portada](../README.md) · [Probar la demo](GETTING_STARTED.md#probar-la-demo) · [Ver el catálogo en pantalla estrecha](assets/mobile.png)
 
 ## Utilizar y mantener

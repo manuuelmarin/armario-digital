@@ -14,3 +14,7 @@ uploads/
 *.lock
 test-results/
 playwright-report/
+
+node_modules/
+web/dist/
+web/.fixtures/

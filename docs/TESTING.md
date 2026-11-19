@@ -1,5 +1,9 @@
 # Pruebas y evidencia de verificación
 
+Para la versión de GitHub Pages consulta [uso e importación en Windows](WINDOWS_PAGES.md) y [arquitectura, pruebas y despliegue](MIGRACION_PAGES.md).
+
+## Referencia de la aplicación Python
+
 Estado auditado en 0.3.1: **114 pruebas locales aprobadas**, incluidas siete de navegador. El [informe](audits/2026-10-31-project.md) detalla los seis problemas encontrados, sus reproducciones, correcciones, cobertura y límites. `tests/test_project_audit.py` conserva las regresiones; `test_browser.py` comprueba además la sustitución de una pieza de un outfit con chaqueta y accesorio sin JavaScript.
 
 ## Comandos reproducibles

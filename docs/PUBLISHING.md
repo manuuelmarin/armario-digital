@@ -1,5 +1,9 @@
 # Preparar una publicación
 
+Para la versión de GitHub Pages consulta [uso e importación en Windows](WINDOWS_PAGES.md) y [arquitectura, pruebas y despliegue](MIGRACION_PAGES.md).
+
+## Referencia de la aplicación Python
+
 ## Estado actual
 
 La versión 0.2 tiene configuración genérica, una demo aislada, ejemplos ficticios, fuentes con licencias incluidas, documentación de contribución y comprobaciones automatizadas. No incluye inventarios, fotografías reales ni credenciales en los archivos de distribución.

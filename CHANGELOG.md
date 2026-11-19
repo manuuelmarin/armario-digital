@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-19 — cliente web y carpeta local
+
+- Distribución en GitHub Pages con flujos manuales de inventario, outfits, maletas y organización.
+- Carpeta local con dos revisiones verificadas de SQLite, imágenes, exportación y restauración de ZIP compatibles con Python.
+- Aplicación instalable con caché de recursos y actualización coordinada entre pestañas. [Migración y pruebas](docs/MIGRACION_PAGES.md)
+
 ## 0.3.1 — 2026-10-31 — auditoría de integridad y recomendaciones
 
 - Corrige sustituciones que podían quitar una chaqueta/accesorio opcional o convertir una pieza única en dos. Las alternativas conservan su capa y las demás prendas; el generador mantiene los controles del outfit guardado incluso sin JavaScript.

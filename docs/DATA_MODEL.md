@@ -1,5 +1,9 @@
 # Modelo de datos
 
+Para la versión de GitHub Pages consulta [uso e importación en Windows](WINDOWS_PAGES.md) y [arquitectura, pruebas y despliegue](MIGRACION_PAGES.md).
+
+## Referencia de la aplicación Python
+
 Esquema actual: `PRAGMA user_version = 9`. Las migraciones se aplican secuencialmente dentro de transacciones, con verificación de claves foráneas y copia previa de datos existentes.
 
 | Tabla | Función |
