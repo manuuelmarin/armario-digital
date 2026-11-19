@@ -28,14 +28,18 @@ if (!$folderBox) { $folderBox = $edits | Select-Object -Last 1 }
 if (!$folderBox) { throw 'El selector no expuso su campo de carpeta.' }
 $folderBox.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Folder)
 $buttons = $window.FindAll($tree,(ByProperty $type ([Windows.Automation.ControlType]::Button)))
-$select = $buttons | Where-Object {$_.Current.Name -match '^(Select Folder|Seleccionar carpeta|Open|Abrir)$'} | Select-Object -First 1
-if (!$select) { throw 'No se encontró el botón de selección.' }
-$select.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+$select = $buttons | Where-Object {$_.Current.AutomationId -eq '1' -or ($_.Current.Name -replace '&','') -match '^(Select.*|Choose.*|Open|Abrir)$'} | Select-Object -First 1
+if ($select) { $select.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke() } else {
+  Add-Type -AssemblyName System.Windows.Forms
+  $folderBox.SetFocus()
+  [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+}
+Write-Output 'Folder selection submitted.'
 # Chrome/Edge may show a separate browser-owned access prompt.
 $until = [DateTime]::UtcNow.AddSeconds(8)
 while ([DateTime]::UtcNow -lt $until) {
   foreach ($browser in $root.FindAll($children,(ByProperty $class 'Chrome_WidgetWin_1'))) {
-    foreach ($label in @('Allow','Allow this time','Allow on every visit','Edit files','Permitir','Editar archivos','View files')) {
+    foreach ($label in @('Allow','Allow this time','Allow on every visit','Edit files','Permitir','Editar archivos','View files','Save changes','Allow while visiting the site','Allow on every visit to this site')) {
       $allow = $browser.FindFirst($tree,(ByProperty $name $label))
       if ($allow -and $allow.Current.ControlType -eq [Windows.Automation.ControlType]::Button) {
         $allow.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
