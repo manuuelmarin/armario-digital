@@ -225,7 +225,7 @@ try {
         );
     }
     const origin = new URL(page.url()).origin;
-    const settings = await ctx.newPage();
+    let settings = await ctx.newPage();
     const scheme = channel === "chrome" ? "chrome" : "edge";
     console.log("Abriendo ajustes del navegador para revocar la escritura.");
     await settings.goto(
@@ -247,9 +247,19 @@ try {
         );
     };
     await editing("block");
-    await page.bringToFront();
-    await page.reload();
+    // A browser may retain an already open file grant until its last window closes.
+    // Reopen the same profile and let the browser re-evaluate its saved setting.
+    await ctx.close();
+    ctx = null;
+    page = await profile("Perfil-B");
+    await expect(page.locator("#connection")).toHaveText("Sin conectar");
     await page.getByRole("button", { name: "Reconectar" }).waitFor();
+    settings = await ctx.newPage();
+    await settings.goto(
+        scheme +
+            "://settings/content/siteDetails?site=" +
+            encodeURIComponent(origin),
+    );
     const grant = await page.evaluate(async () => {
         const db = await new Promise((ok, fail) => {
             const req = indexedDB.open("armario-digital:conexion");

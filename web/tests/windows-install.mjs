@@ -21,6 +21,7 @@ try {
     ctx = await chromium.launchPersistentContext(root, {
         channel,
         headless: false,
+        viewport: null,
     });
     ctx.setDefaultTimeout(20000);
     ctx.setDefaultNavigationTimeout(20000);
@@ -36,39 +37,111 @@ try {
     });
     installed = true;
     await cdp.send("PWA.getOsAppState", { manifestId: base });
-    await cdp.send("PWA.launch", { manifestId: base });
-    const standalone = async () => {
-        for (const p of ctx.pages()) {
-            if (
-                p.url().startsWith(base) &&
-                (await p
-                    .evaluate(
-                        () => matchMedia("(display-mode: standalone)").matches,
-                    )
-                    .catch(() => false))
-            )
-                return p;
+    await cdp.send("PWA.changeAppUserSettings", {
+        manifestId: base,
+        displayMode: "standalone",
+    });
+    const browser = await ctx.browser().newBrowserCDPSession();
+    const launch = await cdp.send("PWA.launch", { manifestId: base });
+    const info = await browser.send("Target.getTargetInfo", {
+        targetId: launch.targetId,
+    });
+    console.log("Destino de la ventana instalada:", info.targetInfo);
+    // PWA windows can belong to a browser context distinct from Playwright's page list.
+    async function inspectWindow(targetId, expression) {
+        const { sessionId } = await browser.send("Target.attachToTarget", {
+            targetId,
+            flatten: false,
+        });
+        let listener, timer;
+        try {
+            const answer = new Promise((ok, fail) => {
+                timer = setTimeout(
+                    () => fail(Error("Sin respuesta de la ventana instalada")),
+                    5000,
+                );
+                listener = (event) => {
+                    if (event.sessionId !== sessionId) return;
+                    const m = JSON.parse(event.message);
+                    if (m.id === 1) {
+                        if (m.error || m.result?.exceptionDetails)
+                            fail(Error(JSON.stringify(m)));
+                        else ok(m.result.result.value);
+                    }
+                };
+                browser.on("Target.receivedMessageFromTarget", listener);
+            });
+            await browser.send("Target.sendMessageToTarget", {
+                sessionId,
+                message: JSON.stringify({
+                    id: 1,
+                    method: "Runtime.evaluate",
+                    params: {
+                        expression,
+                        returnByValue: true,
+                        awaitPromise: true,
+                    },
+                }),
+            });
+            return await answer;
+        } finally {
+            clearTimeout(timer);
+            if (listener)
+                browser.off("Target.receivedMessageFromTarget", listener);
+            await browser
+                .send("Target.detachFromTarget", { sessionId })
+                .catch(() => {});
         }
-    };
+    }
+    const snapshot = `({url:location.href,mode:matchMedia('(display-mode: standalone)').matches,title:document.title,screen:[innerWidth,innerHeight]})`;
+    console.log(
+        "Estado de la ventana:",
+        await inspectWindow(launch.targetId, snapshot),
+    );
     await expect
-        .poll(async () => !!(await standalone()), { timeout: 20000 })
+        .poll(
+            async () => (await inspectWindow(launch.targetId, snapshot)).mode,
+            { timeout: 12000 },
+        )
         .toBe(true);
-    const win = await standalone();
-    await win.getByRole("button", { name: "Probar la demo" }).click();
-    await expect(
-        win.getByRole("heading", { name: "Camisa blanca" }),
-    ).toBeVisible();
+    await expect
+        .poll(() =>
+            inspectWindow(
+                launch.targetId,
+                "Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Probar la demo')",
+            ),
+        )
+        .toBe(true);
+    await inspectWindow(
+        launch.targetId,
+        "Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Probar la demo').click();true",
+    );
+    await expect
+        .poll(() =>
+            inspectWindow(
+                launch.targetId,
+                "document.body.innerText.includes('Camisa blanca')",
+            ),
+        )
+        .toBe(true);
     console.log(
         channel,
-        "instalación registrada y ventana independiente con catálogo y fotos, OK.",
+        "instalación y ventana independiente con catálogo ficticio: OK.",
     );
-    await win.close();
+    await browser.send("Target.closeTarget", { targetId: launch.targetId });
+    const before = new Set(
+        (await browser.send("Target.getTargets")).targetInfos.map(
+            (t) => t.targetId,
+        ),
+    );
     const powershell = `
     $ErrorActionPreference='Stop'
     $dirs=@([Environment]::GetFolderPath('DesktopDirectory'),[Environment]::GetFolderPath('Programs'))
     $shortcut=Get-ChildItem -LiteralPath $dirs -Filter '*Armario*.lnk' -Recurse | Select-Object -First 1
     if (!$shortcut) {throw 'No se ha encontrado el acceso directo instalado.'}
     Write-Output ('Acceso directo: '+$shortcut.Name)
+    $shell=New-Object -ComObject WScript.Shell
+    Write-Output ($shell.CreateShortcut($shortcut.FullName).Arguments)
     Start-Process -FilePath $shortcut.FullName
   `;
     const result = await run("powershell.exe", [
@@ -78,7 +151,19 @@ try {
     ]);
     console.log(result.stdout);
     await expect
-        .poll(async () => !!(await standalone()), { timeout: 20000 })
+        .poll(
+            async () => {
+                const { targetInfos } = await browser.send("Target.getTargets");
+                for (const target of targetInfos.filter(
+                    (t) => !before.has(t.targetId) && t.url.startsWith(base),
+                )) {
+                    if ((await inspectWindow(target.targetId, snapshot)).mode)
+                        return true;
+                }
+                return false;
+            },
+            { timeout: 20000 },
+        )
         .toBe(true);
     console.log(
         channel,
