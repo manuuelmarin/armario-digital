@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#292e2a" />
+    <title>Armario Digital</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" />
+  </head>
+  <body>
+    <a class="skip" href="#principal">Saltar al contenido</a>
+    <header>
+      <a class="identity" href="#/catalogo"
+        ><img src="./icon.svg" width="38" height="38" alt="" />Armario
+        Digital</a
+      ><span id="connection"></span
+      ><button type="button" id="mobile" aria-expanded="false">Menú</button>
+    </header>
+    <nav aria-label="Principal"></nav>
+    <div id="update"></div>
+    <p role="status" id="notice"></p>
+    <main id="principal" tabindex="-1"></main>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

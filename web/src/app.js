@@ -1,0 +1,421 @@
+import "./style.css";
+import { call } from "./engine";
+import { create, connect } from "./folder";
+import { remembered, read } from "./files";
+import { backup, daily, inspectZip, prune } from "./backup";
+import {
+  state,
+  q,
+  esc,
+  field,
+  form,
+  action,
+  link,
+  val,
+  statement,
+  save,
+  remove,
+  clearActions,
+  releasePhotos,
+  hydrate,
+  activatePickers,
+  notice,
+  status,
+} from "./ui";
+import { catalog, detail, garmentEditor, summary } from "./inventory";
+import { groups, trips } from "./groups";
+import { boards, weather } from "./extras";
+import { startUpdates } from "./update";
+const main = document.querySelector("main"),
+  nav = document.querySelector("nav");
+const sections = {
+  catalogo: "Catálogo",
+  outfits: "Outfits",
+  maletas: "Maletas",
+  colecciones: "Colecciones",
+  inspiracion: "Inspiración",
+  resumen: "Resumen",
+  tiempo: "Tiempo",
+  ajustes: "Ajustes",
+};
+let previous,
+  pendingBackup,
+  renderVersion = 0;
+const pick = (mode) =>
+  window.showDirectoryPicker({ mode, id: "armario-digital" });
+function supported() {
+  return (
+    window.isSecureContext &&
+    window.showDirectoryPicker &&
+    navigator.locks &&
+    window.Worker &&
+    window.ImageDecoder
+  );
+}
+async function activate(s, remember = true) {
+  const old = state.session;
+  state.session = s;
+  old?.release?.();
+  if (remember && !s.demo) {
+    previous = s.root;
+    await remembered(s.root).catch(() =>
+      notice("Carpeta abierta. El navegador no ha recordado el acceso."),
+    );
+  }
+  state.dirty = false;
+  pendingBackup = null;
+  status(s.release ? "Guardado" : "Solo lectura");
+  if (s.damaged) notice("Se ha recuperado la última revisión válida.");
+  if (!s.release)
+    notice(
+      "Solo lectura. Para editar, cierra la pestaña que tiene abierto el armario y vuelve a conectar con permiso de escritura.",
+    );
+  if (s.release)
+    try {
+      await daily(s);
+    } catch (e) {
+      notice("No se pudo crear la copia diaria: " + e.message);
+    }
+  await render();
+}
+async function openFolder(root, writable = true) {
+  if (
+    state.session &&
+    (await state.session.root.isSameEntry(root)) &&
+    state.session.release
+  ) {
+    notice("Ya tienes esta carpeta abierta.");
+    return;
+  }
+  await activate(await connect(root, writable));
+}
+async function chooseNew() {
+  const root = await pick("readwrite");
+  if (confirm("¿Crear un armario en «" + root.name + "»?"))
+    await activate(await create(root, () => call("new")));
+}
+async function makeDemo() {
+  const root = await (
+    await navigator.storage.getDirectory()
+  ).getDirectoryHandle("armario-demo-" + crypto.randomUUID(), { create: true });
+  const s = await create(root, () =>
+    call("new", undefined, {
+      statements: [
+        [
+          "INSERT INTO locations(name) VALUES ('Madrid'),('Albacete'),('La Manga')",
+        ],
+        [
+          "INSERT INTO garments(name,category_id,location_id,color,price_cents) VALUES ('Camisa blanca',2,1,'Blanco',3500),('Chaqueta de viaje',6,2,'Azul',null)",
+        ],
+      ],
+    }),
+  );
+  s.demo = true;
+  await activate(s, false);
+}
+function uploadBackup() {
+  return form(
+    '<label>Selecciona el ZIP de tu armario<input name="archive" type="file" required accept=".zip,application/zip"></label>',
+    "Verificar copia",
+    async (f) => {
+      const blob = f.get("archive");
+      const { info } = await inspectZip(blob);
+      pendingBackup = { blob, info };
+      notice("Copia verificada.");
+      state.dirty = false;
+      await render();
+    },
+  );
+}
+function restoreBox() {
+  if (!pendingBackup) return uploadBackup();
+  const { blob, info } = pendingBackup;
+  return (
+    '<div class="panel"><strong>Copia verificada</strong><p>' +
+    info.garments +
+    " prendas · " +
+    info.outfits +
+    " outfits · " +
+    info.files.length +
+    " archivos de imagen · esquema " +
+    info.version +
+    "</p>" +
+    action("Restaurar en una carpeta vacía", async () => {
+      const root = await pick("readwrite");
+      if (!confirm("¿Traer la copia a «" + root.name + "»?")) return;
+      await activate(
+        await create(root, async (dest) => (await inspectZip(blob, dest)).data),
+      );
+      notice(
+        "Armario restaurado. " +
+          info.garments +
+          " prendas y " +
+          info.outfits +
+          " outfits.",
+      );
+      location.hash = "#/catalogo";
+    }) +
+    action("Elegir otra copia", async () => {
+      pendingBackup = null;
+      await render();
+    }) +
+    "</div>"
+  );
+}
+function connectionControls() {
+  const actions = [];
+  if (supported()) {
+    if (previous)
+      actions.push(
+        action("Reconectar", async () => {
+          const permission = await previous.requestPermission({
+            mode: "readwrite",
+          });
+          if (
+            permission !== "granted" &&
+            (await previous.queryPermission({ mode: "read" })) !== "granted"
+          )
+            throw Error("Permiso denegado. Selecciona la carpeta de nuevo.");
+          await openFolder(previous, permission === "granted");
+        }),
+      );
+    actions.push(
+      action("Crear armario", chooseNew, "primary"),
+      action("Abrir mi carpeta", async () =>
+        openFolder(await pick("readwrite")),
+      ),
+      link("Traer una copia", "#/traer"),
+    );
+  }
+  if (navigator.storage?.getDirectory && window.ImageDecoder)
+    actions.push(action("Probar la demo", makeDemo));
+  return (
+    '<div class="actions">' +
+    actions.join("") +
+    "</div>" +
+    (!supported()
+      ? "<p>Para guardar en una carpeta local abre esta web en Chrome o Edge de escritorio sobre HTTPS.</p>"
+      : "")
+  );
+}
+function appearance() {
+  const choice = localStorage.getItem("armario-digital:tema") || "sistema";
+  document.documentElement.dataset.theme =
+    choice === "sistema"
+      ? matchMedia("(prefers-color-scheme:dark)").matches
+        ? "oscuro"
+        : "claro"
+      : choice;
+}
+async function settings() {
+  const s = state.session,
+    [locations, categories] = await Promise.all(
+      ["locations", "categories"].map((t) =>
+        q("SELECT * FROM " + t + " ORDER BY name"),
+      ),
+    );
+  const manage = (table, label, rows) =>
+    "<h2>" +
+    label +
+    "</h2>" +
+    rows
+      .map(
+        (r) =>
+          "<details><summary>" +
+          esc(r.name) +
+          "</summary>" +
+          form(
+            field("Nombre", "name", r.name, 'required maxlength="80"'),
+            "Renombrar",
+            (f) => save([statement(table, { name: val(f, "name") }, r.id)]),
+          ) +
+          remove("Eliminar " + r.name, table, r.id, "#/ajustes") +
+          "</details>",
+      )
+      .join("") +
+    form(
+      field(
+        "Nombre de " + (table === "locations" ? "ubicación" : "categoría"),
+        "name",
+        "",
+        'required maxlength="80"',
+      ),
+      "Crear " + (table === "locations" ? "ubicación" : "categoría"),
+      (f) => save([statement(table, { name: val(f, "name") })]),
+    );
+  return (
+    "<h1>Ajustes</h1><h2>Carpeta conectada</h2><p>" +
+    esc(s.root.name) +
+    " · Revisión " +
+    s.head.revision +
+    " · " +
+    (s.release ? "Lectura y escritura" : "Solo lectura") +
+    "</p>" +
+    connectionControls() +
+    action("Desconectar", async () => {
+      await remembered(null);
+      previous = null;
+      s.release?.();
+      state.session = null;
+      state.dirty = false;
+      status("Sin conectar");
+      location.hash = "#/catalogo";
+      await render();
+    }) +
+    '<h2>Apariencia</h2><div class="actions">' +
+    ["sistema", "claro", "oscuro"]
+      .map((t) =>
+        action(t[0].toUpperCase() + t.slice(1), () => {
+          localStorage.setItem("armario-digital:tema", t);
+          appearance();
+        }),
+      )
+      .join("") +
+    "</div>" +
+    manage("locations", "Ubicaciones", locations) +
+    manage("categories", "Categorías", categories) +
+    "<h2>Copias</h2>" +
+    action("Crear y descargar copia", async () => {
+      if (!s.release)
+        throw Error("Se necesita acceso de escritura para crear la copia.");
+      const f = await backup(s);
+      const url = URL.createObjectURL(f),
+        a = document.createElement("a");
+      a.href = url;
+      a.download = f.name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      notice("Copia verificada y guardada en backups.");
+    }) +
+    link("Verificar o restaurar una copia", "#/traer") +
+    form(
+      field(
+        "Copias diarias que conservar",
+        "keep",
+        7,
+        'type="number" min="1" max="365" required',
+      ),
+      "Limpiar copias diarias antiguas",
+      async (f) => {
+        if (
+          confirm(
+            "¿Limpiar únicamente las copias diarias anteriores a las conservadas?",
+          )
+        )
+          notice("Copias eliminadas: " + (await prune(s, +val(f, "keep"))));
+      },
+    )
+  );
+}
+async function render() {
+  const version = ++renderVersion;
+  clearActions();
+  const [path, query = ""] = (location.hash.slice(1) || "/catalogo").split("?");
+  const [route, id, mode] = path.split("/").filter(Boolean),
+    params = new URLSearchParams(query);
+  let html;
+  nav.innerHTML = state.session
+    ? Object.entries(sections)
+        .map(
+          ([key, title]) =>
+            "<a " +
+            (key === route ? 'aria-current="page"' : "") +
+            ' href="#/' +
+            key +
+            '">' +
+            title +
+            "</a>",
+        )
+        .join("")
+    : "";
+  try {
+    if (route === "traer")
+      html =
+        "<h1>Traer una copia</h1><p>En tu aplicación anterior abre Ajustes y elige «Crear y descargar copia». Aquí podrás comprobar su contenido y elegir una carpeta vacía.</p>" +
+        restoreBox() +
+        link("Volver", "#/catalogo");
+    else if (!state.session)
+      html =
+        '<div class="welcome"><h1>Mi armario digital</h1><p>Guarda tus prendas y fotografías en una carpeta de tu ordenador. Puedes volver a abrirla desde este mismo enlace.</p>' +
+        connectionControls() +
+        "</div>";
+    else if (route === "ajustes") html = await settings();
+    else if (route === "prendas")
+      html =
+        id === "nueva"
+          ? await garmentEditor()
+          : mode === "editar"
+            ? await garmentEditor(+id)
+            : await detail(+id);
+    else if (route === "lotes") html = await garmentEditor(null, true);
+    else if (["outfits", "colecciones", "etiquetas"].includes(route))
+      html = await groups(
+        route,
+        id && (/^\d+$/.test(id) ? Number(id) : id),
+        params,
+      );
+    else if (route === "maletas")
+      html = await trips(id && (/^\d+$/.test(id) ? Number(id) : id));
+    else if (route === "inspiracion") html = await boards(Number(id) || null);
+    else if (route === "tiempo") html = await weather();
+    else if (route === "resumen") html = await summary();
+    else html = await catalog(params);
+  } catch (e) {
+    html =
+      "<h1>No se pudo abrir esta pantalla</h1><p>" +
+      esc(e.message) +
+      "</p>" +
+      link("Volver", "#/catalogo");
+  }
+  if (version !== renderVersion) return;
+  releasePhotos();
+  main.innerHTML = html;
+  main.focus({ preventScroll: true });
+  document.title =
+    (main.querySelector("h1")?.textContent || "Catálogo") +
+    " · Armario Digital";
+  activatePickers();
+  await hydrate();
+}
+state.refresh = render;
+window.addEventListener("hashchange", () => {
+  state.dirty = false;
+  nav.classList.remove("open");
+  document.querySelector("#mobile").setAttribute("aria-expanded", "false");
+  void render();
+});
+window.addEventListener("beforeunload", (e) => {
+  if (state.busy || state.dirty) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+document.querySelector("#mobile").onclick = (e) =>
+  e.target.setAttribute("aria-expanded", nav.classList.toggle("open"));
+document.querySelector(".skip").onclick = (e) => {
+  e.preventDefault();
+  main.focus();
+};
+appearance();
+matchMedia("(prefers-color-scheme:dark)").addEventListener(
+  "change",
+  appearance,
+);
+async function boot() {
+  try {
+    previous = await remembered();
+    if (
+      previous &&
+      (await previous.queryPermission({ mode: "readwrite" })) === "granted"
+    ) {
+      await openFolder(previous);
+      return;
+    }
+  } catch (e) {
+    notice("Vuelve a elegir tu carpeta. " + e.message);
+  }
+  status("Sin conectar");
+  await render();
+}
+void boot();
+startUpdates();
