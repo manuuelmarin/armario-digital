@@ -24,6 +24,7 @@ async function profile(name) {
     ctx = await chromium.launchPersistentContext(join(work, name), {
         channel,
         headless: false,
+        args: ["--force-renderer-accessibility"],
     });
     const p = await ctx.newPage();
     p.setDefaultTimeout(30000);

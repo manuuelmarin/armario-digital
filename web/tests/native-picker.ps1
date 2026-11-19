@@ -25,21 +25,37 @@ if (!$window) { $root.FindAll($children,[Windows.Automation.Condition]::TrueCond
 Add-Type -AssemblyName System.Windows.Forms
 $editType = ByProperty $type ([Windows.Automation.ControlType]::Edit)
 $buttonType = ByProperty $type ([Windows.Automation.ControlType]::Button)
-$edits = $window.FindAll($tree,$editType)
-$edits | ForEach-Object { Write-Output ('Edit: '+$_.Current.AutomationId+' '+$_.Current.Name) }
-$buttons = $window.FindAll($tree,$buttonType)
-$buttons | ForEach-Object { Write-Output ('Button: '+$_.Current.AutomationId+' '+$_.Current.Name) }
-$edit = $edits | Where-Object {$_.Current.AutomationId -eq '1148' -or $_.Current.Name -match 'Folder|Carpeta'} | Select-Object -Last 1
-if (!$edit) { throw 'No se ha encontrado el campo de carpeta.' }
-$edit.SetFocus()
-$edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Folder)
+# The shell's folder view is also a #32770 window, nested inside the actual picker.
+# Target the outer Win32 window and use the same address-bar keys as a desktop user.
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public static class PickerWindow {
+    [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr h, uint flag);
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr h, int id);
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+}
+"@
+$outer = [PickerWindow]::GetAncestor([IntPtr]$window.Current.NativeWindowHandle,2)
+if (!$outer -or $outer -eq [IntPtr]::Zero) { throw 'Ventana de selector no encontrada.' }
+$dialog = [Windows.Automation.AutomationElement]::FromHandle($outer)
+Write-Output ('Selector: '+$dialog.Current.Name+' '+$dialog.Current.ClassName)
+[void][PickerWindow]::SetForegroundWindow($outer)
+Start-Sleep -Milliseconds 500
+if ([PickerWindow]::GetForegroundWindow() -ne $outer) { throw 'El selector no tiene el foco del escritorio.' }
+[System.Windows.Forms.SendKeys]::SendWait('^l')
+Start-Sleep -Milliseconds 200
+[System.Windows.Forms.SendKeys]::SendWait($Folder)
 [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
-Start-Sleep -Milliseconds 700
-# Depending on the shell version, Enter opens the directory or completes the picker.
-try {
-  $ok = $window.FindFirst($tree,(ByProperty ([Windows.Automation.AutomationElement]::AutomationIdProperty) '1'))
-  if ($ok -and $ok.Current.IsEnabled) { $ok.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke() }
-} catch [Windows.Automation.ElementNotAvailableException] { }
+Start-Sleep -Milliseconds 750
+if ([PickerWindow]::IsWindowVisible($outer)) {
+  $ok = [PickerWindow]::GetDlgItem($outer,1)
+  if ($ok -ne [IntPtr]::Zero) { [void][PickerWindow]::PostMessage($ok,0x00f5,[IntPtr]::Zero,[IntPtr]::Zero) }
+  else { [System.Windows.Forms.SendKeys]::SendWait('%s') }
+}
 $seen = @{}
 $until = [DateTime]::UtcNow.AddSeconds(13)
 while ([DateTime]::UtcNow -lt $until) {
