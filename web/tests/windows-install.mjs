@@ -45,6 +45,45 @@ try {
         manifestId: base,
         displayMode: "standalone",
     });
+    if (channel === "msedge") {
+        try {
+            const apps = await ctx.newPage();
+            await apps.goto("edge://apps");
+            const name = apps
+                .getByText("Mi Armario Digital", { exact: true })
+                .first();
+            await name.waitFor({ timeout: 10000 });
+            let card = name;
+            const details = () =>
+                card
+                    .getByText(/^details$/i)
+                    .or(card.getByRole("button", { name: /details/i }))
+                    .first();
+            for (
+                let level = 0;
+                level < 8 && !(await details().count());
+                level++
+            )
+                card = card.locator("..");
+            const detail = (await details().count())
+                ? details()
+                : apps.getByText(/^details$/i).first();
+            console.log(
+                "Aplicaciones de Edge:",
+                await apps.locator("body").innerText(),
+            );
+            await detail.click();
+            const shortcut = apps
+                .getByText(/create desktop shortcut|create shortcut/i)
+                .first();
+            await shortcut.click();
+            console.log(
+                "Acceso de escritorio solicitado desde los detalles de Edge.",
+            );
+        } catch (error) {
+            console.log("El menú de Edge no ofreció el acceso:", error.message);
+        }
+    }
     const result = await run(
         "powershell.exe",
         [

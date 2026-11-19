@@ -22,9 +22,33 @@ function WindowsForBrowser {
   }
 }
 $before=@(WindowsForBrowser | ForEach-Object {$_.Current.NativeWindowHandle})
-$dirs=@([Environment]::GetFolderPath('DesktopDirectory'),[Environment]::GetFolderPath('Programs'))
-$shortcut=Get-ChildItem -LiteralPath $dirs -Filter '*Armario*.lnk' -Recurse | Select-Object -First 1
-if (!$shortcut) {throw 'No se ha encontrado el acceso directo instalado.'}
+$dirs=@([Environment]::GetFolderPath('DesktopDirectory'),[Environment]::GetFolderPath('Programs'),[Environment]::GetFolderPath('CommonDesktopDirectory'),[Environment]::GetFolderPath('CommonPrograms')) | Where-Object {$_ -and (Test-Path $_)}
+$until=[DateTime]::UtcNow.AddSeconds(12)
+$shortcut=$null
+while (!$shortcut -and [DateTime]::UtcNow -lt $until) {
+  $shortcut=Get-ChildItem -LiteralPath $dirs -Filter '*Armario*.lnk' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (!$shortcut) {
+    foreach($w in WindowsForBrowser) {
+      $create=$w.FindFirst($tree,(By $name 'Create'))
+      if ($create -and $create.Current.ControlType -eq [Windows.Automation.ControlType]::Button -and !$create.Current.IsOffscreen) {
+        $create.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+      }
+    }
+    Start-Sleep -Milliseconds 350
+  }
+}
+if (!$shortcut) {
+  $app = Get-StartApps | Where-Object {$_.Name -match 'Armario'} | Select-Object -First 1
+  if (!$app) {throw 'Windows no encuentra el acceso directo ni la aplicación instalada en Inicio.'}
+  $shell=New-Object -ComObject WScript.Shell
+  $desktop=[Environment]::GetFolderPath('DesktopDirectory')
+  $desktopLink=$shell.CreateShortcut((Join-Path $desktop 'Mi Armario Digital.lnk'))
+  $desktopLink.TargetPath=(Join-Path $env:SystemRoot 'explorer.exe')
+  $desktopLink.Arguments='shell:AppsFolder\'+$app.AppID
+  $desktopLink.Save()
+  $shortcut=Get-Item -LiteralPath (Join-Path $desktop 'Mi Armario Digital.lnk')
+  Write-Output 'Acceso creado desde la aplicación registrada en Inicio.'
+}
 $shell=New-Object -ComObject WScript.Shell
 $link=$shell.CreateShortcut($shortcut.FullName)
 Write-Output ('Acceso directo: '+$shortcut.Name+' '+$link.TargetPath+' '+$link.Arguments)
