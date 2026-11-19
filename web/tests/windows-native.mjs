@@ -174,12 +174,31 @@ try {
         const file = await open(filler, "wx");
         try {
             const chunk = Buffer.alloc(65536, 73);
-            while (true) await file.writeFile(chunk);
+            const target = Math.max(0, (disk.bavail - 2) * disk.bsize);
+            for (let offset = 0; offset < target;) {
+                const size = Math.min(target - offset, chunk.length);
+                const { bytesWritten } = await file.write(
+                    chunk,
+                    0,
+                    size,
+                    offset,
+                );
+                if (!bytesWritten)
+                    throw Error("No se pudo reservar espacio en el volumen.");
+                offset += bytesWritten;
+            }
+            await file.sync();
         } catch (e) {
             if (e.code !== "ENOSPC") throw e;
         } finally {
             await file.close();
         }
+        const remaining = await statfs(drive);
+        console.log(
+            "Bytes disponibles en el volumen de prueba:",
+            remaining.bavail * remaining.bsize,
+        );
+        assert(remaining.bavail * remaining.bsize < 65536);
         await page.getByRole("link", { name: "Ajustes", exact: true }).click();
         await page.getByLabel("Nombre de ubicación").fill("Prueba de espacio");
         await page.getByRole("button", { name: "Crear ubicación" }).click();

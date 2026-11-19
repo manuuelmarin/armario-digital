@@ -57,7 +57,24 @@ Chromium 153 en Linux 6.18.57 sobre AMD EPYC 9V74. Cada prenda tiene dos fotos s
 | 1000 | 2158592 | 6000 / 372512000 | 77 | 135 | 201 / 100 | 153 / 198 | 649 |
 | 5000 | 9994240 | 30000 / 1862560000 | 321 | 374 | 458 / 367 | 716 / 878 | 927 |
 
-Se conserva SQLite exportado por operación. Para 1.000 prendas la prueba de almacenamiento cumple los objetivos de 2 s de apertura y 500 ms de guardado p95. A 5.000 prendas la confirmación tarda más. Reproducir con `node tests/performance.mjs` desde `web/` tras instalar Chromium. El ensayo completo escribe más de 2 GB en un perfil temporal. Estos resultados no predicen el rendimiento de un portátil Windows concreto.
+Se conserva SQLite exportado por operación. Para 1.000 prendas la prueba de almacenamiento cumple los objetivos de 2 s de apertura y 500 ms de guardado p95. A 5.000 prendas la confirmación tarda más. Reproducir con `node tests/performance.mjs` desde `web/` tras instalar Chromium. El ensayo completo escribe más de 2 GB en un perfil temporal. El ensayo de 5.000 prendas mide el catálogo. Sus 30.000 archivos de imagen superan el límite de 20.002 entradas del ZIP histórico. Los tiempos corresponden a la máquina Linux descrita.
+
+## Cobertura T01–T12
+
+| Caso | Comprobación reproducible |
+|---|---|
+| T01 | Crear, cancelar, conservar la sesión, denegar y reconectar. Un fichero testigo sobrevive al intento de crear en carpeta ajena. |
+| T02 | Fallos antes y después de publicar imagen, SQLite o confirmación. Se reabre la revisión completa y los reintentos conservan un único traslado. |
+| T03 | Inicialización concurrente, dos pestañas, exclusión de escritor, rechazo de una sesión cerrada y una copia diaria por fecha UTC. |
+| T04 | Lote atómico con dos grupos, entradas inválidas, máximo de seis, EXIF, transparencia, cambio de portada y reparación del original o la miniatura ausentes. |
+| T05 | Nueve ZIP producidos por Python, uno por esquema. Se comparan las tablas después de restaurar y migrar. |
+| T06 | Rechazo de ZIP incompatibles, corruptos o con datos relacionales incompletos. |
+| T07 | Recorrido por catálogo, colecciones, etiquetas, outfit, maleta, tablero y resumen. Se verifican precios conocidos y listados por ubicación tras el traslado explícito. |
+| T08 | JPEG nuevo convertido en tres variantes. Reimportación en Python y en web con cotejo de hashes y relaciones. |
+| T09 | Dos compilaciones servidas en la subruta del proyecto. Se conserva un formulario abierto durante la actualización y se guarda otra edición sin conexión. |
+| T10 | Captura de tráfico con datos ficticios, incluida la consulta meteorológica explícita y la conservación de la última respuesta tras un fallo. |
+| T11 | Foco de teclado, reconexión, ancho de 320 px, menú móvil y conservación de una caché de otra aplicación. |
+| T12 | Ensayos en escritorio Windows con dos navegadores instalados, selector nativo, carpeta NTFS, perfil nuevo, permisos, volumen virtual de 64 MiB y acceso directo. Cada resultado se registra por navegador en los checks de la PR. |
 
 ## Reproducir la aceptación
 

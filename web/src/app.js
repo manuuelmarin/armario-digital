@@ -445,7 +445,15 @@ async function render() {
   await hydrate();
 }
 state.refresh = render;
-window.addEventListener("hashchange", () => {
+window.addEventListener("hashchange", (event) => {
+  if (
+    state.dirty &&
+    !state.busy &&
+    !confirm("¿Descartar los cambios pendientes y salir de este formulario?")
+  ) {
+    history.replaceState(null, "", event.oldURL);
+    return;
+  }
   state.dirty = false;
   nav.classList.remove("open");
   document.querySelector("#mobile").setAttribute("aria-expanded", "false");

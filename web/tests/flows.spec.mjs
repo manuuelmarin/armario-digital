@@ -133,6 +133,13 @@ test("T01/T04/T07/T08/T10/T11 · catálogo, portada, traslado explícito y copia
     ).toContainText("18,00");
     await page.getByRole("link", { name: "Madrid · Camisas" }).click();
     await expect(page.locator(".cards article")).toHaveCount(2);
+    await expect(page.locator(".cards h3")).toHaveText([
+        "Pantalón",
+        "Camisa blanca",
+    ]);
+    await page.getByRole("link", { name: "Resumen", exact: true }).click();
+    await page.getByRole("link", { name: "Albacete · Camisas" }).click();
+    await expect(page.locator(".cards h3")).toHaveText(["Camisa viaje"]);
     await page.getByRole("link", { name: "Ajustes", exact: true }).click();
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "Crear y descargar copia" }).click();

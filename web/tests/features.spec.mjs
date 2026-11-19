@@ -278,3 +278,65 @@ test("T01/T02/T03 · carpeta ajena, fallos de escritura en cada fase, esquema fu
         );
     }
 });
+test("T04 · reparar un máster y una miniatura ausentes y reabrir la ficha", async ({
+    page,
+    context,
+}) => {
+    await testDirectory(context);
+    page.on("dialog", (d) => d.accept());
+    await page.goto("./");
+    await page.getByRole("button", { name: "Crear armario" }).click();
+    await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+    await page.getByLabel("Nombre de ubicación").fill("Prueba");
+    await page.getByRole("button", { name: "Crear ubicación" }).click();
+    await page.locator("summary", { hasText: "Prueba" }).waitFor();
+    await page.getByRole("link", { name: "Catálogo", exact: true }).click();
+    await page.getByRole("link", { name: "Añadir prenda" }).click();
+    await page.getByLabel("Nombre", { exact: true }).fill("Dos variantes");
+    const input = page.locator("input[name=photos]");
+    const image = await readFile(resolve(".fixtures/red.jpg"));
+    await input.setInputFiles(
+        Array.from({ length: 7 }, (_, i) => ({
+            name: "foto" + i + ".jpg",
+            mimeType: "image/jpeg",
+            buffer: image,
+        })),
+    );
+    await page.getByRole("button", { name: "Guardar prenda" }).click();
+    await expect(page.getByRole("status")).toContainText(/seis|6/);
+    await input.setInputFiles(resolve(".fixtures/red.jpg"));
+    await page.getByRole("button", { name: "Guardar prenda" }).click();
+    await expect(
+        page.getByRole("heading", { name: "Dos variantes" }),
+    ).toBeVisible();
+    for (const variant of [".webp", "-thumb.webp"]) {
+        await page.evaluate(async (variant) => {
+            const base = document
+                .querySelector("img[data-photo]")
+                .dataset.photo.replace(/-(preview|thumb)\.webp$/, "");
+            const root = await (
+                await navigator.storage.getDirectory()
+            ).getDirectoryHandle("Armario de prueba");
+            await (
+                await root.getDirectoryHandle("images")
+            ).removeEntry(base + variant);
+        }, variant);
+        await page.reload();
+        await expect(
+            page.getByText("Foto no disponible", { exact: true }),
+        ).toBeVisible();
+        await page
+            .getByLabel("Sustituir foto")
+            .setInputFiles(resolve(".fixtures/blue.jpg"));
+        await page.getByRole("button", { name: "Reparar o sustituir" }).click();
+        await expect(page.locator(".cover img")).toHaveCount(1);
+        await page.reload();
+        await expect
+            .poll(() =>
+                page
+                    .locator(".cover img")
+                    .evaluateAll((xs) => xs.some((x) => x.naturalWidth > 0)),
+            )
+            .toBe(true);
+    }
+});
