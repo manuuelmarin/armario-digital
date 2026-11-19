@@ -351,3 +351,12 @@ td {
     display: none;
   }
 }
+
+.catalog-filters form {
+  margin: 0;
+  padding: 12px 0 0;
+  border: 0;
+}
+nav:empty {
+  display: none;
+}

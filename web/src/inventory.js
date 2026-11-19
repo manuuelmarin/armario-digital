@@ -162,7 +162,9 @@ export async function catalog(p) {
     '<h1>Catálogo</h1><div class="actions">' +
     link("Añadir prenda", "#/prendas/nueva") +
     link("Importar grupos de fotos", "#/lotes") +
-    "</div>" +
+    '</div><details class="catalog-filters" ' +
+    (matchMedia("(min-width: 701px)").matches ? "open" : "") +
+    "><summary>Buscar y filtrar</summary>" +
     form(
       '<div class="fields">' + filters + "</div>",
       "Aplicar filtros",
@@ -172,6 +174,7 @@ export async function catalog(p) {
           "#/catalogo?" + new URLSearchParams([...f].filter(([, v]) => v));
       },
     ) +
+    "</details>" +
     (items.length
       ? form(
           '<div class="cards">' +

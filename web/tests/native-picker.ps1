@@ -31,6 +31,7 @@ Add-Type @"
 using System;
 using System.Runtime.InteropServices;
 public static class PickerWindow {
+    [DllImport("user32.dll")] public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr value);
     [DllImport("user32.dll")] public static extern bool SetCursorPos(int x,int y);
     [DllImport("user32.dll")] public static extern void mouse_event(uint flags,uint x,uint y,uint data,UIntPtr extra);
     [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr h, uint flag);
@@ -41,6 +42,7 @@ public static class PickerWindow {
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
 }
 "@
+[void][PickerWindow]::SetThreadDpiAwarenessContext([IntPtr](-4))
 $outer = [PickerWindow]::GetAncestor([IntPtr]$window.Current.NativeWindowHandle,2)
 if (!$outer -or $outer -eq [IntPtr]::Zero) { throw 'Ventana de selector no encontrada.' }
 $dialog = [Windows.Automation.AutomationElement]::FromHandle($outer)
@@ -74,6 +76,12 @@ while ([DateTime]::UtcNow -lt $until) {
           if ($bounds.Width -le 0 -or $bounds.Height -le 0 -or !$control.Current.IsEnabled) { continue }
           $x=[int]($bounds.Left+$bounds.Width/2); $y=[int]($bounds.Top+$bounds.Height/2)
           Write-Output ("Click "+$label+" at "+$x+","+ $y)
+          try {
+            $control.SetFocus()
+            [System.Windows.Forms.SendKeys]::SendWait(' ')
+            Start-Sleep -Milliseconds 400
+            if (!$control.Current.IsEnabled -or $control.Current.IsOffscreen) { continue }
+          } catch [Windows.Automation.ElementNotAvailableException] { continue }
           [void][PickerWindow]::SetCursorPos($x,$y)
           [PickerWindow]::mouse_event(2,0,0,0,[UIntPtr]::Zero)
           [PickerWindow]::mouse_event(4,0,0,0,[UIntPtr]::Zero)

@@ -65,11 +65,15 @@ jobs:
           cache: pip
       - run: python -m pip install -r ../requirements.txt
       - run: npm ci
-      - run: npm run build
+      - id: build
+        run: npm run build
       - run: python tests/oracle.py fixtures .fixtures
       - run: node tests/windows-native.mjs ${{ matrix.channel }}
         env:
           ARMARIO_TEST_VOLUME: "1"
+      - name: Instalar y abrir desde el acceso directo de Windows
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: node tests/windows-install.mjs ${{ matrix.channel }}
   deploy:
     needs: [web, native]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

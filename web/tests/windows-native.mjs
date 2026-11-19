@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium, expect } from "@playwright/test";
 import { preview } from "vite";
 import {
     mkdtemp,
@@ -10,7 +10,7 @@ import {
     statfs,
 } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
@@ -100,7 +100,12 @@ async function choose(p, button, path) {
             p.getByRole("button", { name: button, exact: true }).click(),
         ]);
         console.log(driver.stdout);
-        await p.getByRole("link", { name: "Añadir prenda" }).waitFor();
+        await p.waitForFunction(
+            (name) =>
+                document.querySelector("#connection").textContent ===
+                name + " · Guardado",
+            basename(path),
+        );
     } catch (e) {
         console.log(
             "Estado de la aplicación:",
@@ -143,10 +148,24 @@ try {
     page = await profile("Perfil-B");
     await choose(page, "Abrir mi carpeta", moved);
     await page.getByRole("heading", { name: "Camisa Windows" }).click();
-    assert.equal(await page.locator(".cover img").count(), 2);
+    await expect(page.locator(".cover img")).toHaveCount(2);
+    await expect
+        .poll(() =>
+            page
+                .locator(".cover img")
+                .evaluateAll(
+                    (imgs) =>
+                        imgs.filter((i) => i.complete && i.naturalWidth > 0)
+                            .length,
+                ),
+        )
+        .toBe(2);
     assert.equal(
         JSON.parse(await readFile(join(moved, "armario.json"), "utf8")).uuid,
         marker.uuid,
+    );
+    console.log(
+        "Selector nativo, escritura, dos fotos y reapertura tras mover: OK.",
     );
     if (diskTest) {
         const disk = await statfs(drive);
@@ -184,9 +203,49 @@ try {
             "Falta de espacio real en VHD NTFS de 64 MiB y reintento único: OK.",
         );
     }
-    console.log(
-        "Selector nativo, dos fotos, escritura NTFS y reapertura desde un perfil nuevo tras mover la carpeta: OK.",
+    const origin = new URL(page.url()).origin;
+    const settings = await ctx.newPage();
+    const scheme = channel === "chrome" ? "chrome" : "edge";
+    await settings.goto(
+        scheme +
+            "://settings/content/siteDetails?site=" +
+            encodeURIComponent(origin),
     );
+    // Change the actual per-origin file-editing preference in the disposable browser profile.
+    const editing = async (value) => {
+        await settings.evaluate(
+            ({ origin, value }) => {
+                chrome.send("setOriginPermissions", [
+                    origin,
+                    "file-system-write",
+                    value,
+                ]);
+            },
+            { origin, value },
+        );
+    };
+    await editing("block");
+    await page.reload();
+    await page.getByRole("button", { name: "Reconectar" }).waitFor();
+    await page.getByRole("button", { name: "Reconectar" }).click();
+    await page.waitForFunction(() =>
+        /Solo lectura|Permiso denegado/i.test(document.body.innerText),
+    );
+    await editing("default");
+    await settings.close();
+    await page.goto(new URL("#/ajustes", page.url()).href);
+    await page.bringToFront();
+    await choose(page, "Abrir mi carpeta", moved);
+    await page.waitForFunction(() =>
+        document.querySelector("#connection").textContent.includes("Guardado"),
+    );
+    console.log(
+        channel,
+        "permiso de edición bloqueado en ajustes del navegador y reconexión con acceso real: OK.",
+    );
+} catch (e) {
+    console.error("Fase de aceptación:", e);
+    throw e;
 } finally {
     await ctx?.close();
     await server.close();
@@ -197,5 +256,12 @@ try {
         retryDelay: 500,
     });
     if (diskTest) await volume("-Detach");
-    await rm(work, { force: true, recursive: true });
+    await rm(work, {
+        force: true,
+        recursive: true,
+        maxRetries: 12,
+        retryDelay: 400,
+    }).catch((e) =>
+        console.warn("Limpieza de archivos temporales:", e.message),
+    );
 }
