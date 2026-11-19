@@ -5,6 +5,7 @@ import shutil
 import sqlite3
 import sys
 import tempfile
+from contextlib import closing
 from pathlib import Path
 
 from invalid_archives import generate
@@ -17,7 +18,7 @@ from armario.db import connect, migrate  # noqa: E402
 
 
 def snapshot(path):
-    with sqlite3.connect(path) as db:
+    with closing(sqlite3.connect(path)) as db:
         db.row_factory = sqlite3.Row
         tables = db.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
