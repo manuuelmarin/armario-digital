@@ -21,6 +21,7 @@ http.createServer(async (req, res) => {
     const prefix = "/armario-digital/",
         url = new URL(req.url, "http://localhost");
     if (!url.pathname.startsWith(prefix)) {
+        console.warn("Recurso de prueba ausente", url.pathname);
         res.writeHead(404);
         res.end();
         return;
@@ -28,6 +29,7 @@ http.createServer(async (req, res) => {
     const root = resolve(release === "a" ? ".fixtures/build-a" : "dist"),
         path = resolve(root, url.pathname.slice(prefix.length) || "index.html");
     if (!path.startsWith(root + sep)) {
+        console.warn("Recurso de prueba ausente", url.pathname);
         res.writeHead(404);
         res.end();
         return;
@@ -40,6 +42,7 @@ http.createServer(async (req, res) => {
         });
         res.end(data);
     } catch {
+        console.warn("Recurso de prueba ausente", url.pathname);
         res.writeHead(404);
         res.end();
     }

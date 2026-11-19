@@ -11,6 +11,7 @@
   "type": "module",
   "dependencies": {
     "@zip.js/zip.js": "2.25.0",
+    "image-size": "2.1.0",
     "sql.js": "1.17.0"
   },
   "devDependencies": {

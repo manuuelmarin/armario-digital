@@ -51,12 +51,13 @@ function supported() {
     window.showDirectoryPicker &&
     navigator.locks &&
     window.Worker &&
-    window.ImageDecoder
+    window.createImageBitmap
   );
 }
 async function activate(s, remember = true) {
   const old = state.session;
   state.session = s;
+  await old?.pendingDaily?.catch(() => {});
   old?.release?.();
   if (remember && !s.demo) {
     previous = s.root;
@@ -72,13 +73,12 @@ async function activate(s, remember = true) {
     notice(
       "Solo lectura. Para editar, cierra la pestaña que tiene abierto el armario y vuelve a conectar con permiso de escritura.",
     );
-  if (s.release)
-    try {
-      await daily(s);
-    } catch (e) {
-      notice("No se pudo crear la copia diaria: " + e.message);
-    }
   await render();
+  if (s.release)
+    void daily(s).catch((e) => {
+      if (state.session === s)
+        notice("No se pudo crear la copia diaria. " + e.message);
+    });
 }
 async function openFolder(root, writable = true) {
   if (
@@ -189,7 +189,7 @@ function connectionControls() {
       link("Traer una copia", "#/traer"),
     );
   }
-  if (navigator.storage?.getDirectory && window.ImageDecoder)
+  if (navigator.storage?.getDirectory && window.createImageBitmap)
     actions.push(action("Probar la demo", makeDemo));
   return (
     '<div class="actions">' +
@@ -209,6 +209,14 @@ function appearance() {
         : "claro"
       : choice;
 }
+function download(file) {
+  const url = URL.createObjectURL(file),
+    a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
 async function settings() {
   const s = state.session,
     [locations, categories] = await Promise.all(
@@ -216,6 +224,41 @@ async function settings() {
         q("SELECT * FROM " + t + " ORDER BY name"),
       ),
     );
+  const copies = [];
+  try {
+    const dir = await s.root.getDirectoryHandle("backups");
+    for await (const entry of dir.values())
+      if (entry.kind === "file" && entry.name.endsWith(".zip"))
+        copies.push(entry);
+  } catch (e) {
+    if (e.name !== "NotFoundError") throw e;
+  }
+  copies.sort((a, b) => b.name.localeCompare(a.name));
+  const savedCopies =
+    "<details><summary>Copias de esta carpeta (" +
+    copies.length +
+    ")</summary>" +
+    copies
+      .map(
+        (handle) =>
+          '<div class="row"><span>' +
+          esc(handle.name) +
+          "</span>" +
+          action("Verificar", async () => {
+            const { info } = await inspectZip(await handle.getFile());
+            notice(
+              "Copia válida. " +
+                info.garments +
+                " prendas y " +
+                info.outfits +
+                " outfits.",
+            );
+          }) +
+          action("Descargar", async () => download(await handle.getFile())) +
+          "</div>",
+      )
+      .join("") +
+    "</details>";
   const manage = (table, label, rows) =>
     "<h2>" +
     label +
@@ -257,6 +300,7 @@ async function settings() {
     action("Desconectar", async () => {
       await remembered(null);
       previous = null;
+      await s.pendingDaily?.catch(() => {});
       s.release?.();
       state.session = null;
       state.dirty = false;
@@ -281,14 +325,10 @@ async function settings() {
       if (!s.release)
         throw Error("Se necesita acceso de escritura para crear la copia.");
       const f = await backup(s);
-      const url = URL.createObjectURL(f),
-        a = document.createElement("a");
-      a.href = url;
-      a.download = f.name;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      download(f);
       notice("Copia verificada y guardada en backups.");
     }) +
+    savedCopies +
     link("Verificar o restaurar una copia", "#/traer") +
     form(
       field(

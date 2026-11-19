@@ -1,4 +1,4 @@
-import { read } from "./files";
+import { read, optional } from "./files";
 import {
   q,
   esc,
@@ -74,10 +74,15 @@ export async function catalog(p) {
   }
   const filter = " WHERE " + where.join(" AND "),
     page = Math.max(1, Math.trunc(Number(p.get("page"))) || 1);
+  const sorts = new Map([
+    ["newest", "g.id DESC"],
+    ["oldest", "g.id"],
+    ["name", "fold(g.name),g.id"],
+    ["name_desc", "fold(g.name) DESC,g.id DESC"],
+  ]);
+  const order = sorts.get(p.get("sort")) || sorts.get("newest");
   const items = await q(
-    garmentSQL +
-      filter +
-      " ORDER BY g.favorite DESC,g.id DESC LIMIT 25 OFFSET ?",
+    garmentSQL + filter + " ORDER BY " + order + " LIMIT 25 OFFSET ?",
     ...args,
     (page - 1) * 24,
   );
@@ -89,6 +94,17 @@ export async function catalog(p) {
   };
   const filters =
     field("Buscar", "q", p.get("q")) +
+    select(
+      "Orden",
+      "sort",
+      [
+        { id: "newest", name: "Más recientes" },
+        { id: "oldest", name: "Más antiguas" },
+        { id: "name", name: "Nombre A–Z" },
+        { id: "name_desc", name: "Nombre Z–A" },
+      ],
+      p.get("sort") || "newest",
+    ) +
     select("Ubicación", "location", locations, p.get("location"), "Todas") +
     select("Categoría", "category", categories, p.get("category"), "Todas") +
     select("Temporada", "season", seasonRows, p.get("season"), "Todas") +
@@ -167,6 +183,8 @@ export async function catalog(p) {
           async (f) => {
             const chosen = ids(f, "garment"),
               sql = [];
+            if (p.get("archived") === "1")
+              throw Error("Reactiva las prendas antes de editarlas en lote.");
             if (!chosen.length) throw Error("Selecciona alguna prenda.");
             if (val(f, "dest"))
               sql.push(...move(chosen, +val(f, "dest"), "Traslado manual"));
@@ -247,6 +265,11 @@ const uploads = (f) => f.getAll("photos").filter((file) => file.size);
 export async function garmentEditor(id, batch = false) {
   const g = id ? (await q("SELECT * FROM garments WHERE id=?", id))[0] : {};
   if (!g) throw Error("Prenda inexistente.");
+  if (g.archived)
+    return (
+      "<h1>Prenda archivada</h1><p>Reactiva la prenda en su ficha para editarla.</p>" +
+      link("Volver a la ficha", "#/prendas/" + id)
+    );
   const [loc, cat, oldSeasons, oldImages, suggestions] = await Promise.all([
     choices("locations"),
     choices("categories"),
@@ -286,6 +309,14 @@ export async function garmentEditor(id, batch = false) {
           let gid = await nextId("garments");
           const sql = [],
             media = [];
+          const uploads = [...el.querySelectorAll('[name="photos"]')].flatMap(
+            (input) => [...input.files],
+          );
+          if (
+            uploads.length > 20 ||
+            uploads.reduce((n, f) => n + f.size, 0) > 64 * 1024 ** 2
+          )
+            throw Error("El lote admite hasta 20 fotos y 64 MiB.");
           for (const box of el.querySelectorAll("fieldset")) {
             const get = (name) => box.querySelector('[name="' + name + '"]');
             const files = [...get("photos").files];
@@ -309,7 +340,16 @@ export async function garmentEditor(id, batch = false) {
       )
     );
   const suggest = (key, label) =>
-    field(label, key, g[key], 'list="suggest-' + key + '" maxlength="100"') +
+    field(
+      label,
+      key,
+      g[key],
+      'list="suggest-' +
+        key +
+        '" maxlength="' +
+        { brand: 80, size: 30, color: 60 }[key] +
+        '"',
+    ) +
     '<datalist id="suggest-' +
     key +
     '">' +
@@ -331,11 +371,14 @@ export async function garmentEditor(id, batch = false) {
           "Precio (€)",
           "price",
           g.price_cents == null ? "" : g.price_cents / 100,
-          'type="number" min="0" step=".01"',
+          'type="number" min="0" max="1000000" step=".01"',
         ) +
         field("Fecha de compra", "date", g.purchased_on, 'type="date"') +
         "</div>" +
         field("Notas", "notes", g.notes, 'maxlength="3000"') +
+        '<label><input type="checkbox" name="favorite" ' +
+        (g.favorite ? "checked" : "") +
+        ">Favorita</label>" +
         "<fieldset><legend>Temporadas</legend>" +
         checks(
           seasonRows,
@@ -349,6 +392,7 @@ export async function garmentEditor(id, batch = false) {
           values = {
             name: val(f, "name"),
             category_id: +val(f, "category_id"),
+            favorite: Number(f.has("favorite")),
             brand: val(f, "brand"),
             color: val(f, "color"),
             size: val(f, "size"),
@@ -391,6 +435,22 @@ export async function detail(id) {
     "SELECT * FROM garment_images WHERE garment_id=? ORDER BY " + coverOrder,
     id,
   );
+  const missing = new Set();
+  await Promise.all(
+    photos.map(async (p) => {
+      for (const name of [p.filename, p.thumbnail, p.preview].filter(Boolean))
+        if (!(await optional(state.session.root, "images/" + name)))
+          missing.add(p.id);
+    }),
+  );
+  const seasons = await q(
+    "SELECT season FROM garment_seasons WHERE garment_id=? ORDER BY season",
+    id,
+  );
+  const looks = await q(
+    "SELECT o.id,o.name FROM outfit_items i JOIN outfits o ON o.id=i.outfit_id WHERE garment_id=? ORDER BY o.name",
+    id,
+  );
   const history = await q(
     "SELECT a.name origin,b.name destination,m.created_at FROM garment_movements m JOIN locations a ON a.id=m.from_id JOIN locations b ON b.id=m.to_id WHERE garment_id=? ORDER BY m.id DESC",
     id,
@@ -413,6 +473,7 @@ export async function detail(id) {
       money(g.price_cents),
       g.purchased_on,
       g.notes,
+      ...seasons.map((r) => r.season),
     ]
       .filter(Boolean)
       .map(esc)
@@ -435,7 +496,9 @@ export async function detail(id) {
       .map(
         (p, i) =>
           '<article class="card"><div class="cover">' +
-          img(p.preview || p.thumbnail, g.name) +
+          (missing.has(p.id)
+            ? "Foto no disponible"
+            : img(p.preview || p.thumbnail, g.name)) +
           "</div><p>" +
           (i === 0 ? "Portada" : "Foto " + (i + 1)) +
           "</p>" +
@@ -494,13 +557,20 @@ export async function detail(id) {
                   ...photo.integrity,
                 ],
                 photo.files,
+                undefined,
+                true,
               );
             },
           ) +
           "</article>",
       )
       .join("") +
-    "</div><h2>Historial de traslados</h2>" +
+    "</div>" +
+    (looks.length
+      ? "<h2>Outfits con esta prenda</h2>" +
+        looks.map((o) => link(o.name, "#/outfits/" + o.id)).join(" ")
+      : "") +
+    "<h2>Historial de traslados</h2>" +
     (history
       .map(
         (r) =>

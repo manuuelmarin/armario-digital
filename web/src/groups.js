@@ -54,13 +54,45 @@ export async function groups(route, id, p) {
       sql += " AND instr(fold(name||' '||notes||' '||occasion),fold(?))>0";
       args.push(p.get("q") || "");
       if (p.get("favorite")) sql += " AND favorite=1";
-      if (p.get("location")) {
+      if (p.get("location") && p.get("complete")) {
         sql +=
           " AND EXISTS(SELECT 1 FROM outfit_items WHERE outfit_id=outfits.id) AND NOT EXISTS(SELECT 1 FROM outfit_items i JOIN garments g ON g.id=i.garment_id WHERE i.outfit_id=outfits.id AND (g.location_id<>? OR g.archived=1))";
         args.push(+p.get("location"));
       }
     }
     const items = await q(sql + " ORDER BY name", ...args);
+    const byOutfit = new Map();
+    if (outfit) {
+      const members = await q(
+        garmentSQL.replace("SELECT g.*", "SELECT i.outfit_id,g.*") +
+          " JOIN outfit_items i ON i.garment_id=g.id ORDER BY i.outfit_id,g.name",
+      );
+      for (const g of members) {
+        if (!byOutfit.has(g.outfit_id)) byOutfit.set(g.outfit_id, []);
+        byOutfit.get(g.outfit_id).push(g);
+      }
+    }
+    function availability(id) {
+      if (!outfit) return "";
+      const pieces = byOutfit.get(id) || [],
+        missing = pieces.filter(
+          (g) => g.archived || g.location_id !== +p.get("location"),
+        );
+      return (
+        (pieces[0]
+          ? '<div class="cover">' +
+            img(pieces[0].thumbnail, pieces[0].name) +
+            "</div>"
+          : "") +
+        (p.get("location") && pieces.length
+          ? "<p>" +
+            (missing.length
+              ? "Faltan: " + missing.map((g) => esc(g.name)).join(", ")
+              : "Completo en esta ubicación") +
+            "</p>"
+          : "")
+      );
+    }
     const filters = outfit
       ? form(
           '<div class="fields">' +
@@ -71,6 +103,13 @@ export async function groups(route, id, p) {
               locations,
               p.get("location"),
               "Cualquier ubicación",
+            ) +
+            select(
+              "Disponibilidad",
+              "complete",
+              [{ id: 1, name: "Solo completos" }],
+              p.get("complete"),
+              "Mostrar todos",
             ) +
             select(
               "Favoritos",
@@ -106,6 +145,7 @@ export async function groups(route, id, p) {
             '<article class="card"><h3>' +
             link(r.name, "#/" + route + "/" + r.id) +
             "</h3>" +
+            availability(r.id) +
             esc(r.notes ?? "") +
             "</article>",
         )
@@ -189,6 +229,12 @@ export async function groups(route, id, p) {
             occasion: val(f, "occasion"),
             favorite: Number(f.has("favorite")),
           });
+        if (
+          outfit &&
+          !ids(f, "garment").length &&
+          !chosen.some((g) => g.archived)
+        )
+          throw Error("Selecciona al menos una prenda.");
         const sql = [
           statement(d.table, values, isNew ? null : id),
           ["DELETE FROM " + d.join + " WHERE " + d.key + "=?", [key]],
@@ -390,6 +436,7 @@ export async function trips(id) {
     )
     .map((i) => ({ id: i.garment_id, name: i.name }));
   return (
+    '<section class="trip-sheet">' +
     link("Todas las maletas", "#/maletas") +
     "<h1>" +
     esc(t.name) +
@@ -397,9 +444,13 @@ export async function trips(id) {
     esc(loc.find((l) => l.id === t.origin_id).name) +
     " → " +
     esc(loc.find((l) => l.id === t.destination_id).name) +
-    '</p><div class="list">' +
+    "</p><p>" +
+    [t.starts_on, t.ends_on, t.notes].filter(Boolean).map(esc).join(" · ") +
+    "</p>" +
+    '<div class="list">' +
     list +
-    '</div><div class="actions">' +
+    '</div></section><div class="no-print">' +
+    '<div class="actions">' +
     action("Imprimir", () => print()) +
     action("Duplicar maleta", () => clone(false)) +
     action("Crear viaje de vuelta", () => clone(true)) +
@@ -425,6 +476,7 @@ export async function trips(id) {
               await save(move(selected, t.destination_id, "Viaje: " + t.name));
           },
         )
-      : "<p>Se podrán trasladar las prendas preparadas que estén en el origen.</p>")
+      : "<p>Se podrán trasladar las prendas preparadas que estén en el origen.</p>") +
+    "</div>"
   );
 }

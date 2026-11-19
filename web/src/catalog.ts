@@ -94,6 +94,16 @@ export async function inspect(db: Database) {
             reference.close();
         }
     }
+    if (
+        version === 9 &&
+        value(db, "SELECT count(*) FROM ai_settings WHERE id=1") !== 1
+    )
+        throw Error("Falta la configuración histórica del esquema 9.");
+    if (
+        rows(db, "SELECT 1 FROM sqlite_master WHERE type IN ('trigger','view')")
+            .length
+    )
+        throw Error("La copia contiene objetos SQLite desconocidos.");
     if (contracts.get(version) !== structure(db))
         throw Error(
             "Las columnas o claves externas difieren del esquema original.",

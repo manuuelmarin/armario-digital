@@ -30,20 +30,32 @@ async function profile(name) {
     return p;
 }
 async function choose(p, button, path) {
-    await Promise.all([
-        run(
-            "powershell.exe",
-            [
-                "-NoProfile",
-                "-File",
-                resolve("tests/native-picker.ps1"),
-                "-Folder",
-                path,
-            ],
-            { timeout: 55000 },
-        ),
-        p.getByRole("button", { name: button, exact: true }).click(),
-    ]);
+    const cdp = await ctx.newCDPSession(p);
+    await cdp.send("Page.setInterceptFileChooserDialog", { enabled: false });
+    try {
+        await Promise.all([
+            run(
+                "powershell.exe",
+                [
+                    "-NoProfile",
+                    "-File",
+                    resolve("tests/native-picker.ps1"),
+                    "-Folder",
+                    path,
+                ],
+                { timeout: 55000 },
+            ),
+            p.getByRole("button", { name: button, exact: true }).click(),
+        ]);
+    } catch (e) {
+        console.log(
+            "Estado de la aplicación:",
+            await p.locator("#notice").textContent(),
+        );
+        throw e;
+    } finally {
+        await cdp.detach();
+    }
     await p.getByRole("link", { name: "Añadir prenda" }).waitFor();
 }
 try {

@@ -1,4 +1,5 @@
 import { call } from "./engine";
+import { daily } from "./backup";
 import { commit } from "./folder";
 import { read } from "./files";
 export const state = {
@@ -156,7 +157,12 @@ export async function nextId(table) {
   return (await q("SELECT coalesce(max(id),0)+1 id FROM " + table))[0].id;
 }
 let activeControl;
-export async function save(statements, files = [], destination) {
+export async function save(
+  statements,
+  files = [],
+  destination,
+  repair = false,
+) {
   const s = state.session;
   if (!s?.release)
     throw Error(
@@ -170,7 +176,12 @@ export async function save(statements, files = [], destination) {
   };
   if (el) el._intent = intent;
   status("Guardando");
+  if (!repair) await daily(s);
   await commit(s, intent, statements, files);
+  if (repair)
+    await daily(s).catch((e) =>
+      notice("Foto reparada. La copia diaria requiere revisión. " + e.message),
+    );
   if (el) delete el._intent;
   state.dirty = false;
   status("Guardado");
@@ -199,7 +210,10 @@ export async function dispatch(el, key) {
           ? "Hay elementos vinculados. Quita la relación antes de eliminar."
           : e.message,
       );
-      if (state.session) status("No se pudo completar la operación");
+      if (state.session)
+        status(
+          e.name === "NotAllowedError" ? "Solo lectura" : "No se pudo guardar",
+        );
       document.querySelector("#notice").setAttribute("tabindex", "-1");
       document.querySelector("#notice").focus();
     }

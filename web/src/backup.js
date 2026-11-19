@@ -154,6 +154,15 @@ export async function backup(session, prefix = "manual") {
 export async function daily(s) {
   const day = new Date().toISOString().slice(0, 10);
   if (!s.release || s.daily === day) return;
+  if (s.pendingDaily) return s.pendingDaily;
+  s.pendingDaily = ensureDaily(s, day);
+  try {
+    await s.pendingDaily;
+  } finally {
+    s.pendingDaily = null;
+  }
+}
+async function ensureDaily(s, day) {
   const existing = await optional(s.root, "backups/daily-" + day + ".zip");
   if (existing) await inspectZip(existing);
   else await backup(s, "daily");

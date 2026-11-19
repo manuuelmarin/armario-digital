@@ -1,5 +1,5 @@
 import { call, sha } from "./engine";
-import { read, write, bytes, checked, optional } from "./files";
+import { read, bytes, checked, optional } from "./files";
 const marker = "armario.json",
   enc = new TextEncoder();
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
@@ -39,6 +39,10 @@ async function generations(root, uuid) {
       damaged = true;
       continue;
     }
+    if (!r || typeof r !== "object") {
+      damaged = true;
+      continue;
+    }
     if (r.schema > 9 || r.format > 1)
       throw Error("Formato posterior. Actualiza la aplicación.");
     if (r.uuid !== uuid) throw Error("Conflicto de identidad del armario.");
@@ -59,6 +63,11 @@ async function generations(root, uuid) {
       damaged = true;
       continue;
     }
+    if (
+      data.length >= 64 &&
+      new DataView(data.buffer, data.byteOffset).getUint32(60) > 9
+    )
+      throw Error("Esquema SQLite posterior. Actualiza la aplicación.");
     try {
       const info = await call("inspect", data);
       if (info.version !== r.schema) throw Error();
@@ -145,7 +154,14 @@ export async function connect(root, editable = true) {
     throw e;
   }
 }
-export async function commit(s, intent, statements, media = []) {
+export function commit(s, intent, statements, media = []) {
+  const writing = (s.queue || Promise.resolve()).then(() =>
+    commitOne(s, intent, statements, media),
+  );
+  s.queue = writing.catch(() => {});
+  return writing;
+}
+async function commitOne(s, intent, statements, media) {
   if (!s.release || intent.uuid !== s.uuid)
     throw Error("El armario está en modo de solo lectura.");
   const m = JSON.parse(await (await read(s.root, marker)).text());
@@ -163,8 +179,12 @@ export async function commit(s, intent, statements, media = []) {
     );
   const data = await call("write", base.data, { statements });
   for (const [name, buffer] of media) {
-    if (await optional(s.root, "images/" + name))
-      throw Error("La foto ya existe.");
+    const existing = await optional(s.root, "images/" + name);
+    if (existing) {
+      if ((await sha(await existing.arrayBuffer())) === (await sha(buffer)))
+        continue;
+      throw Error("El nombre ya corresponde a otra foto.");
+    }
     await checked(s.root, "images/" + name, buffer);
   }
   s.head = await publish(s.root, s.uuid, base, intent.operation, data);

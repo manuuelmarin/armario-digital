@@ -13,6 +13,20 @@ test("T09/T11 · edición durante una actualización, reapertura offline y cach�
     await expect(
         page.getByRole("link", { name: "Añadir prenda" }),
     ).toBeVisible();
+    await expect
+        .poll(
+            async () =>
+                await page.evaluate(async () => {
+                    const r = await navigator.serviceWorker.getRegistration();
+                    return (
+                        r?.active?.state ||
+                        r?.installing?.state ||
+                        "sin registro"
+                    );
+                }),
+            { timeout: 15000 },
+        )
+        .toBe("activated");
     await page.evaluate(async () => {
         await navigator.serviceWorker.ready;
         await caches.open("finances-ensayo");

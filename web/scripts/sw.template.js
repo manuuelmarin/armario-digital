@@ -60,7 +60,10 @@ self.addEventListener("message", (event) => {
         ),
       );
       if (permits.every(Boolean)) await self.skipWaiting();
-      else event.source?.postMessage({ type: "busy" });
+      else {
+        for (const tab of tabs) tab.postMessage({ type: "cancel-update" });
+        event.source?.postMessage({ type: "busy" });
+      }
     })(),
   );
 });

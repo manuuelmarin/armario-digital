@@ -23,9 +23,22 @@ export async function startUpdates() {
         reg.waiting?.postMessage({ type: "check-update" });
       };
     }
+    let timer;
+    function unfreeze() {
+      clearTimeout(timer);
+      document.body.inert = false;
+    }
     navigator.serviceWorker.addEventListener("message", (e) => {
-      if (e.data?.type === "can-update")
-        e.ports[0]?.postMessage({ ok: !state.busy && !state.dirty });
+      if (e.data?.type === "can-update") {
+        const ok = !state.busy && !state.dirty && !state.session?.pendingDaily;
+        if (ok) {
+          document.body.inert = true;
+          clearTimeout(timer);
+          timer = setTimeout(unfreeze, 8000);
+        }
+        e.ports[0]?.postMessage({ ok });
+      }
+      if (e.data?.type === "cancel-update") unfreeze();
       if (e.data?.type === "busy")
         notice(
           "Hay otra pestaña con cambios pendientes. Guarda o cierra esa pestaña antes de actualizar.",

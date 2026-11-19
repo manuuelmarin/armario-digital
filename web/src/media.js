@@ -1,3 +1,4 @@
+import { imageSize } from "image-size";
 import { sha } from "./engine";
 export function imageFormat(data) {
   const tag = (p, n) => String.fromCharCode(...data.subarray(p, p + n));
@@ -10,18 +11,9 @@ export async function decoded(buffer, expected) {
   const format = imageFormat(buffer);
   if (expected && format !== expected)
     throw Error("Se esperaba una imagen WebP.");
-  const decoder = new ImageDecoder({ data: buffer, type: "image/" + format });
-  try {
-    await decoder.tracks.ready;
-    const { image } = await decoder.decode({ frameIndex: 0 });
-    if (image.displayWidth * image.displayHeight > 24000000) {
-      image.close();
-      throw Error("La foto supera los 24 millones de píxeles.");
-    }
-    image.close();
-  } finally {
-    decoder.close();
-  }
+  const { width, height } = imageSize(buffer);
+  if (!width || !height || width * height > 24000000)
+    throw Error("La imagen supera el límite de 24 millones de píxeles.");
   return createImageBitmap(new Blob([buffer]), {
     imageOrientation: "from-image",
   });

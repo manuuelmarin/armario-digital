@@ -11,16 +11,17 @@ function ByProperty($property, $value) {
 $class = [Windows.Automation.AutomationElement]::ClassNameProperty
 $type = [Windows.Automation.AutomationElement]::ControlTypeProperty
 $name = [Windows.Automation.AutomationElement]::NameProperty
+Write-Output ('Interactive: '+[Environment]::UserInteractive+'; session: '+(Get-Process -Id $PID).SessionId)
 $window = $null
 $until = [DateTime]::UtcNow.AddSeconds(30)
 while (!$window -and [DateTime]::UtcNow -lt $until) {
-  foreach ($candidate in $root.FindAll($children, (ByProperty $class '#32770'))) {
+  foreach ($candidate in $root.FindAll($tree, (ByProperty $class '#32770'))) {
     $proc = Get-Process -Id $candidate.Current.ProcessId -ErrorAction SilentlyContinue
     if ($proc.ProcessName -in @('chrome','msedge')) { $window=$candidate; break }
   }
   if (!$window) { Start-Sleep -Milliseconds 250 }
 }
-if (!$window) { throw 'No se encontró el selector nativo de carpetas en el escritorio del runner.' }
+if (!$window) { $root.FindAll($children,[Windows.Automation.Condition]::TrueCondition) | ForEach-Object {Write-Output ($_.Current.ClassName + ' | ' + $_.Current.Name)}; throw 'Selector nativo no accesible en este escritorio.' }
 $edits = $window.FindAll($tree,(ByProperty $type ([Windows.Automation.ControlType]::Edit)))
 $folderBox = $edits | Where-Object {$_.Current.Name -match 'Folder|Carpeta'} | Select-Object -Last 1
 if (!$folderBox) { $folderBox = $edits | Select-Object -Last 1 }
