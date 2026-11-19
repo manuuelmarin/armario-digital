@@ -26,6 +26,8 @@ import { catalog, detail, garmentEditor, summary } from "./inventory";
 import { groups, trips } from "./groups";
 import { boards, weather } from "./extras";
 import { startUpdates } from "./update";
+document.documentElement.dataset.version =
+  import.meta.env.VITE_RELEASE || "1.0.0";
 const main = document.querySelector("main"),
   nav = document.querySelector("nav");
 const sections = {

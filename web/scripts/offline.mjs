@@ -1,8 +1,10 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
-import { relative, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { relative, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
-const root = new URL("../dist/", import.meta.url);
+const root = process.argv[2]
+    ? new URL("./", pathToFileURL(resolve(process.argv[2]) + "/"))
+    : new URL("../dist/", import.meta.url);
 const files = (await readdir(root, { recursive: true, withFileTypes: true }))
     .filter((e) => e.isFile() && e.name !== "sw.js")
     .map((e) =>

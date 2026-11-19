@@ -187,6 +187,8 @@ export function remove(label, table, id, dest) {
 export async function dispatch(el, key) {
   if (state.busy || !callbacks.has(key)) return;
   state.busy = true;
+  const main = document.querySelector("main");
+  main.inert = true;
   activeControl = el;
   try {
     await callbacks.get(key)(el);
@@ -202,6 +204,7 @@ export async function dispatch(el, key) {
       document.querySelector("#notice").focus();
     }
   } finally {
+    main.inert = false;
     activeControl = null;
     state.busy = false;
   }
