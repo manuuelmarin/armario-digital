@@ -312,3 +312,42 @@ td {
     break-inside: avoid;
   }
 }
+.entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 80px);
+  min-height: 60vh;
+}
+.sample-rail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.sample-rail img {
+  width: 100%;
+  border-radius: 12px;
+  background: var(--subtle);
+  border: 1px solid var(--line);
+}
+.sample-rail img:nth-child(2) {
+  margin-top: 56px;
+}
+@media (max-width: 700px) {
+  .entry {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .sample-rail {
+    max-width: 380px;
+  }
+  .sample-rail img:nth-child(2) {
+    margin-top: 20px;
+  }
+}
+@media print {
+  .trip-sheet > a {
+    display: none;
+  }
+}

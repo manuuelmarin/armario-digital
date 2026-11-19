@@ -13,6 +13,28 @@ test("T09/T11 · edición durante una actualización, reapertura offline y cach�
     await expect(
         page.getByRole("link", { name: "Añadir prenda" }),
     ).toBeVisible();
+    const worker = await page.evaluate(async () => {
+        const response = await fetch("./sw.js");
+        const script = await response.text();
+        const list = script.match(/const assets = (\[[^\n]+?\])\.map/);
+        if (!list)
+            throw Error(
+                "Lista de recursos ausente en " +
+                    response.status +
+                    " " +
+                    script.slice(0, 80),
+            );
+        const missing = (
+            await Promise.all(
+                JSON.parse(list[1]).map(async (path) => {
+                    const r = await fetch(path);
+                    return r.ok ? null : [path, r.status];
+                }),
+            )
+        ).filter(Boolean);
+        return { missing, workerStatus: response.status };
+    });
+    expect(worker).toEqual({ missing: [], workerStatus: 200 });
     await expect
         .poll(
             async () =>

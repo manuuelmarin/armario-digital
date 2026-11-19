@@ -2,7 +2,7 @@
 
 ## Product boundaries
 
-Armario Digital is a local-first, single-user wardrobe application. The interface is Spanish. Keep the runtime simple: Python, server-rendered HTML, SQLite and local images. Network hosting, accounts and cloud synchronization require an explicit product decision.
+Armario Digital is a local-first, single-user wardrobe application. The interface is Spanish. The daily Windows client is a static site served by GitHub Pages. It stores SQLite and images in a user-selected directory. The historical Python application remains a compatibility and recovery reference.
 
 ## Data integrity
 
@@ -16,9 +16,9 @@ Armario Digital is a local-first, single-user wardrobe application. The interfac
 
 - Keep request handling, validation, SQLite access, image processing and recovery separated by responsibility.
 - Use parameterized SQL, named functions, explicit errors and type annotations where they clarify contracts.
-- Keep templates readable. Share controls and image markup through Jinja macros with their required context.
+- In the historical Python app, keep templates readable. Share controls and image markup through Jinja macros with their required context.
 - Reuse design tokens, local fonts and SVG icons. Provide labels, keyboard access, focus styles and responsive layouts.
-- Support normal forms without JavaScript. Client-side code enhances selection, filtering and previews.
+- In the historical Python app, support normal forms without JavaScript. Client-side code enhances selection, filtering and previews.
 - Changes to packaging or distribution must document actual platform validation. Do not describe a preview as production-ready.
 
 ## Verification

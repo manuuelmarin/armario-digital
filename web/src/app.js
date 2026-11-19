@@ -1,7 +1,7 @@
 import "./style.css";
 import { call } from "./engine";
 import { create, connect } from "./folder";
-import { remembered, read } from "./files";
+import { remembered, checked } from "./files";
 import { backup, daily, inspectZip, prune } from "./backup";
 import {
   state,
@@ -22,6 +22,7 @@ import {
   notice,
   status,
 } from "./ui";
+import { preparePhoto } from "./media";
 import { catalog, detail, garmentEditor, summary } from "./inventory";
 import { groups, trips } from "./groups";
 import { boards, weather } from "./extras";
@@ -100,18 +101,42 @@ async function makeDemo() {
   const root = await (
     await navigator.storage.getDirectory()
   ).getDirectoryHandle("armario-demo-" + crypto.randomUUID(), { create: true });
-  const s = await create(root, () =>
-    call("new", undefined, {
-      statements: [
-        [
-          "INSERT INTO locations(name) VALUES ('Madrid'),('Albacete'),('La Manga')",
-        ],
-        [
-          "INSERT INTO garments(name,category_id,location_id,color,price_cents) VALUES ('Camisa blanca',2,1,'Blanco',3500),('Chaqueta de viaje',6,2,'Azul',null)",
-        ],
+  const s = await create(root, async (dest) => {
+    const sql = [
+      [
+        "INSERT INTO locations(name) VALUES ('Madrid'),('Albacete'),('La Manga')",
       ],
-    }),
-  );
+    ];
+    for (const [id, name, category, location, color, price, file] of [
+      [1, "Camisa blanca", 2, 1, "Blanco", 3500, "camisa"],
+      [2, "Chaqueta de viaje", 6, 2, "Azul", null, "chaqueta"],
+    ]) {
+      const response = await fetch("./demo/" + file + ".png");
+      if (!response.ok)
+        throw Error("No se pudo abrir la ilustración de la demo.");
+      const photo = await preparePhoto(await response.blob());
+      sql.push(
+        statement("garments", {
+          id,
+          name,
+          category_id: category,
+          location_id: location,
+          color,
+          price_cents: price,
+        }),
+        statement("garment_images", {
+          ...photo.meta,
+          garment_id: id,
+          is_primary: 1,
+          sort_order: 1,
+        }),
+        ...photo.integrity,
+      );
+      for (const [name, data] of photo.files)
+        await checked(dest, "images/" + name, data);
+    }
+    return call("new", undefined, { statements: sql });
+  });
   s.demo = true;
   await activate(s, false);
 }
@@ -378,9 +403,9 @@ async function render() {
         link("Volver", "#/catalogo");
     else if (!state.session)
       html =
-        '<div class="welcome"><h1>Mi armario digital</h1><p>Guarda tus prendas y fotografías en una carpeta de tu ordenador. Puedes volver a abrirla desde este mismo enlace.</p>' +
+        '<div class="entry"><div class="welcome"><h1>Mi armario digital</h1><p>Guarda tus prendas y fotografías en una carpeta de tu ordenador. Puedes volver a abrirla desde este mismo enlace.</p>' +
         connectionControls() +
-        "</div>";
+        '</div><div class="sample-rail" aria-hidden="true"><img src="./demo/camisa.png" alt=""><img src="./demo/chaqueta.png" alt=""></div></div>';
     else if (route === "ajustes") html = await settings();
     else if (route === "prendas")
       html =
@@ -445,6 +470,11 @@ matchMedia("(prefers-color-scheme:dark)").addEventListener(
 );
 async function boot() {
   try {
+    if (location.hash === "#/demo") {
+      history.replaceState(null, "", "#/catalogo");
+      await makeDemo();
+      return;
+    }
     previous = await remembered();
     if (
       previous &&

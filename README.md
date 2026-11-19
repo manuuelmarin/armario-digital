@@ -1,30 +1,17 @@
 # Armario Digital
 
-Un armario visual para saber qué tienes, dónde está y qué llevarte de viaje. Se abre en el navegador y guarda el inventario y las fotos en tu ordenador.
+Abre la misma web en Edge o Chrome de Windows. Elige una carpeta del PC para guardar el catálogo SQLite, las fotos y las copias. Desde la web puedes organizar prendas por ubicación, crear outfits y preparar maletas con traslados explícitos.
 
-[Probar la demo](docs/GETTING_STARTED.md#probar-la-demo) · [Instalar](docs/GETTING_STARTED.md#instalar-y-abrir) · [Documentación](docs/README.md)
+[Abrir mi armario](https://manuuelmarin.github.io/armario-digital/) · [Ver la demo ficticia](https://manuuelmarin.github.io/armario-digital/#/demo) · [Traer mi armario anterior](docs/WINDOWS_PAGES.md)
 
-![Inventario de la demo con prendas ilustradas y filtros por ubicación, categoría y temporada](docs/assets/desktop.png)
+## Primer uso
 
-- **Armarios por ubicación.** Encuentra una prenda por su foto y consulta en qué armario la dejaste.
-- **Outfits.** Guarda combinaciones propias o pide sugerencias a la [IA local opcional](docs/LOCAL_AI.md).
-- **Maletas.** Añade prendas o un outfit entero, marca lo que ya has preparado y confirma el traslado cuando llegues.
+- **Si ya tienes prendas**, abre el programa anterior, crea un ZIP en **Ajustes → Crear y descargar copia** y sigue los pasos de **Traer una copia** en la web.
+- **Si empiezas de cero**, pulsa **Crear armario**, elige una carpeta vacía y crea tu primera ubicación en **Ajustes**.
+- **Para volver**, abre la misma URL con el mismo perfil. Puedes instalar la web como aplicación desde el navegador.
 
-## Empezar
+## Desarrollo
 
-En **Windows**, con Python 3.11 o posterior, [descarga el proyecto](https://github.com/manuuelmarin/armario-digital/archive/refs/heads/main.zip), extrae el ZIP y ejecuta `instalar.cmd` una vez. Después, abre `iniciar.cmd`.
+El cliente estático está en [web/](web/). Comparte las migraciones SQL y el formato de copia con la aplicación Python, que se conserva para exportar, recuperar y comprobar datos históricos. La distribución web incluye los flujos manuales. La IA queda aplazada.
 
-¿Prefieres verlo con ropa de ejemplo? Tras instalarlo, ejecuta `.\iniciar.cmd --demo` desde PowerShell en la carpeta del proyecto. La demo usa un inventario temporal. [Instrucciones para Linux y macOS](docs/GETTING_STARTED.md#linux-y-macos)
-
-## Mapa del repositorio
-
-| Ruta | Qué encontrarás |
-| --- | --- |
-| [`run.py`](run.py) | Arranque, demo y recuperación de copias |
-| [`armario/`](armario/) | Lógica del catálogo, outfits y maletas |
-| [`armario/templates/`](armario/templates/) · [`armario/static/`](armario/static/) | Pantallas, estilos y recursos visuales |
-| [`armario/migrations/`](armario/migrations/) | Evolución de la base de datos SQLite |
-| [`tests/`](tests/) · [`.github/workflows/`](.github/workflows/) | Pruebas y comprobaciones en Windows y Linux |
-| [`docs/`](docs/README.md) | Guías de uso, datos y arquitectura |
-
-[Guía de desarrollo](CONTRIBUTING.md) · [Historial de cambios](CHANGELOG.md)
+[Arquitectura y aceptación](docs/MIGRACION_PAGES.md) · [Uso en Windows](docs/WINDOWS_PAGES.md) · [Documentación histórica y técnica](docs/README.md) · [Historial](CHANGELOG.md)

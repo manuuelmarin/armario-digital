@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 import { preview } from "vite";
 import { mkdtemp, mkdir, rename, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -10,9 +10,12 @@ const run = promisify(execFile),
     channel = process.argv[2];
 if (process.platform !== "win32" || !["chrome", "msedge"].includes(channel))
     throw Error("Ejecuta este ensayo en Windows con chrome o msedge.");
+const documents = join(homedir(), "Documents");
+await mkdir(documents, { recursive: true });
+const sample = await mkdtemp(join(documents, "Armario-QA-"));
 const work = await mkdtemp(join(tmpdir(), "armario-native-")),
-    original = join(work, "Armario ficticio"),
-    moved = join(work, "Carpeta trasladada");
+    original = join(sample, "Armario ficticio"),
+    moved = join(sample, "Carpeta trasladada");
 const server = await preview({
     preview: { host: "127.0.0.1", port: 4182, strictPort: true },
 });
@@ -33,7 +36,7 @@ async function choose(p, button, path) {
     const cdp = await ctx.newCDPSession(p);
     await cdp.send("Page.setInterceptFileChooserDialog", { enabled: false });
     try {
-        await Promise.all([
+        const [driver] = await Promise.all([
             run(
                 "powershell.exe",
                 [
@@ -43,20 +46,24 @@ async function choose(p, button, path) {
                     "-Folder",
                     path,
                 ],
-                { timeout: 55000 },
+                { timeout: 85000 },
             ),
             p.getByRole("button", { name: button, exact: true }).click(),
         ]);
+        console.log(driver.stdout);
+        await p.getByRole("link", { name: "Añadir prenda" }).waitFor();
     } catch (e) {
         console.log(
             "Estado de la aplicación:",
-            await p.locator("#notice").textContent(),
+            await p
+                .locator("body")
+                .innerText({ timeout: 3000 })
+                .catch(() => "diálogo activo"),
         );
         throw e;
     } finally {
         await cdp.detach();
     }
-    await p.getByRole("link", { name: "Añadir prenda" }).waitFor();
 }
 try {
     await mkdir(original);
@@ -98,5 +105,11 @@ try {
 } finally {
     await ctx?.close();
     await server.close();
+    await rm(sample, {
+        force: true,
+        recursive: true,
+        maxRetries: 6,
+        retryDelay: 500,
+    });
     await rm(work, { force: true, recursive: true });
 }

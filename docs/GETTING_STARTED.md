@@ -1,5 +1,9 @@
 # Primeros pasos
 
+Para la versión de GitHub Pages consulta [uso e importación en Windows](WINDOWS_PAGES.md) y [arquitectura, pruebas y despliegue](MIGRACION_PAGES.md).
+
+## Referencia de la aplicación Python
+
 ## Instalar y abrir
 
 ### Windows

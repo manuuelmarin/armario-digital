@@ -33,6 +33,10 @@ def create_fixtures(target):
     target.mkdir(parents=True, exist_ok=True)
     for color in ("red", "green", "blue"):
         Image.new("RGB", (36, 24), color).save(target / f"{color}.jpg")
+    exif = Image.Exif()
+    exif[274] = 6
+    Image.new("RGB", (36, 24), "red").save(target / "rotada.jpg", exif=exif)
+    Image.new("RGBA", (32, 32), (10, 20, 30, 0)).save(target / "transparente.png")
     for version in range(1, 10):
         with tempfile.TemporaryDirectory() as temp:
             source = Path(temp)
