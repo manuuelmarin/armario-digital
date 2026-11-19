@@ -5,6 +5,8 @@ $path = Join-Path $Work 'armario-test.vhd'
 $script = Join-Path $Work 'volume.diskpart'
 if ($Detach) {
   if (!(Test-Path -LiteralPath $path)) { return }
+  $image=Get-DiskImage -ImagePath $path -ErrorAction SilentlyContinue
+  if ($image -and $image.Attached) { Dismount-DiskImage -ImagePath $path; return }
   @("select vdisk file=`"$path`"","detach vdisk") | Set-Content $script -Encoding ASCII
   diskpart /s $script | Out-Host
   return

@@ -42,13 +42,14 @@ jobs:
         with:
           path: web/dist
   native:
-    name: Selector de Windows (${{ matrix.channel }})
+    name: Windows ${{ matrix.channel }} · ${{ matrix.suite }}
     runs-on: windows-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         channel: [chrome, msedge]
+        suite: [carpeta, instalacion]
     defaults:
       run:
         working-directory: web
@@ -59,20 +60,23 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+      - if: matrix.suite == 'carpeta'
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12'
           cache: pip
-      - run: python -m pip install -r ../requirements.txt
+      - if: matrix.suite == 'carpeta'
+        run: python -m pip install -r ../requirements.txt
       - run: npm ci
-      - id: build
-        run: npm run build
-      - run: python tests/oracle.py fixtures .fixtures
-      - run: node tests/windows-native.mjs ${{ matrix.channel }}
+      - run: npm run build
+      - if: matrix.suite == 'carpeta'
+        run: python tests/oracle.py fixtures .fixtures
+      - if: matrix.suite == 'carpeta'
+        run: node tests/windows-native.mjs ${{ matrix.channel }}
         env:
           ARMARIO_TEST_VOLUME: "1"
       - name: Instalar y abrir desde el acceso directo de Windows
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        if: matrix.suite == 'instalacion'
         run: node tests/windows-install.mjs ${{ matrix.channel }}
   deploy:
     needs: [web, native]

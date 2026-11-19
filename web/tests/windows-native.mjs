@@ -52,6 +52,8 @@ async function profile(name) {
             "--disable-features=Translate",
         ],
     });
+    ctx.setDefaultTimeout(20000);
+    ctx.setDefaultNavigationTimeout(20000);
     const p = await ctx.newPage();
     p.setDefaultTimeout(30000);
     await p.bringToFront();
@@ -225,6 +227,7 @@ try {
     const origin = new URL(page.url()).origin;
     const settings = await ctx.newPage();
     const scheme = channel === "chrome" ? "chrome" : "edge";
+    console.log("Abriendo ajustes del navegador para revocar la escritura.");
     await settings.goto(
         scheme +
             "://settings/content/siteDetails?site=" +
@@ -244,12 +247,32 @@ try {
         );
     };
     await editing("block");
+    await page.bringToFront();
     await page.reload();
     await page.getByRole("button", { name: "Reconectar" }).waitFor();
-    await page.getByRole("button", { name: "Reconectar" }).click();
-    await page.waitForFunction(() =>
-        /Solo lectura|Permiso denegado/i.test(document.body.innerText),
-    );
+    const grant = await page.evaluate(async () => {
+        const db = await new Promise((ok, fail) => {
+            const req = indexedDB.open("armario-digital:conexion");
+            req.onsuccess = () => ok(req.result);
+            req.onerror = () => fail(req.error);
+        });
+        try {
+            const dir = await new Promise((ok, fail) => {
+                const req = db
+                    .transaction("preferencias")
+                    .objectStore("preferencias")
+                    .get("carpeta");
+                req.onsuccess = () => ok(req.result);
+                req.onerror = () => fail(req.error);
+            });
+            return dir.queryPermission({ mode: "readwrite" });
+        } finally {
+            db.close();
+        }
+    });
+    console.log("Permiso efectivo después del bloqueo:", grant);
+    assert.notEqual(grant, "granted");
+    await expect(page.locator("#connection")).toHaveText("Sin conectar");
     await editing("default");
     await settings.close();
     await page.goto(new URL("#/ajustes", page.url()).href);
@@ -275,12 +298,22 @@ try {
         retryDelay: 500,
     });
     if (diskTest) await volume("-Detach");
-    await rm(work, {
-        force: true,
-        recursive: true,
-        maxRetries: 12,
-        retryDelay: 400,
-    }).catch((e) =>
-        console.warn("Limpieza de archivos temporales:", e.message),
-    );
+    // A runner can keep a detached Windows disk image open briefly. Do not
+    // recursively retry removing the browser profiles under that file lock.
+    try {
+        if (diskTest)
+            await rm(join(work, "armario-test.vhd"), {
+                force: true,
+                maxRetries: 3,
+                retryDelay: 300,
+            });
+        await rm(work, {
+            force: true,
+            recursive: true,
+            maxRetries: 2,
+            retryDelay: 200,
+        });
+    } catch (e) {
+        console.warn("Limpieza de la carpeta temporal del ensayo:", e.message);
+    }
 }

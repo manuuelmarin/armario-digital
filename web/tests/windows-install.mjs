@@ -22,10 +22,13 @@ try {
         channel,
         headless: false,
     });
+    ctx.setDefaultTimeout(20000);
+    ctx.setDefaultNavigationTimeout(20000);
     const page = await ctx.newPage();
     await page.goto(base);
     await page.bringToFront();
-    await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    console.log("Service worker activo. Instalando desde el manifiesto.");
     cdp = await ctx.newCDPSession(page);
     await cdp.send("PWA.install", {
         manifestId: base,

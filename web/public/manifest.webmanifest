@@ -2,7 +2,7 @@
     "name": "Mi Armario Digital",
     "short_name": "Mi armario",
     "lang": "es",
-    "id": "./",
+    "id": "/armario-digital/",
     "start_url": "./#/catalogo",
     "scope": "./",
     "display": "standalone",

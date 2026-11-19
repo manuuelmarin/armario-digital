@@ -26,6 +26,11 @@ try {
         (await fetch("./manifest.webmanifest")).json(),
     );
     assert.equal(manifest.display, "standalone");
+    const cdp = await ctx.newCDPSession(page);
+    const installedManifest = (await cdp.send("Page.getAppManifest")).manifest;
+    assert.equal(installedManifest.id, base);
+    assert.equal(installedManifest.scope, base);
+    await cdp.detach();
     await page.getByRole("button", { name: "Probar la demo" }).click();
     await expect(
         page.getByRole("heading", { name: "Camisa blanca" }),
