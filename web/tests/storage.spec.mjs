@@ -252,3 +252,24 @@ test("T08 · ZIP Python migrado con foto nueva vuelve a Python con sus hashes", 
         { cwd: resolve(".") },
     );
 });
+test("T03 · una sesión cerrada no puede volver a escribir", async ({
+    page,
+}) => {
+    await openModules(page);
+    const message = await page.evaluate(async () => {
+        const s = await modules.create(await directory("cerrada"), () =>
+            modules.call("new"),
+        );
+        s.release();
+        try {
+            await modules.commit(
+                s,
+                { uuid: s.uuid, revision: 1, operation: crypto.randomUUID() },
+                [],
+            );
+        } catch (e) {
+            return e.message;
+        }
+    });
+    expect(message).toMatch(/solo lectura/);
+});

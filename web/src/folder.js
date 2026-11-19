@@ -22,6 +22,15 @@ async function writer(uuid) {
       .catch(reject),
   );
 }
+function session(root, uuid, head, unlock, damaged = false) {
+  const result = { root, uuid, head, damaged, release: null };
+  if (unlock)
+    result.release = () => {
+      result.release = null;
+      unlock();
+    };
+  return result;
+}
 async function generations(root, uuid) {
   const valid = [];
   let damaged = false;
@@ -127,7 +136,7 @@ export async function create(root, build) {
         marker,
         stringify({ format: "armario-digital", version: 1, uuid }),
       );
-      return { root, uuid, release, head };
+      return session(root, uuid, head, release);
     } catch (e) {
       release();
       throw e;
@@ -148,7 +157,7 @@ export async function connect(root, editable = true) {
   const release = editable ? await writer(m.uuid) : null;
   try {
     const { valid, damaged } = await generations(root, m.uuid);
-    return { root, uuid: m.uuid, head: valid[0], release, damaged };
+    return session(root, m.uuid, valid[0], release, damaged);
   } catch (e) {
     release?.();
     throw e;

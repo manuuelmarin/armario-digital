@@ -2,9 +2,12 @@ export async function testDirectory(context) {
     await context.addInitScript(() => {
         if (typeof FileSystemHandle === "undefined") return;
         FileSystemHandle.prototype.queryPermission = async () =>
-            window.permissionState || "granted";
+            sessionStorage.getItem("qa-permission") || "granted";
         FileSystemHandle.prototype.requestPermission = async () =>
-            (window.permissionState = "granted");
+            sessionStorage.getItem("qa-denied")
+                ? "denied"
+                : (sessionStorage.setItem("qa-permission", "granted"),
+                  "granted");
         window.showDirectoryPicker = async () => {
             const path = window.testTarget || "Armario de prueba";
             if (window.cancelPicker)

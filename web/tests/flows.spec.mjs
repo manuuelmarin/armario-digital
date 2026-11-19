@@ -199,3 +199,36 @@ test("T01/T03 · cancelar, carpeta ajena, una pestaña escritora y perfil sin re
     await reopened.goto("./");
     await expect(reopened.locator("#connection")).toContainText("Guardado");
 });
+test("T01/T11 · permiso revocado, reconexión y teclado a 320 píxeles", async ({
+    page,
+    context,
+}) => {
+    await testDirectory(context);
+    page.on("dialog", (d) => d.accept());
+    await page.goto("./");
+    await page.getByRole("button", { name: "Crear armario" }).click();
+    await expect(page.locator("#connection")).toContainText("Guardado");
+    await page.evaluate(() => {
+        sessionStorage.setItem("qa-permission", "denied");
+        sessionStorage.setItem("qa-denied", "true");
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Reconectar" }).click();
+    await expect(page.locator("#notice")).toContainText("Permiso denegado");
+    await expect(page.locator("#notice")).toBeFocused();
+    await page.evaluate(() => sessionStorage.removeItem("qa-denied"));
+    await page.getByRole("button", { name: "Reconectar" }).click();
+    await expect(page.locator("#connection")).toContainText("Guardado");
+    await page.setViewportSize({ width: 320, height: 700 });
+    const menu = page.getByRole("button", { name: "Menú" });
+    await menu.focus();
+    await page.keyboard.press("Enter");
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+    await expect(page.locator("main")).toBeFocused();
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+    ).toBe(true);
+});

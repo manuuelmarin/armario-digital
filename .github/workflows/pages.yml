@@ -68,6 +68,8 @@ jobs:
       - run: npm run build
       - run: python tests/oracle.py fixtures .fixtures
       - run: node tests/windows-native.mjs ${{ matrix.channel }}
+        env:
+          ARMARIO_TEST_VOLUME: "1"
   deploy:
     needs: [web, native]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
