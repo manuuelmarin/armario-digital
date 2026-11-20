@@ -1,6 +1,6 @@
 import { call } from "./engine";
 import { daily } from "./backup";
-import { commit } from "./folder";
+import { commit, StaleRevisionError } from "./folder";
 import { read } from "./files";
 export const state = {
   session: null,
@@ -204,7 +204,12 @@ export async function dispatch(el, key) {
   try {
     await callbacks.get(key)(el);
   } catch (e) {
-    if (e.name !== "AbortError") {
+    if (e instanceof StaleRevisionError) {
+      state.dirty = false;
+      await state.refresh();
+      notice(e.message);
+      status("No se pudo guardar");
+    } else if (e.name !== "AbortError") {
       notice(
         e.message?.includes("FOREIGN KEY")
           ? "Hay elementos vinculados. Quita la relación antes de eliminar."
@@ -240,26 +245,40 @@ document.addEventListener("input", (e) => {
   }
 });
 let urls = [];
+let photoObserver;
 export function releasePhotos() {
+  photoObserver?.disconnect();
   urls.forEach(URL.revokeObjectURL);
   urls = [];
 }
 export async function hydrate() {
   const root = state.session?.root;
-  await Promise.all(
-    [...document.querySelectorAll("img[data-photo]")].map(async (el) => {
-      try {
-        const f = await read(root, "images/" + el.dataset.photo);
-        if (!el.isConnected) return;
-        const url = URL.createObjectURL(f);
-        urls.push(url);
-        el.src = url;
-        el.onerror = () => el.replaceWith("Foto no disponible");
-      } catch {
-        if (el.isConnected) el.replaceWith("Foto no disponible");
+  async function loadPhoto(el) {
+    try {
+      const file = await read(root, "images/" + el.dataset.photo);
+      if (!el.isConnected) return;
+      const url = URL.createObjectURL(file);
+      urls.push(url);
+      el.onerror = () => el.replaceWith("Foto no disponible");
+      el.src = url;
+    } catch {
+      if (el.isConnected) el.replaceWith("Foto no disponible");
+    }
+  }
+  photoObserver = new IntersectionObserver((entries, observer) => {
+    for (const entry of entries)
+      if (entry.isIntersecting) {
+        observer.unobserve(entry.target);
+        void loadPhoto(entry.target);
       }
-    }),
-  );
+  });
+  const immediate = [];
+  for (const el of document.querySelectorAll("img[data-photo]")) {
+    if (el.closest("article.card a[href^='#/prendas/']"))
+      photoObserver.observe(el);
+    else immediate.push(loadPhoto(el));
+  }
+  await Promise.all(immediate);
 }
 export const seasons = ["Primavera", "Verano", "Otoño", "Invierno"];
 export const checks = (rows, chosen, name) =>

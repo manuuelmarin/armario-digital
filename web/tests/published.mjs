@@ -35,6 +35,7 @@ try {
     await expect(
         page.getByRole("heading", { name: "Camisa blanca" }),
     ).toBeVisible();
+    await page.locator(".cards img").first().scrollIntoViewIfNeeded();
     await expect
         .poll(() =>
             page

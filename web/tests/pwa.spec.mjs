@@ -51,10 +51,30 @@ test("T09/T11 · edición durante una actualización, reapertura offline y cach�
         .toBe("activated");
     await page.evaluate(async () => {
         await navigator.serviceWorker.ready;
-        await caches.open("finances-ensayo");
+    });
+    const sibling = await context.newPage();
+    await sibling.goto("http://127.0.0.1:4175/finances/");
+    await sibling.evaluate(async () => {
+        await navigator.serviceWorker.register("./sw.js");
+        await navigator.serviceWorker.ready;
     });
     await page.getByRole("link", { name: "Ajustes", exact: true }).click();
     await page.getByLabel("Nombre de ubicación").fill("Espacio A");
+    await page.getByRole("button", { name: "Crear ubicación" }).click();
+    await expect(
+        page.locator("summary", { hasText: "Espacio A" }),
+    ).toBeVisible();
+    await page.getByRole("link", { name: "Catálogo", exact: true }).click();
+    await page.getByRole("link", { name: "Añadir prenda" }).click();
+    await page.getByLabel("Nombre", { exact: true }).fill("Camisa de ensayo");
+    await page.getByRole("button", { name: "Guardar prenda" }).click();
+    await expect(
+        page.getByRole("heading", { name: "Camisa de ensayo" }),
+    ).toBeVisible();
+    const ficha = page.url();
+    await page.reload();
+    await page.getByRole("link", { name: "Editar prenda" }).click();
+    await page.getByLabel("Notas", { exact: true }).fill("Edición con A");
     await request.post("http://127.0.0.1:4175/choose-b");
     await page.evaluate(async () =>
         (await navigator.serviceWorker.ready).update(),
@@ -65,24 +85,42 @@ test("T09/T11 · edición durante una actualización, reapertura offline y cach�
     await expect(update).toBeVisible();
     await update.click();
     await expect(page.locator("#notice")).toContainText("Guarda el formulario");
-    await expect(page.getByLabel("Nombre de ubicación")).toHaveValue(
-        "Espacio A",
+    await expect(page.getByLabel("Notas", { exact: true })).toHaveValue(
+        "Edición con A",
     );
-    await page.getByRole("button", { name: "Crear ubicación" }).click();
+    await page.getByRole("button", { name: "Guardar prenda" }).click();
     await expect(
-        page.locator("summary", { hasText: "Espacio A" }),
+        page.getByText("Edición con A", { exact: false }),
     ).toBeVisible();
     await update.click();
     await expect(update).toHaveCount(0);
     expect(await page.evaluate(() => caches.has("finances-ensayo"))).toBe(true);
     await context.setOffline(true);
+    await sibling.reload();
+    await expect(
+        sibling.getByRole("heading", { name: "Finanzas de prueba" }),
+    ).toBeVisible();
+    expect(
+        await sibling.evaluate(
+            () => navigator.serviceWorker.controller.scriptURL,
+        ),
+    ).toMatch(/finances\/sw\.js$/);
+
+    await page.goto(ficha);
     await page.reload();
     await expect(
-        page.locator("summary", { hasText: "Espacio A" }),
+        page.getByText("Edición con A", { exact: false }),
     ).toBeVisible();
-    await page.getByLabel("Nombre de ubicación").fill("Espacio offline");
-    await page.getByRole("button", { name: "Crear ubicación" }).click();
+    await page.getByRole("link", { name: "Editar prenda" }).click();
+    await page
+        .getByLabel("Notas", { exact: true })
+        .fill("Edición offline con B");
+    await page.getByRole("button", { name: "Guardar prenda" }).click();
     await expect(
-        page.locator("summary", { hasText: "Espacio offline" }),
+        page.getByText("Edición offline con B", { exact: false }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+        page.getByText("Edición offline con B", { exact: false }),
     ).toBeVisible();
 });

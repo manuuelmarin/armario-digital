@@ -173,14 +173,8 @@ function restoreBox() {
       await activate(
         await create(root, async (dest) => (await inspectZip(blob, dest)).data),
       );
-      notice(
-        "Armario restaurado. " +
-          info.garments +
-          " prendas y " +
-          info.outfits +
-          " outfits.",
-      );
-      location.hash = "#/catalogo";
+      notice("Armario restaurado.");
+      location.hash = "#/restaurado";
     }) +
     action("Elegir otra copia", async () => {
       pendingBackup = null;
@@ -406,7 +400,20 @@ async function render() {
         '<div class="entry"><div class="welcome"><h1>Mi armario digital</h1><p>Guarda tus prendas y fotografías en una carpeta de tu ordenador. Puedes volver a abrirla desde este mismo enlace.</p>' +
         connectionControls() +
         '</div><div class="sample-rail" aria-hidden="true"><img src="./demo/camisa.png" alt=""><img src="./demo/chaqueta.png" alt=""></div></div>';
-    else if (route === "ajustes") html = await settings();
+    else if (route === "restaurado") {
+      const info = await call("inspect", state.session.head.data);
+      html =
+        "<h1>Armario listo</h1><p>Carpeta: " +
+        esc(state.session.root.name) +
+        "</p><p>" +
+        info.garments +
+        " prendas · " +
+        info.outfits +
+        " outfits · " +
+        info.files.length +
+        " archivos de imagen</p>" +
+        link("Abrir armario", "#/catalogo");
+    } else if (route === "ajustes") html = await settings();
     else if (route === "prendas")
       html =
         id === "nueva"

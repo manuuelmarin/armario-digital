@@ -273,3 +273,122 @@ test("T03 · una sesión cerrada no puede volver a escribir", async ({
     });
     expect(message).toMatch(/solo lectura/);
 });
+test("T02 · tras un conflicto se puede revisar la última versión y guardar", async ({
+    page,
+}) => {
+    const result = await page.evaluate(async () => {
+        const m = modules,
+            s = await m.create(await directory("conflicto"), () =>
+                m.call("new"),
+            );
+        const intent = () => ({
+            uuid: s.uuid,
+            revision: s.head.revision,
+            operation: crypto.randomUUID(),
+        });
+        const old = s.head,
+            stale = intent();
+        await m.commit(s, intent(), [
+            ["INSERT INTO locations(name) VALUES ('Actual')"],
+        ]);
+        s.head = old;
+        let conflict = false;
+        try {
+            await m.commit(s, stale, [["UPDATE locations SET name='Antigua'"]]);
+        } catch (e) {
+            conflict = e instanceof m.StaleRevisionError;
+        }
+        const current = await m.call("query", s.head.data, {
+            sql: "SELECT name FROM locations",
+        });
+        await m.commit(s, intent(), [["UPDATE locations SET name='Revisada'"]]);
+        s.release();
+        const reopened = await m.connect(s.root);
+        const final = await m.call("query", reopened.head.data, {
+            sql: "SELECT name FROM locations",
+        });
+        reopened.release();
+        return { conflict, current, final };
+    });
+    expect(result).toEqual({
+        conflict: true,
+        current: [{ name: "Actual" }],
+        final: [{ name: "Revisada" }],
+    });
+});
+test("T08 · repara la copia diaria vacía y conserva una copia dañada con datos", async ({
+    page,
+}) => {
+    const result = await page.evaluate(async () => {
+        const m = modules,
+            root = await directory("diaria-interrumpida"),
+            s = await m.create(root, () => m.call("new"));
+        const day = new Date().toISOString().slice(0, 10),
+            path = "backups/daily-" + day + ".zip";
+        await m.write(root, path, new Uint8Array());
+        await m.daily(s);
+        await m.inspectZip(await m.read(root, path));
+        s.release();
+        const reopened = await m.connect(root);
+        await m.write(root, path, "incompleta");
+        let error;
+        try {
+            await m.daily(reopened);
+        } catch (e) {
+            error = e.message;
+        }
+        reopened.release();
+        return { error, remaining: await (await m.read(root, path)).text() };
+    });
+    expect(result.error).toContain("fuera de backups");
+    expect(result.remaining).toBe("incompleta");
+});
+test("T04 · el catálogo lee cada miniatura cuando entra en pantalla", async ({
+    page,
+}) => {
+    await page.evaluate(async () => {
+        const ui = await import("/armario-digital/src/ui.js"),
+            root = await directory("miniaturas");
+        const canvas = new OffscreenCanvas(20, 20);
+        canvas.getContext("2d").fillRect(0, 0, 20, 20);
+        const photo = await canvas.convertToBlob({
+            type: "image/webp",
+        });
+        for (const name of ["primera", "segunda"])
+            await modules.write(root, "images/" + name + ".webp", photo);
+        ui.state.session = { root };
+        const getFile = FileSystemDirectoryHandle.prototype.getFileHandle;
+        window.reads = [];
+        FileSystemDirectoryHandle.prototype.getFileHandle = function (
+            name,
+            ...args
+        ) {
+            window.reads.push(name);
+            return getFile.call(this, name, ...args);
+        };
+        document.body.innerHTML = ["primera", "segunda"]
+            .map(
+                (name, i) =>
+                    '<article class="card" style="height:3000px"><a href="#/prendas/' +
+                    i +
+                    '"><img width="60" height="60" data-photo="' +
+                    name +
+                    '.webp"></a></article>',
+            )
+            .join("");
+        await ui.hydrate();
+    });
+    const images = page.locator("img");
+    await expect
+        .poll(() => images.first().evaluate((el) => el.naturalWidth))
+        .toBe(20);
+    expect(await page.evaluate(() => window.reads)).toEqual(["primera.webp"]);
+    await images.last().scrollIntoViewIfNeeded();
+    await expect
+        .poll(() => images.last().evaluate((el) => el.naturalWidth))
+        .toBe(20);
+    expect(await page.evaluate(() => window.reads)).toEqual([
+        "primera.webp",
+        "segunda.webp",
+    ]);
+});

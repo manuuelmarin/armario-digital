@@ -164,8 +164,18 @@ export async function daily(s) {
 }
 async function ensureDaily(s, day) {
   const existing = await optional(s.root, "backups/daily-" + day + ".zip");
-  if (existing) await inspectZip(existing);
-  else await backup(s, "daily");
+  if (existing?.size) {
+    try {
+      await inspectZip(existing);
+    } catch (error) {
+      throw Error(
+        "No se pudo verificar " +
+          existing.name +
+          ". Conserva ese ZIP fuera de backups y reintenta para generar la copia del día. " +
+          error.message,
+      );
+    }
+  } else await backup(s, "daily");
   s.daily = day;
 }
 export async function prune(s, keep) {

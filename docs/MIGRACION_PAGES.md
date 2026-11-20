@@ -2,6 +2,18 @@
 
 Guía de referencia revisada el 19 de noviembre de 2026. Rama `migracion/pages-carpeta-local`. Se consultó `main` en `6b19834925b5826509ef64b155c776ba76b77f14`. Las PR [#11](https://github.com/manuuelmarin/armario-digital/pull/11) y [#13](https://github.com/manuuelmarin/armario-digital/pull/13) seguían abiertas en `6de21286fd56b3901614b2ce88dbf7c94bad99e3` y `a7d0073d6899f3a7577f72f8930abab602d825a4`. Se portaron los contratos manuales desde esas referencias. [PR de migración y checks](https://github.com/manuuelmarin/armario-digital/pull/14)
 
+## Auditoría del 20 de noviembre
+
+La revisión partió de `main` en `1f97282`, después de integrar la PR #14. Las PR #11 y #13 seguían abiertas en los commits identificados arriba. Se cotejaron la matriz funcional, el formato de carpeta, los ZIP históricos, la recuperación y T01–T12 con la guía del 19 de noviembre.
+
+| Apartado de la guía | Diferencia encontrada y corrección | Comprobación |
+|---|---|---|
+| 5.3, revisión de partida | Tras un conflicto se vuelve a cargar la revisión confirmada y se explica que hay que revisar el cambio. | T02 rechaza la intención antigua, comprueba el valor que queda y guarda una edición nueva. |
+| 5.4, galería | El catálogo aplaza la lectura en disco hasta que la miniatura entra en pantalla. | T04 cuenta aperturas efectivas de archivos antes y después de desplazar la página. |
+| 4 y 6, copias | Un ZIP diario vacío se regenera. Un ZIP diario ilegible con contenido se conserva y se identifica por su nombre. Al restaurar, la web muestra la carpeta y los recuentos del catálogo confirmado. | T08 verifica el ZIP regenerado, la conservación de los bytes dañados y la apertura de la carpeta restaurada. |
+| 4, viajes y tiempo | El viaje rechaza una vuelta anterior a la salida. Una respuesta meteorológica con fechas imposibles o series de distinta longitud conserva la previsión anterior. | T07 y T10 ejercitan los formularios y comparan los datos mostrados. |
+| 8 y 9, actualización y accesibilidad | La prueba abre la ficha de una prenda por enlace profundo, guarda durante una actualización y edita y recarga la misma ficha sin red. | T09 y T11 comprueban también un segundo sitio offline con su propio trabajador, el zoom al 200 % y el contraste del texto principal y del botón primario en los dos temas. |
+
 ## Formatos y responsabilidades
 
 El build de Vite empaqueta el cliente, las nueve migraciones SQL originales, las fuentes locales, el trabajador y el WASM de la misma versión de sql.js. El acceso diario a la carpeta elegida pertenece a File System Access. IndexedDB recuerda la referencia a la carpeta. El navegador comprueba el permiso al reconectar. La caché de la PWA contiene únicamente los recursos estáticos enumerados por el build.
@@ -44,7 +56,7 @@ Los tres casos históricos de asistencia de #11 quedan aplazados con su implemen
 | Cliente y almacenamiento | `3f1dd1d` | TypeScript y compilación estática | SQLite, carpeta, flujos manuales, contenedores ZIP y PWA implementados. |
 | Compatibilidad y actualización | `6b82f58` | 16 pruebas de navegador y una de Node en Linux | Reapertura, rechazo de ZIP inválidos, migración de nueve esquemas, ida y vuelta y cambio de versión offline. |
 | Windows | `575248c` | CI sobre el oráculo Python y navegador | Se corrigió el cierre del lector SQLite antes de limpiar el destino temporal en Windows. |
-| Integridad y rendimiento | `0cee008` | Guardado con imágenes sintéticas y 30 ediciones por tamaño | Objetivos de rendimiento para 1.000 prendas cumplidos en la máquina de desarrollo. |
+| Integridad y rendimiento | `0cee008` | Guardado con imágenes sintéticas y 30 ediciones por tamaño | Medición del motor de almacenamiento en la máquina de desarrollo. |
 | Aceptación final | Último commit y checks de la PR enlazada | Suite de navegador, ensayo nativo en Windows y estado de publicación | El informe de entrega distingue el resultado de cada entorno. |
 
 ## Mediciones de almacenamiento
@@ -57,7 +69,7 @@ Chromium 153 en Linux 6.18.57 sobre AMD EPYC 9V74. Cada prenda tiene dos fotos s
 | 1000 | 2158592 | 6000 / 372512000 | 77 | 135 | 201 / 100 | 153 / 198 | 649 |
 | 5000 | 9994240 | 30000 / 1862560000 | 321 | 374 | 458 / 367 | 716 / 878 | 927 |
 
-Se conserva SQLite exportado por operación. Para 1.000 prendas la prueba de almacenamiento cumple los objetivos de 2 s de apertura y 500 ms de guardado p95. A 5.000 prendas la confirmación tarda más. Reproducir con `node tests/performance.mjs` desde `web/` tras instalar Chromium. El ensayo completo escribe más de 2 GB en un perfil temporal. El ensayo de 5.000 prendas mide el catálogo. Sus 30.000 archivos de imagen superan el límite de 20.002 entradas del ZIP histórico. Los tiempos corresponden a la máquina Linux descrita.
+Se conserva SQLite exportado por operación. Con 1.000 prendas, los 198 ms de p95 corresponden a la operación del motor y excluyen el formulario y la copia diaria. A 5.000 prendas la confirmación tarda más. Reproducir con `node tests/performance.mjs` desde `web/` tras instalar Chromium. El ensayo completo escribe más de 2 GB en un perfil temporal. El ensayo de 5.000 prendas mide el catálogo. Sus 30.000 archivos de imagen superan el límite de 20.002 entradas del ZIP histórico. Los tiempos corresponden a la máquina Linux descrita.
 
 ## Cobertura T01–T12
 

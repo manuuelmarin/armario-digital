@@ -1,6 +1,6 @@
 // Run from web/. Only synthetic files in the temporary Chromium profile are used.
 import { chromium } from "playwright";
-import { createServer } from "vite";
+import { createServer, preview } from "vite";
 import { tmpdir, cpus, platform, release } from "node:os";
 import { mkdtemp, rm, readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -10,13 +10,14 @@ const server = await createServer({
 });
 await server.listen();
 let ctx;
-async function openPage() {
+async function openPage(harness = true) {
     ctx = await chromium.launchPersistentContext(profile, {
         executablePath: process.env.BROWSER_EXECUTABLE || undefined,
         args: ["--disable-dev-shm-usage"],
         headless: true,
     });
     const page = await ctx.newPage();
+    if (!harness) return page;
     await page.goto("http://127.0.0.1:4183/armario-digital/tests/harness.html");
     await page.evaluate(async () => {
         const base = "/armario-digital/src/";
@@ -124,12 +125,146 @@ async function rss() {
             } catch {}
     return Math.round(kb / 1024);
 }
+// Medición de la interfaz compilada. OPFS sustituye únicamente al selector de Windows.
+async function measureInterface(page, n) {
+    await page.addInitScript((n) => {
+        window.showDirectoryPicker = async () => {
+            const folder = await (
+                await navigator.storage.getDirectory()
+            ).getDirectoryHandle("medicion-" + n);
+            window.permissionAt = performance.now();
+            return folder;
+        };
+        FileSystemHandle.prototype.queryPermission = async () => {
+            window.permissionAt = performance.now();
+            return "granted";
+        };
+        document.addEventListener(
+            "click",
+            (event) => {
+                if (
+                    event.target.closest("button")?.textContent ===
+                    "Guardar prenda"
+                ) {
+                    const start = performance.now(),
+                        status = document.querySelector("#connection");
+                    const observer = new MutationObserver(() => {
+                        if (status.textContent.endsWith(" · Guardado")) {
+                            window.confirmedMs = performance.now() - start;
+                            observer.disconnect();
+                        }
+                    });
+                    window.confirmedMs = null;
+                    observer.observe(status, { childList: true });
+                }
+            },
+            true,
+        );
+    }, n);
+    async function galleryTime() {
+        const first = page.locator(".cards img").first();
+        await first.waitFor({ state: "attached", timeout: 30000 });
+        await first.evaluate((img) => {
+            if (img.getBoundingClientRect().top >= innerHeight)
+                img.scrollIntoView({ block: "start" });
+        });
+        const measured = await page.waitForFunction(
+            () => {
+                const visible = [
+                    ...document.querySelectorAll(".cards img"),
+                ].filter((img) => {
+                    const box = img.getBoundingClientRect();
+                    return box.top < innerHeight && box.bottom > 0;
+                });
+                return (
+                    visible.length &&
+                    visible.every((img) => img.naturalWidth > 0) &&
+                    performance.now() - window.permissionAt
+                );
+            },
+            null,
+            { polling: "raf", timeout: 30000 },
+        );
+        return measured.jsonValue();
+    }
+    await page.goto("http://127.0.0.1:4183/armario-digital/");
+    await page.getByRole("button", { name: "Abrir mi carpeta" }).click();
+    const coldGalleryMs = await galleryTime();
+    console.error("Galería abierta en", coldGalleryMs, "ms");
+    const timings = [];
+    for (let i = 0; i < 32; i++) {
+        await page.evaluate(() => {
+            location.hash = "/prendas/1/editar";
+        });
+        await page
+            .getByLabel("Notas", { exact: true })
+            .fill("Edición ficticia " + i);
+        await page.getByRole("button", { name: "Guardar prenda" }).click();
+        await page.waitForFunction(
+            () => {
+                const status =
+                    document.querySelector("#connection").textContent;
+                if (
+                    status.includes("No se pudo guardar") ||
+                    status.includes("Solo lectura")
+                )
+                    throw Error(document.querySelector("#notice").textContent);
+                return Number.isFinite(window.confirmedMs);
+            },
+            null,
+            { timeout: 600000 },
+        );
+        timings.push(await page.evaluate(() => window.confirmedMs));
+        if (i === 0)
+            console.error("Primer guardado confirmado en", timings[0], "ms");
+        await page.getByRole("link", { name: "Editar prenda" }).waitFor();
+    }
+    await page.getByRole("link", { name: "Catálogo", exact: true }).click();
+    await page.reload();
+    const warmGalleryMs = await galleryTime();
+    const sorted = timings.slice(2).sort((a, b) => a - b);
+    return {
+        coldGalleryMs,
+        warmGalleryMs,
+        firstSaveMs: timings[0],
+        medianMs: (sorted[14] + sorted[15]) / 2,
+        p95Ms: sorted[28],
+        ua: await page.evaluate(() => navigator.userAgent),
+    };
+}
+const interfaceArg = process.argv.find(
+    (arg) => arg === "--interfaz" || arg.startsWith("--interfaz="),
+);
+const interfaceSize = Number(interfaceArg?.split("=")[1] ?? 1000);
+if (interfaceArg && ![100, 1000].includes(interfaceSize))
+    throw Error(
+        "La copia diaria de esta fixture admite ensayos de interfaz con 100 o 1000 prendas.",
+    );
+let published;
 try {
-    for (const n of [100, 1000, 5000]) {
+    for (const n of interfaceArg ? [interfaceSize] : [100, 1000, 5000]) {
         let page = await openPage();
         const size = await seed(page, n);
         await ctx.close();
         ctx = null;
+        if (interfaceArg) {
+            await server.close();
+            published = await preview({
+                preview: { host: "127.0.0.1", port: 4183, strictPort: true },
+            });
+            page = await openPage(false);
+            const result = await measureInterface(page, n);
+            console.log(
+                JSON.stringify({
+                    n,
+                    ...size,
+                    ...result,
+                    cpu: cpus()[0].model,
+                    os: platform() + " " + release(),
+                }),
+            );
+            break;
+        }
         page = await openPage();
         let peak = 0;
         const timer = setInterval(async () => {
@@ -224,6 +359,7 @@ try {
     }
 } finally {
     await ctx?.close();
-    await server.close();
+    if (published) await published.close();
+    else await server.close();
     await rm(profile, { recursive: true, force: true });
 }

@@ -20,6 +20,22 @@ http.createServer(async (req, res) => {
     }
     const prefix = "/armario-digital/",
         url = new URL(req.url, "http://localhost");
+    if (url.pathname === "/finances/") {
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.end(
+            "<!doctype html><title>Prueba de coexistencia</title><h1>Finanzas de prueba</h1>",
+        );
+        return;
+    }
+    if (url.pathname === "/finances/sw.js") {
+        res.writeHead(200, { "Content-Type": "text/javascript" });
+        res.end(`
+            self.addEventListener("install", event => event.waitUntil(caches.open("finances-ensayo").then(cache=>cache.add("./"))));
+            self.addEventListener("activate", event=>event.waitUntil(clients.claim()));
+            self.addEventListener("fetch", event => event.respondWith(caches.match(event.request).then(hit=>hit||fetch(event.request))));
+        `);
+        return;
+    }
     if (!url.pathname.startsWith(prefix)) {
         console.warn("Recurso de prueba ausente", url.pathname);
         res.writeHead(404);
