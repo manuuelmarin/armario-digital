@@ -1,6 +1,7 @@
 import "./style.css";
 import { call } from "./engine";
 import { create, connect } from "./folder";
+import { models, VISION_MODEL, TEXT_MODEL } from "./ollama";
 import { remembered, checked } from "./files";
 import { backup, daily, inspectZip, prune } from "./backup";
 import {
@@ -326,6 +327,25 @@ async function settings() {
       status("Sin conectar");
       location.hash = "#/catalogo";
       await render();
+    }) +
+    "<h2>Conexión de IA local</h2><p>Comprueba Ollama y los modelos instalados en este equipo.</p>" +
+    action("Comprobar Ollama", async () => {
+      try {
+        const available = await models();
+        const stateOf = (model) =>
+          available[model] ? "disponible" : "no instalado";
+        notice(
+          "Ollama conectado. Visión: " +
+            stateOf(VISION_MODEL) +
+            ". Texto: " +
+            stateOf(TEXT_MODEL) +
+            ".",
+        );
+      } catch {
+        throw Error(
+          "No se pudo conectar con Ollama. Comprueba que esté iniciado y que el navegador tenga permiso de acceso local.",
+        );
+      }
     }) +
     '<h2>Apariencia</h2><div class="actions">' +
     ["sistema", "claro", "oscuro"]
