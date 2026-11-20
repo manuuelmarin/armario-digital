@@ -335,6 +335,12 @@ export async function trips(id) {
       };
       if (values.origin_id === values.destination_id)
         throw Error("Elige un origen y un destino distintos.");
+      if (
+        values.starts_on &&
+        values.ends_on &&
+        values.ends_on < values.starts_on
+      )
+        throw Error("La vuelta no puede ser anterior a la salida.");
       if (fresh) values.id = key;
       await save(
         [statement("trips", values, fresh ? null : id)],

@@ -2,11 +2,11 @@ import {
   ZipReader,
   ZipWriter,
   BlobReader,
-  BlobWriter,
+  Uint8ArrayReader,
   configure,
 } from "@zip.js/zip.js/index-native.js";
 import { call, sha } from "./engine";
-import { bytes, read, write, checked, optional } from "./files";
+import { access, bytes, read, write, checked, optional } from "./files";
 import { decoded } from "./media";
 configure({ useWebWorkers: false, useCompressionStream: true });
 const imagePath = /^images\/[a-f0-9]{32}(?:-preview|-thumb)?\.webp$/;
@@ -119,37 +119,88 @@ async function saveOriginal(root, name, blob) {
   await inspectZip(file);
   return file;
 }
-export async function backup(session, prefix = "manual") {
+export async function backup(
+  session,
+  prefix = "manual",
+  day = new Date().toISOString().slice(0, 10),
+) {
   const { data, revision } = session.head,
-    info = await call("inspect", data),
-    files = {};
-  const zip = new ZipWriter(new BlobWriter("application/zip"), { level: 0 });
-  async function add(name, blob) {
-    files[name] = await sha(await blob.arrayBuffer());
-    await zip.add(name, new BlobReader(blob));
-  }
-  await add("wardrobe.sqlite", new Blob([data]));
-  for (const name of info.files)
-    await add("images/" + name, await read(session.root, "images/" + name));
-  const manifest = {
-    format: 1,
-    schema_version: info.version,
-    created_at: new Date().toISOString(),
-    revision,
-    files,
-  };
-  await zip.add(
-    "manifest.json",
-    new BlobReader(new Blob([JSON.stringify(manifest)])),
-  );
-  const result = await zip.close();
-  await inspectZip(result);
-  const day = new Date().toISOString().slice(0, 10);
+    info = await call("inspect", data);
+  if (info.files.length > 20000)
+    throw Error(
+      "El ZIP histórico admite hasta 20.000 archivos de imagen. Conserva una copia de la carpeta completa.",
+    );
   const name =
     prefix === "daily"
       ? "daily-" + day + ".zip"
       : "manual-" + day + "-" + crypto.randomUUID() + ".zip";
-  return saveOriginal(session.root, name, result);
+  const handle = await access(session.root, "backups/" + name, true),
+    stream = await handle.createWritable();
+  let parts = [],
+    size = 0,
+    total = 0;
+  async function flush() {
+    if (!size) return;
+    await stream.write(new Blob(parts));
+    parts = [];
+    size = 0;
+  }
+  // Agrupar las escrituras pequeñas sin construir el ZIP completo en memoria.
+  const output = new WritableStream({
+    async write(chunk) {
+      parts.push(chunk.slice());
+      size += chunk.byteLength;
+      if (size >= 1024 * 1024) await flush();
+    },
+    close: flush,
+  });
+  try {
+    const zip = new ZipWriter(output, { level: 0 }),
+      files = {};
+    async function add(path, buffer) {
+      total += buffer.byteLength;
+      if (total > max) throw Error("La copia excede 4 GiB descomprimidos.");
+      await zip.add(path, new Uint8ArrayReader(buffer));
+    }
+    files["wardrobe.sqlite"] = await sha(data);
+    await add("wardrobe.sqlite", data);
+    for (const file of info.files) {
+      const path = "images/" + file,
+        photo = await bytes(await read(session.root, path));
+      const hash = await sha(photo);
+      if (hash !== info.hashes[file])
+        throw Error("La foto difiere de su huella original: " + file);
+      files[path] = hash;
+      await add(path, photo);
+    }
+    const manifest = new TextEncoder().encode(
+      JSON.stringify({
+        format: 1,
+        schema_version: info.version,
+        created_at: new Date().toISOString(),
+        revision,
+        files,
+      }),
+    );
+    if (manifest.length > manifestMax)
+      throw Error("El manifiesto excede 4 MiB.");
+    await add("manifest.json", manifest);
+    await zip.close();
+    await stream.close();
+    const file = await handle.getFile();
+    await inspectZip(file);
+    return file;
+  } catch (error) {
+    await stream.abort().catch(() => {});
+    throw (
+      error ||
+      Error(
+        "No se pudo completar la copia " +
+          name +
+          ". Comprueba el espacio disponible y reintenta.",
+      )
+    );
+  }
 }
 export async function daily(s) {
   const day = new Date().toISOString().slice(0, 10);
@@ -164,8 +215,18 @@ export async function daily(s) {
 }
 async function ensureDaily(s, day) {
   const existing = await optional(s.root, "backups/daily-" + day + ".zip");
-  if (existing) await inspectZip(existing);
-  else await backup(s, "daily");
+  if (existing?.size) {
+    try {
+      await inspectZip(existing);
+    } catch (error) {
+      throw Error(
+        "No se pudo verificar " +
+          existing.name +
+          ". Conserva ese ZIP fuera de backups y reintenta para generar la copia del día. " +
+          error.message,
+      );
+    }
+  } else await backup(s, "daily", day);
   s.daily = day;
 }
 export async function prune(s, keep) {

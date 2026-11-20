@@ -256,6 +256,18 @@ export async function weather() {
           const raw = await res.text();
           if (raw.length > 200000) throw Error();
           const { daily: d } = JSON.parse(raw);
+          if (
+            !Array.isArray(d.time) ||
+            ![
+              d.temperature_2m_max,
+              d.temperature_2m_min,
+              d.precipitation_probability_max,
+            ].every(
+              (values) =>
+                Array.isArray(values) && values.length === d.time.length,
+            )
+          )
+            throw Error();
           rows = d.time.map((date, i) => ({
             date,
             max: d.temperature_2m_max[i],
@@ -268,6 +280,8 @@ export async function weather() {
             rows.some(
               (v) =>
                 !/^\d{4}-\d{2}-\d{2}$/.test(v.date) ||
+                new Date(v.date + "T00:00:00Z").toISOString().slice(0, 10) !==
+                  v.date ||
                 ![v.min, v.max, v.rain].every(Number.isFinite) ||
                 v.rain < 0 ||
                 v.rain > 100,

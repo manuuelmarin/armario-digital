@@ -114,49 +114,62 @@ test("T02 · interrupción y reintento antes y después de rotar las dos generac
     expect(result.rows).toEqual([{ name: "Dos", location_id: 2, moves: 1 }]);
     expect(result.damaged).toBe(true);
 });
-test("T03 · creación concurrente y restauración comparten el bloqueo inicial", async ({
-    page,
-    context,
-}) => {
-    const tab = await context.newPage();
-    await openModules(tab);
-    const fixture = (await readFile(".fixtures/v9.zip")).toString("base64");
-    const run = (p, restore) =>
-        p.evaluate(
-            async ({ fixture, restore }) => {
-                const m = modules,
-                    root = await directory("compartido");
-                try {
-                    window.session = await m.create(root, async (dest) =>
-                        restore
-                            ? (
-                                  await m.inspectZip(
-                                      new Blob([
-                                          Uint8Array.fromBase64(fixture),
-                                      ]),
-                                      dest,
-                                  )
-                              ).data
-                            : m.call("new"),
+for (const restoreFirst of [false, true])
+    test(
+        "T03 · bloqueo inicial de " +
+            (restoreFirst ? "restauración y creación" : "dos creaciones"),
+        async ({ page, context }) => {
+            const tab = await context.newPage();
+            await openModules(tab);
+            const fixture = (await readFile(".fixtures/v9.zip")).toString(
+                "base64",
+            );
+            const run = (p, restore) =>
+                p.evaluate(
+                    async ({ fixture, restore }) => {
+                        const m = modules,
+                            root = await directory("compartido");
+                        try {
+                            window.session = await m.create(
+                                root,
+                                async (dest) =>
+                                    restore
+                                        ? (
+                                              await m.inspectZip(
+                                                  new Blob([
+                                                      Uint8Array.fromBase64(
+                                                          fixture,
+                                                      ),
+                                                  ]),
+                                                  dest,
+                                              )
+                                          ).data
+                                        : m.call("new"),
+                            );
+                            return "writer";
+                        } catch (e) {
+                            return e.message;
+                        }
+                    },
+                    { fixture, restore },
+                );
+            const results = await Promise.all([
+                run(tab, restoreFirst),
+                run(page, false),
+            ]);
+            expect(results.filter((x) => x === "writer")).toHaveLength(1);
+            expect(results.join(" ")).toContain("contiene archivos");
+            const loser = results[0] === "writer" ? page : tab;
+            expect(
+                await loser.evaluate(async () => {
+                    const s = await modules.connect(
+                        await directory("compartido"),
                     );
-                    return "writer";
-                } catch (e) {
-                    return e.message;
-                }
-            },
-            { fixture, restore },
-        );
-    const results = await Promise.all([run(tab, true), run(page, false)]);
-    expect(results.filter((x) => x === "writer")).toHaveLength(1);
-    expect(results.join(" ")).toContain("contiene archivos");
-    const loser = results[0] === "writer" ? page : tab;
-    expect(
-        await loser.evaluate(async () => {
-            const s = await modules.connect(await directory("compartido"));
-            return [s.head.revision, s.release === null];
-        }),
-    ).toEqual([1, true]);
-});
+                    return [s.head.revision, s.release === null];
+                }),
+            ).toEqual([1, true]);
+        },
+    );
 test("T06 · copias inválidas se rechazan sin activar el destino", async ({
     page,
 }) => {
@@ -272,4 +285,193 @@ test("T03 · una sesión cerrada no puede volver a escribir", async ({
         }
     });
     expect(message).toMatch(/solo lectura/);
+});
+test("T02 · tras un conflicto se puede revisar la última versión y guardar", async ({
+    page,
+}) => {
+    const result = await page.evaluate(async () => {
+        const m = modules,
+            s = await m.create(await directory("conflicto"), () =>
+                m.call("new"),
+            );
+        const intent = () => ({
+            uuid: s.uuid,
+            revision: s.head.revision,
+            operation: crypto.randomUUID(),
+        });
+        const old = s.head,
+            stale = intent();
+        await m.commit(s, intent(), [
+            ["INSERT INTO locations(name) VALUES ('Actual')"],
+        ]);
+        s.head = old;
+        let conflict = false;
+        try {
+            await m.commit(s, stale, [["UPDATE locations SET name='Antigua'"]]);
+        } catch (e) {
+            conflict = e instanceof m.StaleRevisionError;
+        }
+        const current = await m.call("query", s.head.data, {
+            sql: "SELECT name FROM locations",
+        });
+        await m.commit(s, intent(), [["UPDATE locations SET name='Revisada'"]]);
+        s.release();
+        const reopened = await m.connect(s.root);
+        const final = await m.call("query", reopened.head.data, {
+            sql: "SELECT name FROM locations",
+        });
+        reopened.release();
+        return { conflict, current, final };
+    });
+    expect(result).toEqual({
+        conflict: true,
+        current: [{ name: "Actual" }],
+        final: [{ name: "Revisada" }],
+    });
+});
+test("T08 · repara la copia diaria vacía y conserva una copia dañada con datos", async ({
+    page,
+}) => {
+    const result = await page.evaluate(async () => {
+        const m = modules,
+            root = await directory("diaria-interrumpida"),
+            s = await m.create(root, () => m.call("new"));
+        const day = new Date().toISOString().slice(0, 10),
+            path = "backups/daily-" + day + ".zip";
+        await m.write(root, path, new Uint8Array());
+        await m.daily(s);
+        await m.inspectZip(await m.read(root, path));
+        s.release();
+        const reopened = await m.connect(root);
+        await m.write(root, path, "incompleta");
+        let error;
+        try {
+            await m.daily(reopened);
+        } catch (e) {
+            error = e.message;
+        }
+        reopened.release();
+        return { error, remaining: await (await m.read(root, path)).text() };
+    });
+    expect(result.error).toContain("fuera de backups");
+    expect(result.remaining).toBe("incompleta");
+});
+test("T04 · el catálogo lee cada miniatura cuando entra en pantalla", async ({
+    page,
+}) => {
+    await page.evaluate(async () => {
+        const ui = await import("/armario-digital/src/ui.js"),
+            root = await directory("miniaturas");
+        const canvas = new OffscreenCanvas(20, 20);
+        canvas.getContext("2d").fillRect(0, 0, 20, 20);
+        const photo = await canvas.convertToBlob({
+            type: "image/webp",
+        });
+        for (const name of ["primera", "segunda"])
+            await modules.write(root, "images/" + name + ".webp", photo);
+        ui.state.session = { root };
+        const getFile = FileSystemDirectoryHandle.prototype.getFileHandle;
+        window.reads = [];
+        FileSystemDirectoryHandle.prototype.getFileHandle = function (
+            name,
+            ...args
+        ) {
+            window.reads.push(name);
+            return getFile.call(this, name, ...args);
+        };
+        document.body.innerHTML = ["primera", "segunda"]
+            .map(
+                (name, i) =>
+                    '<article class="card" style="height:3000px"><a href="#/prendas/' +
+                    i +
+                    '"><img width="60" height="60" data-photo="' +
+                    name +
+                    '.webp"></a></article>',
+            )
+            .join("");
+        await ui.hydrate();
+    });
+    const images = page.locator("img");
+    await expect
+        .poll(() => images.first().evaluate((el) => el.naturalWidth))
+        .toBe(20);
+    expect(await page.evaluate(() => window.reads)).toEqual(["primera.webp"]);
+    await images.last().scrollIntoViewIfNeeded();
+    await expect
+        .poll(() => images.last().evaluate((el) => el.naturalWidth))
+        .toBe(20);
+    expect(await page.evaluate(() => window.reads)).toEqual([
+        "primera.webp",
+        "segunda.webp",
+    ]);
+});
+test("T08 · copia diaria con más de 16 MiB de fotos y nueva edición", async ({
+    page,
+}) => {
+    const result = await page.evaluate(async () => {
+        const m = modules,
+            root = await directory("copia-grande");
+        const canvas = new OffscreenCanvas(512, 512),
+            ctx = canvas.getContext("2d"),
+            pixels = ctx.createImageData(512, 512);
+        let seed = 1;
+        for (let i = 0; i < pixels.data.length; i += 4) {
+            seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
+            pixels.data[i] = seed >>> 24;
+            pixels.data[i + 1] = (seed >>> 16) & 255;
+            pixels.data[i + 2] = (seed >>> 8) & 255;
+            pixels.data[i + 3] = 255;
+        }
+        ctx.putImageData(pixels, 0, 0);
+        const photo = await canvas.convertToBlob({
+            type: "image/webp",
+            quality: 0.95,
+        });
+        const hash = await m.sha(await photo.arrayBuffer());
+        const s = await m.create(root, async (dest) => {
+            const statements = [
+                ["INSERT INTO locations(name) VALUES ('Prueba')"],
+            ];
+            for (let id = 1; id <= 48; id++) {
+                const stem = id.toString(16).padStart(32, "0"),
+                    filename = stem + ".webp",
+                    thumb = stem + "-thumb.webp";
+                statements.push(
+                    [
+                        "INSERT INTO garments(id,name,location_id,category_id) VALUES(?,?,1,1)",
+                        [id, "Prenda " + id],
+                    ],
+                    [
+                        "INSERT INTO garment_images(garment_id,filename,thumbnail,digest) VALUES(?,?,?,?)",
+                        [id, filename, thumb, hash],
+                    ],
+                );
+                for (const name of [filename, thumb]) {
+                    await m.write(dest, "images/" + name, photo);
+                    statements.push([
+                        "INSERT INTO image_integrity(name,sha256) VALUES(?,?)",
+                        [name, hash],
+                    ]);
+                }
+            }
+            return m.call("new", null, { statements });
+        });
+        await m.daily(s);
+        const file = await m.read(root, "backups/daily-" + s.daily + ".zip");
+        const { info } = await m.inspectZip(file);
+        await m.commit(
+            s,
+            { uuid: s.uuid, revision: 1, operation: crypto.randomUUID() },
+            [["UPDATE garments SET favorite=1 WHERE id=1"]],
+        );
+        s.release();
+        return {
+            count: info.garments,
+            size: file.size,
+            revision: s.head.revision,
+        };
+    });
+    expect(result.count).toBe(48);
+    expect(result.size).toBeGreaterThan(16 * 1024 ** 2);
+    expect(result.revision).toBe(2);
 });

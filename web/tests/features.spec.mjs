@@ -90,12 +90,12 @@ test("T04/T07/T10 · grupos, colecciones compartidas, tableros y meteorología e
         "https://api.open-meteo.com/v1/forecast?*",
         async (route) => {
             count++;
-            if (count === 1)
+            if (count <= 3)
                 await route.fulfill({
                     json: {
                         daily: {
-                            time: ["2026-11-19"],
-                            temperature_2m_max: [18],
+                            time: [count === 2 ? "2026-02-30" : "2026-11-19"],
+                            temperature_2m_max: count === 3 ? [30, 31] : [18],
                             temperature_2m_min: [12],
                             precipitation_probability_max: [20],
                         },
@@ -111,10 +111,14 @@ test("T04/T07/T10 · grupos, colecciones compartidas, tableros y meteorología e
     await expect(
         page.getByRole("heading", { name: "Lugar ficticio" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Actualizar previsión" }).click();
-    await expect(page.getByRole("status")).toContainText("Se conserva");
-    await expect(page.getByText("12 a 18", { exact: false })).toBeVisible();
-    expect(count).toBe(2);
+    for (const attempt of [2, 3, 4]) {
+        await page
+            .getByRole("button", { name: "Actualizar previsión" })
+            .click();
+        await expect(page.getByRole("status")).toContainText("Se conserva");
+        await expect(page.getByText("12 a 18", { exact: false })).toBeVisible();
+        expect(count).toBe(attempt);
+    }
     await page.goto("./#/inspiracion/1");
     await expect(page.locator(".pin")).toHaveCSS("width", "220px");
     expect(requests.some((u) => u.includes("example.org"))).toBe(false);
@@ -317,6 +321,15 @@ test("T04 · reparar un máster y una miniatura ausentes y reabrir la ficha", as
             const root = await (
                 await navigator.storage.getDirectory()
             ).getDirectoryHandle("Armario de prueba");
+            if (variant === ".webp") {
+                const backups = await root.getDirectoryHandle("backups");
+                for await (const [name, handle] of backups.entries()) {
+                    if (!name.startsWith("daily-")) continue;
+                    const writable = await handle.createWritable();
+                    await writable.write("copia ficticia dañada");
+                    await writable.close();
+                }
+            }
             await (
                 await root.getDirectoryHandle("images")
             ).removeEntry(base + variant);
@@ -329,6 +342,9 @@ test("T04 · reparar un máster y una miniatura ausentes y reabrir la ficha", as
             .getByLabel("Sustituir foto")
             .setInputFiles(resolve(".fixtures/blue.jpg"));
         await page.getByRole("button", { name: "Reparar o sustituir" }).click();
+        await expect(page.getByRole("status")).toContainText(
+            "Foto reparada. La copia diaria requiere revisión.",
+        );
         await expect(page.locator(".cover img")).toHaveCount(1);
         await page.reload();
         await expect

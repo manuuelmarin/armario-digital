@@ -163,6 +163,7 @@ export async function connect(root, editable = true) {
     throw e;
   }
 }
+export class StaleRevisionError extends Error {}
 export function commit(s, intent, statements, media = []) {
   const writing = (s.queue || Promise.resolve()).then(() =>
     commitOne(s, intent, statements, media),
@@ -182,10 +183,12 @@ async function commitOne(s, intent, statements, media) {
     s.head = base;
     return;
   }
-  if (intent.revision !== base.revision || s.head.hash !== base.hash)
-    throw Error(
-      "La revisión ha cambiado. Abre de nuevo la carpeta y revisa la operación.",
+  if (intent.revision !== base.revision || s.head.hash !== base.hash) {
+    s.head = base;
+    throw new StaleRevisionError(
+      "La revisión ha cambiado. Se muestran los datos actuales. Revisa el cambio antes de volver a guardarlo.",
     );
+  }
   const data = await call("write", base.data, { statements });
   for (const [name, buffer] of media) {
     const existing = await optional(s.root, "images/" + name);

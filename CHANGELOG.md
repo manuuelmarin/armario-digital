@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-20 — auditoría de la migración
+
+- El catálogo lee las miniaturas cuando entran en pantalla. Un formulario basado en una revisión antigua vuelve a mostrar los datos confirmados y explica cómo reintentar.
+- Los ZIP se escriben en la carpeta por bloques y se releen para verificar su contenido. Se evita el fallo que podía dejar el primer guardado en curso al crear una copia con muchas fotos.
+- Se recupera una copia diaria vacía tras una escritura interrumpida. La aplicación identifica una copia dañada con contenido para poder apartarla y crear otra.
+- Se validan el orden de las fechas de viaje y las series de la previsión. La última previsión válida sigue disponible si el servicio devuelve fechas imposibles o series incompletas.
+- Se comprueba una actualización de la aplicación mientras se edita una prenda y su reapertura y edición sin red. [Matriz de pruebas y mediciones](docs/MIGRACION_PAGES.md)
+
 ## 2026-11-19 — cliente web y carpeta local
 
 - Distribución en GitHub Pages con flujos manuales de inventario, outfits, maletas y organización.

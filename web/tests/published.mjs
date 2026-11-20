@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { testDirectory } from "./helpers.mjs";
 import { expect } from "@playwright/test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -14,7 +15,9 @@ const ctx = await chromium.launchPersistentContext(profile, {
     viewport: { width: 1365, height: 865 },
 });
 try {
+    await testDirectory(ctx);
     const page = await ctx.newPage();
+    page.on("dialog", (dialog) => dialog.accept());
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     const res = await page.goto(base, { waitUntil: "networkidle" });
@@ -35,6 +38,7 @@ try {
     await expect(
         page.getByRole("heading", { name: "Camisa blanca" }),
     ).toBeVisible();
+    await page.locator(".cards img").first().scrollIntoViewIfNeeded();
     await expect
         .poll(() =>
             page
@@ -66,9 +70,26 @@ try {
     await expect(
         page.getByRole("heading", { name: "Camisa blanca" }),
     ).toBeVisible();
+    await page.setViewportSize({ width: 1365, height: 865 });
+    await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+    await page
+        .getByRole("button", { name: "Crear armario", exact: true })
+        .click();
+    await expect(page.locator("#connection")).toContainText(
+        "Armario de prueba",
+    );
+    await page.getByLabel("Nombre de ubicación").fill("Ubicación ficticia");
+    await page.getByRole("button", { name: "Crear ubicación" }).click();
+    await expect(
+        page.locator("summary", { hasText: "Ubicación ficticia" }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+        page.locator("summary", { hasText: "Ubicación ficticia" }),
+    ).toBeVisible();
     assert.deepEqual(errors, []);
     console.log(
-        "URL, recursos de producción, SQLite WASM, dos fotos, manifest, vista móvil y demo sin conexión verificados en",
+        "URL, recursos de producción, SQLite WASM, dos fotos, manifest, vista móvil, demo y guardado en carpeta ficticia sin conexión verificados en",
         base,
     );
 } finally {

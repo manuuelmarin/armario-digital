@@ -98,6 +98,13 @@ test("T01/T04/T07/T08/T10/T11 · catálogo, portada, traslado explícito y copia
     await page.getByRole("link", { name: "Maletas", exact: true }).click();
     await page.getByRole("link", { name: "Crear maleta" }).click();
     await page.getByLabel("Nombre del viaje").fill("Viaje de prueba");
+    await page.getByLabel("Salida", { exact: true }).fill("2026-11-20");
+    await page.getByLabel("Vuelta", { exact: true }).fill("2026-11-19");
+    await page.getByRole("button", { name: "Guardar viaje" }).click();
+    await expect(page.getByRole("status")).toContainText(
+        "anterior a la salida",
+    );
+    await page.getByLabel("Vuelta", { exact: true }).fill("2026-11-20");
     await page.getByRole("button", { name: "Guardar viaje" }).click();
     await expect(
         page.getByRole("heading", { name: "Viaje de prueba" }),
@@ -163,6 +170,13 @@ test("T01/T04/T07/T08/T10/T11 · catálogo, portada, traslado explícito y copia
         .getByRole("button", { name: "Restaurar en una carpeta vacía" })
         .click();
     await expect(page.locator("#connection")).toContainText("Restaurado");
+    await expect(
+        page.getByRole("heading", { name: "Armario listo" }),
+    ).toBeVisible();
+    await expect(
+        page.getByText(/4 prendas · .*archivos de imagen/),
+    ).toBeVisible();
+    await page.getByRole("link", { name: "Abrir armario" }).click();
     await expect(page.locator(".cards article")).toHaveCount(3);
     await page.reload();
     await expect(
@@ -238,4 +252,44 @@ test("T01/T11 · permiso revocado, reconexión y teclado a 320 píxeles", async 
             () => document.documentElement.scrollWidth <= innerWidth,
         ),
     ).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.evaluate(() => {
+        document.documentElement.style.zoom = "2";
+    });
+    for (const theme of ["Oscuro", "Claro"]) {
+        await page.getByRole("button", { name: theme, exact: true }).click();
+        await expect(page.locator("html")).toHaveAttribute(
+            "data-theme",
+            theme.toLowerCase(),
+        );
+        const measured = await page.evaluate(() => {
+            const luminance = (rgb) => {
+                const values = rgb
+                    .match(/\d+/g)
+                    .map((v) => Number(v) / 255)
+                    .map((v) =>
+                        v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4,
+                    );
+                return (
+                    values[0] * 0.2126 + values[1] * 0.7152 + values[2] * 0.0722
+                );
+            };
+            return {
+                width: document.documentElement.scrollWidth,
+                viewport: innerWidth,
+                contrast: [
+                    document.body,
+                    document.querySelector("button.primary"),
+                ].map((el) => {
+                    const style = getComputedStyle(el),
+                        a = luminance(style.color),
+                        b = luminance(style.backgroundColor);
+                    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+                }),
+            };
+        });
+        expect(measured.width).toBeLessThanOrEqual(measured.viewport);
+        for (const ratio of measured.contrast)
+            expect(ratio).toBeGreaterThanOrEqual(4.5);
+    }
 });
