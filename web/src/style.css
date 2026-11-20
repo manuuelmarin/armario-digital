@@ -363,3 +363,7 @@ td {
 nav:empty {
   display: none;
 }
+
+.catalog-bulk:has(details:not([open])) > .actions {
+  display: none;
+}
