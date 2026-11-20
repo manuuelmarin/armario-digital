@@ -483,6 +483,7 @@ export async function detail(id) {
       .join(" · ") +
     '</p><div class="actions">' +
     link("Editar prenda", "#/prendas/" + id + "/editar") +
+    link("Descripción de IA", "#/prendas/" + id + "/descripcion") +
     action(g.favorite ? "Quitar de favoritas" : "Marcar favorita", () =>
       save([
         ["UPDATE garments SET favorite=? WHERE id=?", [1 - g.favorite, id]],
