@@ -56,3 +56,19 @@ test("Ollama identifica los modelos admitidos", async () => {
         globalThis.fetch = original;
     }
 });
+
+test("Ollama rechaza dos versiones ambiguas del mismo modelo", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () =>
+        Response.json({
+            models: [
+                { name: TEXT_MODEL, digest: "uno" },
+                { name: TEXT_MODEL, digest: "dos" },
+            ],
+        });
+    try {
+        await assert.rejects(models(), /duplicados/);
+    } finally {
+        globalThis.fetch = original;
+    }
+});

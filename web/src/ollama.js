@@ -53,7 +53,14 @@ export async function models() {
   if (!Array.isArray(result.models)) throw Error("Lista de modelos inválida.");
   const found = {};
   for (const item of result.models) {
-    if (![VISION_MODEL, TEXT_MODEL].includes(item.name)) continue;
+    if (
+      !item ||
+      typeof item !== "object" ||
+      ![VISION_MODEL, TEXT_MODEL].includes(item.name)
+    )
+      continue;
+    if (Object.hasOwn(found, item.name))
+      throw Error("La lista de modelos contiene duplicados.");
     if (
       typeof item.digest !== "string" ||
       !item.digest ||

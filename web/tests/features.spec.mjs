@@ -356,3 +356,35 @@ test("T04 · reparar un máster y una miniatura ausentes y reabrir la ficha", as
             .toBe(true);
     }
 });
+
+test("IA local · comprobar modelos desde ajustes sin transmitir fotos", async ({
+    page,
+    context,
+}) => {
+    await testDirectory(context);
+    page.on("dialog", (d) => d.accept());
+    const requests = [];
+    await page.route("http://127.0.0.1:11434/**", async (route) => {
+        requests.push({
+            url: route.request().url(),
+            method: route.request().method(),
+        });
+        await route.fulfill({
+            headers: { "Access-Control-Allow-Origin": "*" },
+            json: {
+                models: [
+                    { name: "qwen3-vl:4b-instruct-q4_K_M", digest: "ficticio" },
+                ],
+            },
+        });
+    });
+    await page.goto("./");
+    await page.getByRole("button", { name: "Crear armario" }).click();
+    await page.getByRole("link", { name: "Ajustes", exact: true }).click();
+    await page.getByRole("button", { name: "Comprobar Ollama" }).click();
+    await expect(page.getByRole("status")).toContainText("Visión: disponible");
+    await expect(page.getByRole("status")).toContainText("Texto: no instalado");
+    expect(requests).toEqual([
+        { url: "http://127.0.0.1:11434/api/tags", method: "GET" },
+    ]);
+});
