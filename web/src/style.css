@@ -44,6 +44,7 @@ nav a {
 }
 a {
   color: inherit;
+  overflow-wrap: anywhere;
 }
 nav a[aria-current],
 button.primary {
@@ -93,6 +94,8 @@ button,
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 button:disabled {
   opacity: 0.65;
