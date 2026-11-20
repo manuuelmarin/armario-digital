@@ -37,76 +37,92 @@ async function openPage(harness = true) {
     });
     return page;
 }
-async function seed(page, n) {
-    return page.evaluate(async (n) => {
-        const canvas = new OffscreenCanvas(512, 512),
-            c = canvas.getContext("2d"),
-            pixels = c.createImageData(512, 512);
-        let rand = 1024;
-        for (let i = 0; i < pixels.data.length; i += 4) {
-            rand = (Math.imul(rand, 1664525) + 1013904223) >>> 0;
-            const value = rand >>> 26;
-            pixels.data.set([100 + value, 75 + value, 60 + value, 255], i);
-        }
-        c.putImageData(pixels, 0, 0);
-        const variants = [];
-        for (const edge of [512, 384, 256]) {
-            const v = new OffscreenCanvas(edge, edge);
-            v.getContext("2d").drawImage(canvas, 0, 0, edge, edge);
-            const buf = new Uint8Array(
-                await (
-                    await v.convertToBlob({ type: "image/webp", quality: 0.88 })
-                ).arrayBuffer(),
-            );
-            variants.push({ buf, hash: await m.sha(buf) });
-        }
-        const sql = [["INSERT INTO locations(name) VALUES('Ficticia')"]];
-        const root = await folder(n);
-        let batch = [],
-            fileBytes = 0;
-        const s = await m.create(root, async (dest) => {
-            const dir = await dest.getDirectoryHandle("images", {
-                create: true,
-            });
-            for (let g = 1; g <= n; g++) {
-                sql.push([
-                    "INSERT INTO garments(id,name,category_id,location_id) VALUES(?,?,2,1)",
-                    [g, "Prenda ficticia " + g],
-                ]);
-                for (let p = 0; p < 2; p++) {
-                    const token = (g * 2 + p).toString(16).padStart(32, "0"),
-                        names = ["", "-preview", "-thumb"].map(
-                            (s) => token + s + ".webp",
-                        );
+async function seed(page, n, historicalPhotos = false) {
+    return page.evaluate(
+        async ({ n, historicalPhotos }) => {
+            const canvas = new OffscreenCanvas(512, 512),
+                c = canvas.getContext("2d"),
+                pixels = c.createImageData(512, 512);
+            let rand = 1024;
+            for (let i = 0; i < pixels.data.length; i += 4) {
+                rand = (Math.imul(rand, 1664525) + 1013904223) >>> 0;
+                const value = rand >>> 26;
+                pixels.data.set([100 + value, 75 + value, 60 + value, 255], i);
+            }
+            c.putImageData(pixels, 0, 0);
+            const variants = [];
+            for (const edge of [512, 384, 256]) {
+                const v = new OffscreenCanvas(edge, edge);
+                v.getContext("2d").drawImage(canvas, 0, 0, edge, edge);
+                const buf = new Uint8Array(
+                    await (
+                        await v.convertToBlob({
+                            type: "image/webp",
+                            quality: 0.88,
+                        })
+                    ).arrayBuffer(),
+                );
+                variants.push({ buf, hash: await m.sha(buf) });
+            }
+            const sql = [["INSERT INTO locations(name) VALUES('Ficticia')"]];
+            const root = await folder(n);
+            let batch = [],
+                fileBytes = 0;
+            const s = await m.create(root, async (dest) => {
+                const dir = await dest.getDirectoryHandle("images", {
+                    create: true,
+                });
+                for (let g = 1; g <= n; g++) {
                     sql.push([
-                        "INSERT INTO garment_images(garment_id,filename,preview,thumbnail,digest,is_primary,sort_order) VALUES(?,?,?,?,?,?,?)",
-                        [g, ...names, token, p === 0 ? 1 : 0, p],
+                        "INSERT INTO garments(id,name,category_id,location_id) VALUES(?,?,2,1)",
+                        [g, "Prenda ficticia " + g],
                     ]);
-                    for (let j = 0; j < 3; j++) {
-                        fileBytes += variants[j].buf.length;
+                    for (let p = 0; p < 2; p++) {
+                        const token = (g * 2 + p)
+                                .toString(16)
+                                .padStart(32, "0"),
+                            names = ["", "-preview", "-thumb"].map(
+                                (s) => token + s + ".webp",
+                            );
                         sql.push([
-                            "INSERT INTO image_integrity VALUES(?,?)",
-                            [names[j], variants[j].hash],
+                            "INSERT INTO garment_images(garment_id,filename,preview,thumbnail,digest,is_primary,sort_order) VALUES(?,?,?,?,?,?,?)",
+                            [
+                                g,
+                                names[0],
+                                historicalPhotos ? null : names[1],
+                                names[2],
+                                token,
+                                p === 0 ? 1 : 0,
+                                p,
+                            ],
                         ]);
-                        batch.push(m.write(dir, names[j], variants[j].buf));
-                    }
-                    if (batch.length >= 24) {
-                        await Promise.all(batch);
-                        batch = [];
+                        for (const j of historicalPhotos ? [0, 2] : [0, 1, 2]) {
+                            fileBytes += variants[j].buf.length;
+                            sql.push([
+                                "INSERT INTO image_integrity VALUES(?,?)",
+                                [names[j], variants[j].hash],
+                            ]);
+                            batch.push(m.write(dir, names[j], variants[j].buf));
+                        }
+                        if (batch.length >= 24) {
+                            await Promise.all(batch);
+                            batch = [];
+                        }
                     }
                 }
-            }
-            await Promise.all(batch);
-            return m.call("new", null, { statements: sql });
-        });
-        s.release();
-        return {
-            catalogBytes: s.head.length,
-            photos: n * 2,
-            files: n * 6,
-            imageBytes: fileBytes,
-        };
-    }, n);
+                await Promise.all(batch);
+                return m.call("new", null, { statements: sql });
+            });
+            s.release();
+            return {
+                catalogBytes: s.head.length,
+                photos: n * 2,
+                files: n * (historicalPhotos ? 4 : 6),
+                imageBytes: fileBytes,
+            };
+        },
+        { n, historicalPhotos },
+    );
 }
 async function rss() {
     if (platform() !== "linux") return null;
@@ -236,15 +252,15 @@ const interfaceArg = process.argv.find(
     (arg) => arg === "--interfaz" || arg.startsWith("--interfaz="),
 );
 const interfaceSize = Number(interfaceArg?.split("=")[1] ?? 1000);
-if (interfaceArg && ![100, 1000].includes(interfaceSize))
-    throw Error(
-        "La copia diaria de esta fixture admite ensayos de interfaz con 100 o 1000 prendas.",
-    );
+if (interfaceArg && ![100, 1000, 5000].includes(interfaceSize))
+    throw Error("Elige 100, 1000 o 5000 prendas para el ensayo de interfaz.");
 let published;
 try {
     for (const n of interfaceArg ? [interfaceSize] : [100, 1000, 5000]) {
         let page = await openPage();
-        const size = await seed(page, n);
+        // Con 5.000 prendas y dos fotos por prenda, el formato histórico admite
+        // sus 20.000 másteres y miniaturas, con la vista previa opcional ausente.
+        const size = await seed(page, n, Boolean(interfaceArg) && n === 5000);
         await ctx.close();
         ctx = null;
         if (interfaceArg) {

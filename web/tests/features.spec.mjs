@@ -321,6 +321,15 @@ test("T04 · reparar un máster y una miniatura ausentes y reabrir la ficha", as
             const root = await (
                 await navigator.storage.getDirectory()
             ).getDirectoryHandle("Armario de prueba");
+            if (variant === ".webp") {
+                const backups = await root.getDirectoryHandle("backups");
+                for await (const [name, handle] of backups.entries()) {
+                    if (!name.startsWith("daily-")) continue;
+                    const writable = await handle.createWritable();
+                    await writable.write("copia ficticia dañada");
+                    await writable.close();
+                }
+            }
             await (
                 await root.getDirectoryHandle("images")
             ).removeEntry(base + variant);
@@ -333,6 +342,9 @@ test("T04 · reparar un máster y una miniatura ausentes y reabrir la ficha", as
             .getByLabel("Sustituir foto")
             .setInputFiles(resolve(".fixtures/blue.jpg"));
         await page.getByRole("button", { name: "Reparar o sustituir" }).click();
+        await expect(page.getByRole("status")).toContainText(
+            "Foto reparada. La copia diaria requiere revisión.",
+        );
         await expect(page.locator(".cover img")).toHaveCount(1);
         await page.reload();
         await expect

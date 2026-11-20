@@ -392,3 +392,73 @@ test("T04 · el catálogo lee cada miniatura cuando entra en pantalla", async ({
         "segunda.webp",
     ]);
 });
+test("T08 · copia diaria con más de 16 MiB de fotos y nueva edición", async ({
+    page,
+}) => {
+    const result = await page.evaluate(async () => {
+        const m = modules,
+            root = await directory("copia-grande");
+        const canvas = new OffscreenCanvas(512, 512),
+            ctx = canvas.getContext("2d"),
+            pixels = ctx.createImageData(512, 512);
+        let seed = 1;
+        for (let i = 0; i < pixels.data.length; i += 4) {
+            seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
+            pixels.data[i] = seed >>> 24;
+            pixels.data[i + 1] = (seed >>> 16) & 255;
+            pixels.data[i + 2] = (seed >>> 8) & 255;
+            pixels.data[i + 3] = 255;
+        }
+        ctx.putImageData(pixels, 0, 0);
+        const photo = await canvas.convertToBlob({
+            type: "image/webp",
+            quality: 0.95,
+        });
+        const hash = await m.sha(await photo.arrayBuffer());
+        const s = await m.create(root, async (dest) => {
+            const statements = [
+                ["INSERT INTO locations(name) VALUES ('Prueba')"],
+            ];
+            for (let id = 1; id <= 48; id++) {
+                const stem = id.toString(16).padStart(32, "0"),
+                    filename = stem + ".webp",
+                    thumb = stem + "-thumb.webp";
+                statements.push(
+                    [
+                        "INSERT INTO garments(id,name,location_id,category_id) VALUES(?,?,1,1)",
+                        [id, "Prenda " + id],
+                    ],
+                    [
+                        "INSERT INTO garment_images(garment_id,filename,thumbnail,digest) VALUES(?,?,?,?)",
+                        [id, filename, thumb, hash],
+                    ],
+                );
+                for (const name of [filename, thumb]) {
+                    await m.write(dest, "images/" + name, photo);
+                    statements.push([
+                        "INSERT INTO image_integrity(name,sha256) VALUES(?,?)",
+                        [name, hash],
+                    ]);
+                }
+            }
+            return m.call("new", null, { statements });
+        });
+        await m.daily(s);
+        const file = await m.read(root, "backups/daily-" + s.daily + ".zip");
+        const { info } = await m.inspectZip(file);
+        await m.commit(
+            s,
+            { uuid: s.uuid, revision: 1, operation: crypto.randomUUID() },
+            [["UPDATE garments SET favorite=1 WHERE id=1"]],
+        );
+        s.release();
+        return {
+            count: info.garments,
+            size: file.size,
+            revision: s.head.revision,
+        };
+    });
+    expect(result.count).toBe(48);
+    expect(result.size).toBeGreaterThan(16 * 1024 ** 2);
+    expect(result.revision).toBe(2);
+});

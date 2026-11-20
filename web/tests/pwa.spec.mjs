@@ -123,4 +123,17 @@ test("T09/T11 · edición durante una actualización, reapertura offline y cach�
     await expect(
         page.getByText("Edición offline con B", { exact: false }),
     ).toBeVisible();
+    await context.setOffline(false);
+    await request.post("http://127.0.0.1:4175/choose-a");
+    await page.evaluate(async () =>
+        (await navigator.serviceWorker.ready).update(),
+    );
+    await expect(update).toBeVisible();
+    await update.click();
+    await expect(update).toHaveCount(0);
+    await context.setOffline(true);
+    await page.reload();
+    await expect(
+        page.getByText("Edición offline con B", { exact: false }),
+    ).toBeVisible();
 });

@@ -176,16 +176,24 @@ export async function save(
   };
   if (el) el._intent = intent;
   status("Guardando");
-  if (!repair) await daily(s);
+  if (!repair && s.daily !== new Date().toISOString().slice(0, 10)) {
+    notice("Preparando o verificando la copia diaria antes de guardar…");
+    await daily(s);
+  }
   await commit(s, intent, statements, files);
-  if (repair)
-    await daily(s).catch((e) =>
-      notice("Foto reparada. La copia diaria requiere revisión. " + e.message),
-    );
+  let message = "Cambios guardados.";
+  if (repair) {
+    try {
+      await daily(s);
+    } catch (e) {
+      message =
+        "Foto reparada. La copia diaria requiere revisión. " + e.message;
+    }
+  }
   if (el) delete el._intent;
   state.dirty = false;
   status("Guardado");
-  notice("Cambios guardados.");
+  notice(message);
   if (destination && location.hash !== destination) location.hash = destination;
   else await state.refresh();
 }

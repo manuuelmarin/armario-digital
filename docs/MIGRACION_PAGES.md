@@ -10,7 +10,7 @@ La revisión partió de `main` en `1f97282`, después de integrar la PR #14. Las
 |---|---|---|
 | 5.3, revisión de partida | Tras un conflicto se vuelve a cargar la revisión confirmada y se explica que hay que revisar el cambio. | T02 rechaza la intención antigua, comprueba el valor que queda y guarda una edición nueva. |
 | 5.4, galería | El catálogo aplaza la lectura en disco hasta que la miniatura entra en pantalla. | T04 cuenta aperturas efectivas de archivos antes y después de desplazar la página. |
-| 4 y 6, copias | Un ZIP diario vacío se regenera. Un ZIP diario ilegible con contenido se conserva y se identifica por su nombre. Al restaurar, la web muestra la carpeta y los recuentos del catálogo confirmado. | T08 verifica el ZIP regenerado, la conservación de los bytes dañados y la apertura de la carpeta restaurada. |
+| 4 y 6, copias | El generador escribe el ZIP por bloques en la carpeta y reabre el archivo para verificarlo. Un ZIP diario vacío se regenera. Un ZIP diario ilegible con contenido se conserva y se identifica por su nombre. Al restaurar, la web muestra la carpeta y los recuentos del catálogo confirmado. | T08 verifica una copia diaria de más de 16 MiB y una edición posterior, el ZIP regenerado, la conservación de los bytes dañados y la apertura de la carpeta restaurada. |
 | 4, viajes y tiempo | El viaje rechaza una vuelta anterior a la salida. Una respuesta meteorológica con fechas imposibles o series de distinta longitud conserva la previsión anterior. | T07 y T10 ejercitan los formularios y comparan los datos mostrados. |
 | 8 y 9, actualización y accesibilidad | La prueba abre la ficha de una prenda por enlace profundo, guarda durante una actualización y edita y recarga la misma ficha sin red. | T09 y T11 comprueban también un segundo sitio offline con su propio trabajador, el zoom al 200 % y el contraste del texto principal y del botón primario en los dos temas. |
 
@@ -71,6 +71,17 @@ Chromium 153 en Linux 6.18.57 sobre AMD EPYC 9V74. Cada prenda tiene dos fotos s
 
 Se conserva SQLite exportado por operación. Con 1.000 prendas, los 198 ms de p95 corresponden a la operación del motor y excluyen el formulario y la copia diaria. A 5.000 prendas la confirmación tarda más. Reproducir con `node tests/performance.mjs` desde `web/` tras instalar Chromium. El ensayo completo escribe más de 2 GB en un perfil temporal. El ensayo de 5.000 prendas mide el catálogo. Sus 30.000 archivos de imagen superan el límite de 20.002 entradas del ZIP histórico. Los tiempos corresponden a la máquina Linux descrita.
 
+### Medición desde la interfaz compilada
+
+Chromium 153 en Linux 6.18.57, Intel Xeon Platinum 8573C. Se creó un perfil temporal con un directorio OPFS y fotos WebP ficticias. Tras reiniciar Chromium, el ensayo abre la carpeta por el botón de la aplicación. Mide desde la concesión de acceso hasta que las miniaturas visibles se han cargado, desplazando la primera a la vista si hace falta. La apertura en caliente se mide tras recargar la página. El tiempo de guardado va desde el clic en **Guardar prenda** hasta **Guardado**, después de verificar la escritura. Las 30 ediciones medidas siguen a dos de calentamiento.
+
+| Prendas | Archivos de imagen | Galería fría / caliente | Primer guardado con copia diaria en curso | Mediana / p95 de 30 guardados |
+|---:|---:|---:|---:|---:|
+| 100 | 600 | 220 / 267 ms | 8,4 s | 69 / 90 ms |
+| 1.000 | 6.000 | 342 / 841 ms | 120,2 s | 223 / 403 ms |
+
+Con 1.000 prendas se cumplen en este ensayo los presupuestos de 2 s para la primera página y 500 ms para el p95 después del calentamiento. La copia diaria inicial domina el primer guardado con 372.512.000 bytes de imágenes. Reproducir con `npm run build` y `node tests/performance.mjs --interfaz=1000` desde `web/`. Para 5.000 prendas, el ensayo de interfaz utiliza dos fotos por prenda con máster y miniatura históricos y sin la vista previa opcional. Las 20.000 imágenes caben en el límite del ZIP. La tabla del motor usa las tres variantes por foto.
+
 ## Cobertura T01–T12
 
 | Caso | Comprobación reproducible |
@@ -83,7 +94,7 @@ Se conserva SQLite exportado por operación. Con 1.000 prendas, los 198 ms de p9
 | T06 | Rechazo de ZIP incompatibles, corruptos o con datos relacionales incompletos. |
 | T07 | Recorrido por catálogo, colecciones, etiquetas, outfit, maleta, tablero y resumen. Se verifican precios conocidos y listados por ubicación tras el traslado explícito. |
 | T08 | JPEG nuevo convertido en tres variantes. Reimportación en Python y en web con cotejo de hashes y relaciones. |
-| T09 | Dos compilaciones servidas en la subruta del proyecto. Se conserva un formulario abierto durante la actualización y se guarda otra edición sin conexión. |
+| T09 | Dos compilaciones servidas en la subruta del proyecto. Se conserva la edición de una prenda durante la actualización, se guarda otra edición sin conexión y se vuelve a la versión anterior del código conservando esa edición. |
 | T10 | Captura de tráfico con datos ficticios, incluida la consulta meteorológica explícita y la conservación de la última respuesta tras un fallo. |
 | T11 | Foco de teclado, reconexión, ancho de 320 px, menú móvil y conservación de una caché de otra aplicación. |
 | T12 | Ensayos en escritorio Windows con dos navegadores instalados, selector nativo, carpeta NTFS, perfil nuevo, permisos, volumen virtual de 64 MiB y acceso directo. Cada resultado se registra por navegador en los checks de la PR. |
