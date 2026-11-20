@@ -293,3 +293,29 @@ test("T01/T11 · permiso revocado, reconexión y teclado a 320 píxeles", async 
             expect(ratio).toBeGreaterThanOrEqual(4.5);
     }
 });
+test("Catálogo · la edición en lote guía la selección y confirma el cambio", async ({
+    page,
+    context,
+}) => {
+    await testDirectory(context);
+    page.on("dialog", (dialog) => dialog.accept());
+    await page.goto("./");
+    await page.getByRole("button", { name: "Probar la demo" }).click();
+    const submit = page.getByRole("button", {
+        name: "Confirmar cambios en la selección",
+    });
+    await expect(submit).toBeHidden();
+    await page.getByText("Editar selección", { exact: true }).click();
+    await expect(submit).toBeVisible();
+    await page.getByLabel("Seleccionar Camisa blanca").check();
+    await submit.click();
+    await expect(page.getByRole("status")).toContainText(
+        "Elige al menos un cambio",
+    );
+    await page.getByLabel("Nueva categoría").selectOption({ label: "Punto" });
+    await submit.click();
+    await expect(page.getByRole("status")).toContainText("Cambios guardados");
+    await expect(
+        page.locator("article", { hasText: "Camisa blanca" }),
+    ).toContainText("Punto");
+});

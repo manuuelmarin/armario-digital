@@ -208,8 +208,9 @@ export async function catalog(p) {
                   [id, +val(f, "tag")],
                 ]);
             }
+            if (!sql.length)
+              throw Error("Elige al menos un cambio para la selección.");
             if (
-              sql.length &&
               confirm(
                 "¿Aplicar los cambios a las " +
                   chosen.length +
@@ -218,6 +219,7 @@ export async function catalog(p) {
             )
               await save(sql);
           },
+          "catalog-bulk",
         )
       : "<p>No hay prendas que coincidan.</p>") +
     '<div class="actions">' +
