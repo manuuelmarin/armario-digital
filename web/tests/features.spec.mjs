@@ -388,3 +388,104 @@ test("IA local · comprobar modelos desde ajustes sin transmitir fotos", async (
         { url: "http://127.0.0.1:11434/api/tags", method: "GET" },
     ]);
 });
+test("IA local · revisar y guardar perfil con foto ficticia", async ({
+    page,
+    context,
+}) => {
+    await testDirectory(context);
+    page.on("dialog", (d) => d.accept());
+    const profile = {
+        description: "Camisa ficticia",
+        identification: { type: "camisa", subtype: "" },
+        palette: { main: "azul", secondary: "", contrast: "bajo" },
+        pattern: { kind: "liso", distribution: "" },
+        shape: {
+            silhouette: "recta",
+            sleeves: "largas",
+            leg_length: "no_visible",
+        },
+        surface: { texture: "", finish: "" },
+        details: "",
+        aesthetics: { styles: ["casual"], formality: 2 },
+    };
+    await page.route("http://127.0.0.1:11434/**", async (route) => {
+        const url = route.request().url();
+        await route.fulfill({
+            headers: { "Access-Control-Allow-Origin": "*" },
+            json: url.endsWith("/api/tags")
+                ? {
+                      models: [
+                          {
+                              name: "qwen3-vl:4b-instruct-q4_K_M",
+                              digest: "hash-ficticio",
+                          },
+                      ],
+                  }
+                : {
+                      model: "qwen3-vl:4b-instruct-q4_K_M",
+                      done: true,
+                      message: { content: JSON.stringify(profile) },
+                  },
+        });
+    });
+    await page.goto("./");
+    await page.getByRole("button", { name: "Probar la demo" }).click();
+    await page.getByRole("heading", { name: "Camisa blanca" }).click();
+    await page.getByRole("link", { name: "Descripción de IA" }).click();
+    await page.getByRole("button", { name: "Analizar foto principal" }).click();
+    await expect(page.getByLabel("Descripción", { exact: true })).toHaveValue(
+        "Camisa ficticia",
+    );
+    await page
+        .getByLabel("Descripción", { exact: true })
+        .fill("Camisa revisada");
+    await page.getByRole("button", { name: "Guardar descripción" }).click();
+    await page.getByRole("link", { name: "Descripción de IA" }).click();
+    await expect(page.getByLabel("Descripción", { exact: true })).toHaveValue(
+        "Camisa revisada",
+    );
+    await page
+        .getByLabel("Descripción", { exact: true })
+        .fill("Segunda revisión");
+    await page.getByRole("button", { name: "Guardar descripción" }).click();
+    await page.getByRole("link", { name: "Descripción de IA" }).click();
+    await expect(page.getByLabel("Descripción", { exact: true })).toHaveValue(
+        "Segunda revisión",
+    );
+});
+test("IA local · rechaza respuestas inválidas sin guardar un perfil", async ({
+    page,
+    context,
+}) => {
+    await testDirectory(context);
+    page.on("dialog", (d) => d.accept());
+    await page.route("http://127.0.0.1:11434/**", async (route) => {
+        const tags = route.request().url().endsWith("/api/tags");
+        await route.fulfill({
+            headers: { "Access-Control-Allow-Origin": "*" },
+            json: tags
+                ? {
+                      models: [
+                          {
+                              name: "qwen3-vl:4b-instruct-q4_K_M",
+                              digest: "ficticio",
+                          },
+                      ],
+                  }
+                : {
+                      model: "qwen3-vl:4b-instruct-q4_K_M",
+                      done: true,
+                      message: { content: '{"description":"incompleto"}' },
+                  },
+        });
+    });
+    await page.goto("./");
+    await page.getByRole("button", { name: "Probar la demo" }).click();
+    await page.getByRole("heading", { name: "Camisa blanca" }).click();
+    await page.getByRole("link", { name: "Descripción de IA" }).click();
+    await page.getByRole("button", { name: "Analizar foto principal" }).click();
+    await expect(page.getByRole("status")).toContainText("campos esperados");
+    await expect(
+        page.getByRole("button", { name: "Guardar descripción" }),
+    ).toHaveCount(0);
+});

@@ -27,6 +27,7 @@ import { preparePhoto } from "./media";
 import { catalog, detail, garmentEditor, summary } from "./inventory";
 import { groups, trips } from "./groups";
 import { boards, weather } from "./extras";
+import { profilePage } from "./profiles";
 import { startUpdates } from "./update";
 document.documentElement.dataset.version =
   import.meta.env.VITE_RELEASE || "1.0.0";
@@ -436,11 +437,13 @@ async function render() {
     } else if (route === "ajustes") html = await settings();
     else if (route === "prendas")
       html =
-        id === "nueva"
-          ? await garmentEditor()
-          : mode === "editar"
-            ? await garmentEditor(+id)
-            : await detail(+id);
+        mode === "descripcion"
+          ? await profilePage(+id)
+          : id === "nueva"
+            ? await garmentEditor()
+            : mode === "editar"
+              ? await garmentEditor(+id)
+              : await detail(+id);
     else if (route === "lotes") html = await garmentEditor(null, true);
     else if (["outfits", "colecciones", "etiquetas"].includes(route))
       html = await groups(
