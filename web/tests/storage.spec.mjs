@@ -114,49 +114,62 @@ test("T02 · interrupción y reintento antes y después de rotar las dos generac
     expect(result.rows).toEqual([{ name: "Dos", location_id: 2, moves: 1 }]);
     expect(result.damaged).toBe(true);
 });
-test("T03 · creación concurrente y restauración comparten el bloqueo inicial", async ({
-    page,
-    context,
-}) => {
-    const tab = await context.newPage();
-    await openModules(tab);
-    const fixture = (await readFile(".fixtures/v9.zip")).toString("base64");
-    const run = (p, restore) =>
-        p.evaluate(
-            async ({ fixture, restore }) => {
-                const m = modules,
-                    root = await directory("compartido");
-                try {
-                    window.session = await m.create(root, async (dest) =>
-                        restore
-                            ? (
-                                  await m.inspectZip(
-                                      new Blob([
-                                          Uint8Array.fromBase64(fixture),
-                                      ]),
-                                      dest,
-                                  )
-                              ).data
-                            : m.call("new"),
+for (const restoreFirst of [false, true])
+    test(
+        "T03 · bloqueo inicial de " +
+            (restoreFirst ? "restauración y creación" : "dos creaciones"),
+        async ({ page, context }) => {
+            const tab = await context.newPage();
+            await openModules(tab);
+            const fixture = (await readFile(".fixtures/v9.zip")).toString(
+                "base64",
+            );
+            const run = (p, restore) =>
+                p.evaluate(
+                    async ({ fixture, restore }) => {
+                        const m = modules,
+                            root = await directory("compartido");
+                        try {
+                            window.session = await m.create(
+                                root,
+                                async (dest) =>
+                                    restore
+                                        ? (
+                                              await m.inspectZip(
+                                                  new Blob([
+                                                      Uint8Array.fromBase64(
+                                                          fixture,
+                                                      ),
+                                                  ]),
+                                                  dest,
+                                              )
+                                          ).data
+                                        : m.call("new"),
+                            );
+                            return "writer";
+                        } catch (e) {
+                            return e.message;
+                        }
+                    },
+                    { fixture, restore },
+                );
+            const results = await Promise.all([
+                run(tab, restoreFirst),
+                run(page, false),
+            ]);
+            expect(results.filter((x) => x === "writer")).toHaveLength(1);
+            expect(results.join(" ")).toContain("contiene archivos");
+            const loser = results[0] === "writer" ? page : tab;
+            expect(
+                await loser.evaluate(async () => {
+                    const s = await modules.connect(
+                        await directory("compartido"),
                     );
-                    return "writer";
-                } catch (e) {
-                    return e.message;
-                }
-            },
-            { fixture, restore },
-        );
-    const results = await Promise.all([run(tab, true), run(page, false)]);
-    expect(results.filter((x) => x === "writer")).toHaveLength(1);
-    expect(results.join(" ")).toContain("contiene archivos");
-    const loser = results[0] === "writer" ? page : tab;
-    expect(
-        await loser.evaluate(async () => {
-            const s = await modules.connect(await directory("compartido"));
-            return [s.head.revision, s.release === null];
-        }),
-    ).toEqual([1, true]);
-});
+                    return [s.head.revision, s.release === null];
+                }),
+            ).toEqual([1, true]);
+        },
+    );
 test("T06 · copias inválidas se rechazan sin activar el destino", async ({
     page,
 }) => {

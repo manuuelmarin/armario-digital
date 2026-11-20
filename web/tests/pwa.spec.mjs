@@ -75,6 +75,9 @@ test("T09/T11 · edición durante una actualización, reapertura offline y cach�
     await page.reload();
     await page.getByRole("link", { name: "Editar prenda" }).click();
     await page.getByLabel("Notas", { exact: true }).fill("Edición con A");
+    const reader = await context.newPage();
+    await reader.goto(ficha);
+    await expect(reader.locator("#connection")).toContainText("Solo lectura");
     await request.post("http://127.0.0.1:4175/choose-b");
     await page.evaluate(async () =>
         (await navigator.serviceWorker.ready).update(),
@@ -82,6 +85,17 @@ test("T09/T11 · edición durante una actualización, reapertura offline y cach�
     const update = page.getByRole("button", {
         name: "Nueva versión disponible · Actualizar",
     });
+    const updateFromReader = reader.getByRole("button", {
+        name: "Nueva versión disponible · Actualizar",
+    });
+    await updateFromReader.click();
+    await expect(reader.locator("#notice")).toContainText(
+        "otra pestaña con cambios pendientes",
+    );
+    await expect(page.getByLabel("Notas", { exact: true })).toHaveValue(
+        "Edición con A",
+    );
+    await reader.close();
     await expect(update).toBeVisible();
     await update.click();
     await expect(page.locator("#notice")).toContainText("Guarda el formulario");

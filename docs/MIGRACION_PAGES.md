@@ -14,6 +14,8 @@ La revisión partió de `main` en `1f97282`, después de integrar la PR #14. Las
 | 4, viajes y tiempo | El viaje rechaza una vuelta anterior a la salida. Una respuesta meteorológica con fechas imposibles o series de distinta longitud conserva la previsión anterior. | T07 y T10 ejercitan los formularios y comparan los datos mostrados. |
 | 8 y 9, actualización y accesibilidad | La prueba abre la ficha de una prenda por enlace profundo, guarda durante una actualización y edita y recarga la misma ficha sin red. | T09 y T11 comprueban también un segundo sitio offline con su propio trabajador, el zoom al 200 % y el contraste del texto principal y del botón primario en los dos temas. |
 
+La suite final contiene 27 pruebas de navegador y un contrato SQL. La suite Python conserva 114 pruebas, siete de ellas de navegador. La comprobación del sitio publicado crea además una carpeta de ensayo en un perfil efímero, guarda una ubicación y la recupera tras recargar sin red. La prueba de Windows usa el selector nativo y archivos NTFS. Los enlaces a los resultados por sistema y a la publicación quedan en la [PR de auditoría](https://github.com/manuuelmarin/armario-digital/pull/15).
+
 ## Formatos y responsabilidades
 
 El build de Vite empaqueta el cliente, las nueve migraciones SQL originales, las fuentes locales, el trabajador y el WASM de la misma versión de sql.js. El acceso diario a la carpeta elegida pertenece a File System Access. IndexedDB recuerda la referencia a la carpeta. El navegador comprueba el permiso al reconectar. La caché de la PWA contiene únicamente los recursos estáticos enumerados por el build.
@@ -79,8 +81,9 @@ Chromium 153 en Linux 6.18.57, Intel Xeon Platinum 8573C. Se creó un perfil tem
 |---:|---:|---:|---:|---:|
 | 100 | 600 | 220 / 267 ms | 8,4 s | 69 / 90 ms |
 | 1.000 | 6.000 | 342 / 841 ms | 120,2 s | 223 / 403 ms |
+| 5.000 | 20.000 | 905 / 973 ms | 339,2 s | 763 / 1.005 ms |
 
-Con 1.000 prendas se cumplen en este ensayo los presupuestos de 2 s para la primera página y 500 ms para el p95 después del calentamiento. La copia diaria inicial domina el primer guardado con 372.512.000 bytes de imágenes. Reproducir con `npm run build` y `node tests/performance.mjs --interfaz=1000` desde `web/`. Para 5.000 prendas, el ensayo de interfaz utiliza dos fotos por prenda con máster y miniatura históricos y sin la vista previa opcional. Las 20.000 imágenes caben en el límite del ZIP. La tabla del motor usa las tres variantes por foto.
+Con 1.000 prendas se cumplen en este ensayo los presupuestos de 2 s para la primera página y 500 ms para el p95 después del calentamiento. La copia diaria inicial domina el primer guardado con 372.512.000 bytes de imágenes. Reproducir con `npm run build` y `node tests/performance.mjs --interfaz=1000` desde `web/`. Para 5.000 prendas, el ensayo de interfaz utiliza dos fotos por prenda con máster y miniatura históricos y sin la vista previa opcional. La base de este último ensayo ocupó 7.053.312 bytes y sus 20.000 archivos de imagen sumaron 1.332.220.000 bytes. La copia se verificó dentro del límite del ZIP. La tabla del motor usa las tres variantes por foto.
 
 ## Cobertura T01–T12
 
