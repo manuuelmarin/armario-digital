@@ -217,15 +217,16 @@ export async function dispatch(el, key) {
       await state.refresh();
       notice(e.message);
       status("No se pudo guardar");
-    } else if (e.name !== "AbortError") {
+    } else if (e?.name !== "AbortError") {
       notice(
-        e.message?.includes("FOREIGN KEY")
+        e?.message?.includes("FOREIGN KEY")
           ? "Hay elementos vinculados. Quita la relación antes de eliminar."
-          : e.message,
+          : e?.message ||
+              "No se pudo completar la operación. Inténtalo de nuevo.",
       );
       if (state.session)
         status(
-          e.name === "NotAllowedError" ? "Solo lectura" : "No se pudo guardar",
+          e?.name === "NotAllowedError" ? "Solo lectura" : "No se pudo guardar",
         );
       document.querySelector("#notice").setAttribute("tabindex", "-1");
       document.querySelector("#notice").focus();
